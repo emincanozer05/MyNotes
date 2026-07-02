@@ -41,12 +41,25 @@ kullanılmaz; kütüphaneniz tüm cihazlarınızda senkronizedir.
 
 ## Modüller
 
-- ✅ **Literatür** — DOI / PubMed kimliği yapıştırın, makale meta verisi
-  (başlık, yazarlar, yıl, dergi, özet) otomatik çekilip kütüphaneye eklenir.
-- 🔜 **Notlar** — zorunlu kaynak referansı, highlight koleksiyonu, Zettelkasten
-  bağlantıları, akıllı etiketler (Aşama 2)
-- 🔜 **Hesaplayıcılar** — 1RM (Epley/Brzycki), Kuvvet-Hız profili, Karvonen (Aşama 3)
-- 🔜 **Bilgi Grafiği & Flashcard** — kavram haritası, SM-2 aralıklı tekrar (Aşama 4)
-- 🔜 **Feynman Modu, Kitap Rafı, Ses Notu, Bilgi Derinliği** (Aşama 5)
+- ✅ **Literatür** — DOI / PubMed kimliği yapıştırın; başlık, yazarlar, yıl,
+  dergi ve özet otomatik çekilip kütüphaneye eklenir.
+- ✅ **Notlar** — zorunlu kaynak künyesi (eser, yazar, yıl, sayfa),
+  `[[Not Başlığı]]` ile Zettelkasten bağlantıları + geri bağlantılar,
+  `#etiket` ile çapraz filtreleme, not içi arama.
+- ✅ **Öne Çıkanlar** — not içinde pasaj seçin, tek tıkla alıntı koleksiyonuna eklensin.
+- ✅ **Hesaplayıcılar** — 1RM (Epley/Brzycki + %1RM tablosu), Kuvvet-Hız
+  profili (Samozino yöntemi, optimal eğim karşılaştırması ve antrenman
+  önerisi), Karvonen nabız bölgeleri; sonuçlar geçmişe kaydedilir.
+- ✅ **Bilgi Grafiği** — not/etiket/kaynak ilişkilerinin sürüklenebilir,
+  tıklanabilir kuvvet-yönlendirmeli haritası.
+- ✅ **Flashcard** — SM-2 aralıklı tekrar algoritması, günlük tekrar kuyruğu.
+- ✅ **Feynman Modu** — notu sporcuya / asistan antrenöre / sosyal medya
+  formatına sadeleştirir (Claude API; `ANTHROPIC_API_KEY` gerektirir).
+- ✅ **Kitap Rafı** — kapak görselleriyle dijital kütüphane (ISBN'den otomatik
+  kapak), kitaba bağlı notlara hızlı erişim.
+- ✅ **Ses Notu & Transkript** — tarayıcıda konuşma tanıma (tr-TR), transkript
+  tek tıkla kaynaklı nota dönüşür.
+- ✅ **Bilgi Derinliği** — konu başına benzersiz kaynak sayısı analizi;
+  yüzeysel kalınan konuları işaretler.
 
 Geliştirme kuralları için [CLAUDE.md](./CLAUDE.md) dosyasına bakın.

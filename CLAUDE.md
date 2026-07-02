@@ -51,7 +51,9 @@ npm run lint    # eslint
 ## Modül Yol Haritası
 
 1. ✅ Aşama 1 — İskelet, CLAUDE.md, DB şeması, Auth, Literatür modülü (DOI/PubMed içe aktarma)
-2. Aşama 2 — Not sistemi: zorunlu kaynak referansı, highlight koleksiyonu, Zettelkasten linkleri, etiketler
-3. Aşama 3 — Hesaplayıcılar: 1RM (Epley/Brzycki), Kuvvet-Hız profili, Karvonen nabız bölgeleri
-4. Aşama 4 — Bilgi grafiği (concept map) + Spaced repetition flashcard (SM-2)
-5. Aşama 5 — Feynman modu (Claude API), Kitap rafı, Ses notu & transkript, Bilgi Derinliği paneli
+2. ✅ Aşama 2 — Not sistemi: zorunlu kaynak referansı, highlight koleksiyonu, Zettelkasten linkleri, etiketler
+3. ✅ Aşama 3 — Hesaplayıcılar: 1RM (Epley/Brzycki), Kuvvet-Hız profili (Samozino), Karvonen nabız bölgeleri
+4. ✅ Aşama 4 — Bilgi grafiği (concept map) + Spaced repetition flashcard (SM-2)
+5. ✅ Aşama 5 — Feynman modu (Claude API, `claude-opus-4-8`), Kitap rafı, Ses notu & transkript (Web Speech API), Bilgi Derinliği paneli
+
+Feynman modu `ANTHROPIC_API_KEY` ister; anahtar yoksa route açıklayıcı 503 döner.

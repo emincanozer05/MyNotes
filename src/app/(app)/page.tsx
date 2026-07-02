@@ -1,27 +1,36 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-const UPCOMING = [
-  { title: "Not Sistemi", detail: "Kaynak referansı, highlight, Zettelkasten bağlantıları, etiketler", phase: "Aşama 2" },
-  { title: "Hesaplayıcılar", detail: "1RM (Epley/Brzycki), Kuvvet-Hız profili, Karvonen nabız bölgeleri", phase: "Aşama 3" },
-  { title: "Bilgi Grafiği & Flashcard", detail: "Etkileşimli kavram haritası ve SM-2 aralıklı tekrar", phase: "Aşama 4" },
-  { title: "Feynman Modu & Saha Araçları", detail: "AI sadeleştirme, kitap rafı, ses notu transkripti, bilgi derinliği", phase: "Aşama 5" },
+const MODULES = [
+  { title: "Literatür", detail: "DOI/PubMed yapıştır, makale otomatik kütüphanene eklensin", href: "/library" },
+  { title: "Notlar", detail: "Kaynak referanslı notlar, [[bağlantılar]] ve #etiketler", href: "/notes" },
+  { title: "Hesaplayıcılar", detail: "1RM, Kuvvet-Hız profili, Karvonen nabız bölgeleri", href: "/calculators" },
+  { title: "Bilgi Grafiği", detail: "Not-etiket-kaynak ilişkilerinin etkileşimli haritası", href: "/graph" },
+  { title: "Ses Notu", detail: "Sahada konuş, transkript otomatik nota dönüşsün", href: "/voice" },
+  { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights" },
 ];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const nowIso = new Date().toISOString();
 
-  const [{ count: articleCount }, { count: noteCount }, { count: highlightCount }] =
-    await Promise.all([
-      supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
-      supabase.from("notes").select("*", { count: "exact", head: true }),
-      supabase.from("highlights").select("*", { count: "exact", head: true }),
-    ]);
+  const [
+    { count: articleCount },
+    { count: noteCount },
+    { count: highlightCount },
+    { count: dueCount },
+  ] = await Promise.all([
+    supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
+    supabase.from("notes").select("*", { count: "exact", head: true }),
+    supabase.from("highlights").select("*", { count: "exact", head: true }),
+    supabase.from("flashcards").select("*", { count: "exact", head: true }).lte("due_at", nowIso),
+  ]);
 
   const stats = [
     { label: "Makale", value: articleCount ?? 0, href: "/library" },
     { label: "Not", value: noteCount ?? 0, href: "/notes" },
     { label: "Alıntı", value: highlightCount ?? 0, href: "/highlights" },
+    { label: "Tekrarı gelen kart", value: dueCount ?? 0, href: "/flashcards" },
   ];
 
   return (
@@ -33,7 +42,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((s) => (
           <Link
             key={s.label}
@@ -46,32 +55,32 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
-        <h2 className="font-semibold">Hızlı başlangıç</h2>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Bir makalenin DOI numarasını veya PubMed linkini yapıştırarak
-          kütüphanenizi oluşturmaya başlayın.
-        </p>
-        <Link
-          href="/library"
-          className="mt-3 inline-block rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
-        >
-          Literatüre git →
-        </Link>
-      </div>
+      {(dueCount ?? 0) > 0 && (
+        <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 p-4">
+          <p className="text-sm font-semibold">
+            🔔 Bugün tekrarı gelen {dueCount} flashcard&apos;ınız var.
+          </p>
+          <Link
+            href="/flashcards"
+            className="mt-1 inline-block text-sm font-medium text-amber-700 dark:text-amber-400 hover:underline"
+          >
+            Çalışmaya başla →
+          </Link>
+        </div>
+      )}
 
       <div>
-        <h2 className="font-semibold">Yol haritası</h2>
+        <h2 className="font-semibold">Modüller</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {UPCOMING.map((m) => (
-            <div
+          {MODULES.map((m) => (
+            <Link
               key={m.title}
-              className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-4"
+              href={m.href}
+              className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 hover:border-amber-400 transition-colors"
             >
-              <p className="text-xs font-medium text-amber-600">{m.phase}</p>
-              <p className="mt-0.5 font-medium">{m.title}</p>
+              <p className="font-medium">{m.title}</p>
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{m.detail}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
