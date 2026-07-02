@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { NoteContent } from "@/components/NoteContent";
 import { HighlightCapture } from "./HighlightCapture";
+import { FeynmanPanel } from "./FeynmanPanel";
 import { deleteNote } from "../actions";
 
 export default async function NoteDetailPage({
@@ -98,6 +99,8 @@ export default async function NoteDetailPage({
           İpucu: metinde bir pasaj seçince ❝ Alıntıya ekle düğmesi çıkar.
         </p>
       </div>
+
+      <FeynmanPanel noteId={id} />
 
       {(outLinks?.length || backLinks?.length) ? (
         <div className="grid gap-4 sm:grid-cols-2">
