@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/graph", label: "Bilgi Grafiği", icon: "⌘" },
   { href: "/calculators", label: "Hesaplayıcılar", icon: "∑" },
   { href: "/flashcards", label: "Flashcard", icon: "▤" },
+  { href: "/voice", label: "Ses Notu", icon: "♪" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
   { href: "/insights", label: "Bilgi Derinliği", icon: "◔" },
 ];

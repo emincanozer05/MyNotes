@@ -1,0 +1,67 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+export async function saveVoiceNote(transcript: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const trimmed = transcript.trim();
+  if (!trimmed) return { error: "Boş transkript kaydedilemez." };
+
+  const { error } = await supabase.from("voice_notes").insert({
+    user_id: user.id,
+    transcript: trimmed,
+  });
+
+  revalidatePath("/voice");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteVoiceNote(formData: FormData) {
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  if (id) await supabase.from("voice_notes").delete().eq("id", id);
+  revalidatePath("/voice");
+}
+
+/** Converts a voice transcript into a regular note and links them. */
+export async function convertToNote(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const id = String(formData.get("id") ?? "");
+  const { data: voice } = await supabase
+    .from("voice_notes")
+    .select("transcript, created_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (!voice?.transcript) return;
+
+  const date = new Date(voice.created_at).toLocaleDateString("tr-TR");
+  const { data: note } = await supabase
+    .from("notes")
+    .insert({
+      user_id: user.id,
+      title: `Saha notu — ${date}`,
+      content: voice.transcript,
+      source_title: "Saha ses kaydı",
+      source_author: "Kendi gözlemim",
+      source_year: new Date(voice.created_at).getFullYear(),
+    })
+    .select("id")
+    .single();
+
+  if (note) {
+    await supabase.from("voice_notes").update({ note_id: note.id }).eq("id", id);
+    redirect(`/notes/${note.id}/edit`);
+  }
+}
