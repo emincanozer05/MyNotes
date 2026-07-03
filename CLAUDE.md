@@ -58,3 +58,10 @@ npm run lint    # eslint
 6. ✅ Aşama 6 — Dinamik tasarım (aurora arka plan + animasyonlar); kaynak referansı opsiyonel + Post-it not panosu; Literatür 3 bölüm (RCT getir / konu bazlı liste / A4 yazdırma); Hesaplayıcılar kaldırıldı; Kitap Rafı zengin metin özet editörü (font/boyut/renk/görsel). Makale konusu ve kitap özeti `sources.metadata` jsonb alanında tutulur; not kaynağı için `0002` migration.
 
 Feynman modu `ANTHROPIC_API_KEY` ister; anahtar yoksa route açıklayıcı 503 döner.
+
+`0003` migration'ı "permission denied" hatalarını çözer: PostgREST rollerine
+(anon/authenticated) public şema GRANT'lerini verir — RLS satır izolasyonu
+değişmez; yeni tablolar default privileges ile otomatik kapsanır. Literatür
+sayfası sekmeli akış tasarımındadır (Günlük Akış / Kaydedilenler /
+Not Aldıklarım) ve kullanıcı kendi makalesini elle ekleyebilir
+(`addOwnArticle`, `metadata.manual = true`).

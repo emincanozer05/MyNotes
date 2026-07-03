@@ -43,6 +43,54 @@ export async function saveCuratedArticle(pmid: string) {
   return { error: null };
 }
 
+/** Adds an article entered manually by the user (own reading list). */
+export async function addOwnArticle(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return { error: "Makale başlığı zorunludur." };
+
+  const authors = String(formData.get("authors") ?? "")
+    .split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+  const yearRaw = String(formData.get("year") ?? "").trim();
+  const year = yearRaw ? Number(yearRaw) : null;
+  const journal = String(formData.get("journal") ?? "").trim() || null;
+  const doi = String(formData.get("doi") ?? "").trim() || null;
+  const topic = String(formData.get("topic") ?? "").trim() || "Diğer";
+  const abstract = String(formData.get("abstract") ?? "").trim() || null;
+
+  const { error } = await supabase.from("sources").insert({
+    user_id: user.id,
+    kind: "article",
+    title,
+    authors,
+    year: year && Number.isFinite(year) ? year : null,
+    journal,
+    doi,
+    url: doi ? `https://doi.org/${doi}` : null,
+    abstract,
+    metadata: { topic, manual: true },
+  });
+
+  if (error) {
+    const isDuplicate = error.code === "23505";
+    return {
+      error: isDuplicate
+        ? "Bu DOI ile kayıtlı bir makale zaten var."
+        : `Eklenemedi: ${error.message}`,
+    };
+  }
+
+  revalidatePath("/library");
+  return { error: null };
+}
+
 export async function deleteArticle(formData: FormData) {
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
