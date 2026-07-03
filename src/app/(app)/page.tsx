@@ -2,12 +2,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 const MODULES = [
-  { title: "Literatür", detail: "DOI/PubMed yapıştır, makale otomatik kütüphanene eklensin", href: "/library" },
-  { title: "Notlar", detail: "Kaynak referanslı notlar, [[bağlantılar]] ve #etiketler", href: "/notes" },
-  { title: "Hesaplayıcılar", detail: "1RM, Kuvvet-Hız profili, Karvonen nabız bölgeleri", href: "/calculators" },
-  { title: "Bilgi Grafiği", detail: "Not-etiket-kaynak ilişkilerinin etkileşimli haritası", href: "/graph" },
-  { title: "Ses Notu", detail: "Sahada konuş, transkript otomatik nota dönüşsün", href: "/voice" },
-  { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights" },
+  { title: "Literatür", detail: "RCT makalelerini getir, konu başlığına göre kütüphaneni oluştur", href: "/library", grad: "from-rose-500 to-orange-500", icon: "❧" },
+  { title: "Post-it Notlar", detail: "Renkli post-it'ler, [[bağlantılar]] ve #etiketler", href: "/notes", grad: "from-amber-500 to-yellow-500", icon: "✎" },
+  { title: "Bilgi Grafiği", detail: "Not-etiket-kaynak ilişkilerinin etkileşimli haritası", href: "/graph", grad: "from-violet-500 to-fuchsia-500", icon: "⌘" },
+  { title: "Ses Notu", detail: "Sahada konuş, transkript otomatik nota dönüşsün", href: "/voice", grad: "from-cyan-500 to-sky-500", icon: "♪" },
+  { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane, zengin metin özetleri", href: "/bookshelf", grad: "from-emerald-500 to-teal-500", icon: "▥" },
+  { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights", grad: "from-indigo-500 to-blue-500", icon: "◔" },
 ];
 
 export default async function DashboardPage() {
@@ -27,42 +27,51 @@ export default async function DashboardPage() {
   ]);
 
   const stats = [
-    { label: "Makale", value: articleCount ?? 0, href: "/library" },
-    { label: "Not", value: noteCount ?? 0, href: "/notes" },
-    { label: "Alıntı", value: highlightCount ?? 0, href: "/highlights" },
-    { label: "Tekrarı gelen kart", value: dueCount ?? 0, href: "/flashcards" },
+    { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
+    { label: "Not", value: noteCount ?? 0, href: "/notes", grad: "from-amber-500 to-yellow-500" },
+    { label: "Alıntı", value: highlightCount ?? 0, href: "/highlights", grad: "from-violet-500 to-fuchsia-500" },
+    { label: "Tekrarı gelen kart", value: dueCount ?? 0, href: "/flashcards", grad: "from-cyan-500 to-sky-500" },
   ];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Panel</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+    <div className="mx-auto max-w-5xl space-y-10">
+      <div className="animate-in">
+        <h1 className="text-4xl font-extrabold tracking-tight">
+          <span className="gradient-text">Panel</span>
+        </h1>
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
           Kütüphanenizin ve bilgi tabanınızın genel görünümü.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((s) => (
           <Link
             key={s.label}
             href={s.href}
-            className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 hover:border-amber-400 transition-colors"
+            className="glass-card group relative overflow-hidden rounded-2xl p-5"
           >
-            <p className="text-3xl font-bold">{s.value}</p>
-            <p className="text-sm text-stone-500 dark:text-stone-400">{s.label}</p>
+            <div
+              className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${s.grad} opacity-20 blur-xl transition-opacity group-hover:opacity-40`}
+            />
+            <p className={`bg-gradient-to-br ${s.grad} bg-clip-text text-4xl font-black text-transparent`}>
+              {s.value}
+            </p>
+            <p className="mt-1 text-sm font-medium text-stone-500 dark:text-stone-400">
+              {s.label}
+            </p>
           </Link>
         ))}
       </div>
 
       {(dueCount ?? 0) > 0 && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 p-4">
+        <div className="animate-in overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/10 to-rose-500/10 p-5">
           <p className="text-sm font-semibold">
             🔔 Bugün tekrarı gelen {dueCount} flashcard&apos;ınız var.
           </p>
           <Link
             href="/flashcards"
-            className="mt-1 inline-block text-sm font-medium text-amber-700 dark:text-amber-400 hover:underline"
+            className="mt-1 inline-block text-sm font-semibold text-amber-700 dark:text-amber-400 hover:underline"
           >
             Çalışmaya başla →
           </Link>
@@ -70,16 +79,23 @@ export default async function DashboardPage() {
       )}
 
       <div>
-        <h2 className="font-semibold">Modüller</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <h2 className="text-lg font-bold">Modüller</h2>
+        <div className="stagger mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((m) => (
             <Link
               key={m.title}
               href={m.href}
-              className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 hover:border-amber-400 transition-colors"
+              className="glass-card group rounded-2xl p-5"
             >
-              <p className="font-medium">{m.title}</p>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{m.detail}</p>
+              <span
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white shadow-lg transition-transform group-hover:scale-110 group-hover:-rotate-6`}
+              >
+                {m.icon}
+              </span>
+              <p className="mt-3 font-bold">{m.title}</p>
+              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+                {m.detail}
+              </p>
             </Link>
           ))}
         </div>

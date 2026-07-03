@@ -28,9 +28,11 @@ export default async function GraphPage() {
     nodes.push({ id: t.id, label: `#${t.name}`, type: "tag" });
   }
 
-  // sources: one node per unique reference (library id or inline title)
+  // sources: one node per unique reference (library id or inline title).
+  // Source-less notes (optional reference) contribute no source node.
   const sourceKeys = new Map<string, string>(); // key -> node id
   for (const n of notes ?? []) {
+    if (!n.source_id && !n.source_title) continue;
     const key = n.source_id ?? `title:${n.source_title.toLocaleLowerCase("tr")}`;
     if (!sourceKeys.has(key)) {
       const nodeId = `src:${key}`;

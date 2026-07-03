@@ -78,6 +78,7 @@ export async function saveNote(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const content = String(formData.get("content") ?? "");
+  // Source reference is now optional; columns default to '' so blank is fine.
   const payload = {
     title: String(formData.get("title") ?? "").trim(),
     content,
@@ -88,8 +89,8 @@ export async function saveNote(formData: FormData) {
     source_page: String(formData.get("source_page") ?? "").trim() || null,
   };
 
-  if (!payload.title || !payload.source_title || !payload.source_author) {
-    redirect(`/notes/${id ? `${id}/edit` : "new"}?error=${encodeURIComponent("Başlık ve kaynak bilgisi (eser adı + yazar) zorunludur.")}`);
+  if (!payload.title) {
+    redirect(`/notes/${id ? `${id}/edit` : "new"}?error=${encodeURIComponent("Not başlığı zorunludur.")}`);
   }
 
   let noteId = id;

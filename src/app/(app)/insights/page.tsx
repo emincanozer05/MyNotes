@@ -31,7 +31,9 @@ export default async function InsightsPage() {
     (notes ?? []).map((n) => [
       n.id,
       n.source_id ??
-        `${n.source_title}|${n.source_author}`.toLocaleLowerCase("tr").trim(),
+        (n.source_title
+          ? `${n.source_title}|${n.source_author}`.toLocaleLowerCase("tr").trim()
+          : null),
     ]),
   );
 
@@ -51,7 +53,9 @@ export default async function InsightsPage() {
     .sort((a, b) => b.sourceCount - a.sourceCount || b.noteCount - a.noteCount);
 
   const maxSources = Math.max(1, ...rows.map((r) => r.sourceCount));
-  const totalSources = new Set(noteSource.values()).size;
+  const totalSources = new Set(
+    [...noteSource.values()].filter((s): s is string => Boolean(s)),
+  ).size;
   const shallow = rows.filter((r) => r.sourceCount <= 1);
 
   return (

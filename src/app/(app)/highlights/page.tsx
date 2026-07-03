@@ -55,11 +55,15 @@ export default async function HighlightsPage() {
                         className="font-medium text-amber-700 dark:text-amber-400 hover:underline"
                       >
                         {h.notes.title}
-                      </Link>{" "}
-                      · {h.notes.source_author}
-                      {h.notes.source_year && ` (${h.notes.source_year})`},{" "}
-                      <em>{h.notes.source_title}</em>
-                      {h.notes.source_page && `, s. ${h.notes.source_page}`}
+                      </Link>
+                      {h.notes.source_title && (
+                        <>
+                          {" "}· {h.notes.source_author}
+                          {h.notes.source_year && ` (${h.notes.source_year})`},{" "}
+                          <em>{h.notes.source_title}</em>
+                          {h.notes.source_page && `, s. ${h.notes.source_page}`}
+                        </>
+                      )}
                     </>
                   ) : (
                     "Bağlı not silinmiş"
