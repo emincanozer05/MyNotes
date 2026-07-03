@@ -95,86 +95,90 @@ export function NoteForm({
         </p>
       </div>
 
-      <fieldset className="rounded-lg border border-stone-200 dark:border-stone-800 p-4 space-y-4">
-        <legend className="px-1 text-sm font-semibold">
-          Kaynak referansı (zorunlu)
-        </legend>
+      <details
+        className="rounded-lg border border-stone-200 dark:border-stone-800 p-4"
+        open={Boolean(note?.source_title || note?.source_id)}
+      >
+        <summary className="cursor-pointer text-sm font-semibold text-stone-700 dark:text-stone-300">
+          Kaynak referansı{" "}
+          <span className="font-normal text-stone-400">(isteğe bağlı)</span>
+        </summary>
 
-        <div className="space-y-1">
-          <label htmlFor="source_id" className="text-sm font-medium">
-            Kütüphaneden seç (isteğe bağlı)
-          </label>
-          <select
-            id="source_id"
-            name="source_id"
-            value={sourceId}
-            onChange={(e) => handleSourceSelect(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">— Elle gireceğim —</option>
-            {sources.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.title.slice(0, 80)}
-                {s.year ? ` (${s.year})` : ""}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="mt-4 space-y-4">
+          <div className="space-y-1">
+            <label htmlFor="source_id" className="text-sm font-medium">
+              Kütüphaneden seç
+            </label>
+            <select
+              id="source_id"
+              name="source_id"
+              value={sourceId}
+              onChange={(e) => handleSourceSelect(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">— Elle gireceğim / kaynak yok —</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title.slice(0, 80)}
+                  {s.year ? ` (${s.year})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label htmlFor="source_title" className="text-sm font-medium">
-              Kitap / Makale adı *
-            </label>
-            <input
-              id="source_title"
-              name="source_title"
-              required
-              value={sourceTitle}
-              onChange={(e) => setSourceTitle(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="source_author" className="text-sm font-medium">
-              Yazar *
-            </label>
-            <input
-              id="source_author"
-              name="source_author"
-              required
-              value={sourceAuthor}
-              onChange={(e) => setSourceAuthor(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="source_year" className="text-sm font-medium">
-              Yayın yılı
-            </label>
-            <input
-              id="source_year"
-              name="source_year"
-              type="number"
-              value={sourceYear}
-              onChange={(e) => setSourceYear(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="source_page" className="text-sm font-medium">
-              Sayfa no
-            </label>
-            <input
-              id="source_page"
-              name="source_page"
-              defaultValue={note?.source_page ?? ""}
-              placeholder="örn. 142-148"
-              className={inputCls}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label htmlFor="source_title" className="text-sm font-medium">
+                Kitap / Makale adı
+              </label>
+              <input
+                id="source_title"
+                name="source_title"
+                value={sourceTitle}
+                onChange={(e) => setSourceTitle(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="source_author" className="text-sm font-medium">
+                Yazar
+              </label>
+              <input
+                id="source_author"
+                name="source_author"
+                value={sourceAuthor}
+                onChange={(e) => setSourceAuthor(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="source_year" className="text-sm font-medium">
+                Yayın yılı
+              </label>
+              <input
+                id="source_year"
+                name="source_year"
+                type="number"
+                value={sourceYear}
+                onChange={(e) => setSourceYear(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="source_page" className="text-sm font-medium">
+                Sayfa no
+              </label>
+              <input
+                id="source_page"
+                name="source_page"
+                defaultValue={note?.source_page ?? ""}
+                placeholder="örn. 142-148"
+                className={inputCls}
+              />
+            </div>
           </div>
         </div>
-      </fieldset>
+      </details>
 
       <div className="space-y-1">
         <label htmlFor="tags" className="text-sm font-medium">
@@ -192,7 +196,7 @@ export function NoteForm({
         </p>
       </div>
 
-      <button className="rounded-md bg-amber-600 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+      <button className="btn-gradient rounded-full px-6 py-2.5 text-sm font-semibold">
         {note?.id ? "Güncelle" : "Notu Kaydet"}
       </button>
     </form>

@@ -52,8 +52,9 @@ npm run lint    # eslint
 
 1. ✅ Aşama 1 — İskelet, CLAUDE.md, DB şeması, Auth, Literatür modülü (DOI/PubMed içe aktarma)
 2. ✅ Aşama 2 — Not sistemi: zorunlu kaynak referansı, highlight koleksiyonu, Zettelkasten linkleri, etiketler
-3. ✅ Aşama 3 — Hesaplayıcılar: 1RM (Epley/Brzycki), Kuvvet-Hız profili (Samozino), Karvonen nabız bölgeleri
+3. ✅ Aşama 3 — Hesaplayıcılar (Aşama 6'da kaldırıldı)
 4. ✅ Aşama 4 — Bilgi grafiği (concept map) + Spaced repetition flashcard (SM-2)
 5. ✅ Aşama 5 — Feynman modu (Claude API, `claude-opus-4-8`), Kitap rafı, Ses notu & transkript (Web Speech API), Bilgi Derinliği paneli
+6. ✅ Aşama 6 — Dinamik tasarım (aurora arka plan + animasyonlar); kaynak referansı opsiyonel + Post-it not panosu; Literatür 3 bölüm (RCT getir / konu bazlı liste / A4 yazdırma); Hesaplayıcılar kaldırıldı; Kitap Rafı zengin metin özet editörü (font/boyut/renk/görsel). Makale konusu ve kitap özeti `sources.metadata` jsonb alanında tutulur; not kaynağı için `0002` migration.
 
 Feynman modu `ANTHROPIC_API_KEY` ister; anahtar yoksa route açıklayıcı 503 döner.

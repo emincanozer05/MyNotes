@@ -50,12 +50,15 @@ export default async function NoteDetailPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{note.title}</h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            {note.source_author}
-            {note.source_year && ` (${note.source_year})`} —{" "}
-            <em>{note.source_title}</em>
-            {note.source_page && `, s. ${note.source_page}`}
-          </p>
+          {note.source_title && (
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+              {note.source_author}
+              {note.source_year && ` (${note.source_year})`}
+              {(note.source_author || note.source_year) && " — "}
+              <em>{note.source_title}</em>
+              {note.source_page && `, s. ${note.source_page}`}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2">
           <Link

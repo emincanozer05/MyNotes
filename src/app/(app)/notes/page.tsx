@@ -4,11 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 interface NoteRow {
   id: string;
   title: string;
+  content: string;
   source_title: string;
   source_author: string;
   source_year: number | null;
   updated_at: string;
   note_tags: { tags: { name: string } | null }[];
+}
+
+// Deterministic post-it colour + slight tilt from the note id
+const POSTIT = ["postit-y", "postit-p", "postit-g", "postit-b", "postit-o", "postit-v"];
+const TILTS = ["-2deg", "1.5deg", "-1deg", "2deg", "0.5deg", "-1.5deg"];
+function postitStyle(id: string) {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return { cls: POSTIT[h % POSTIT.length], tilt: TILTS[h % TILTS.length] };
 }
 
 export default async function NotesPage({
@@ -39,7 +49,7 @@ export default async function NotesPage({
 
   let query = supabase
     .from("notes")
-    .select("id, title, source_title, source_author, source_year, updated_at, note_tags(tags(name))")
+    .select("id, title, content, source_title, source_author, source_year, updated_at, note_tags(tags(name))")
     .order("updated_at", { ascending: false });
 
   if (noteIdsForTag !== null) query = query.in("id", noteIdsForTag);
@@ -52,18 +62,20 @@ export default async function NotesPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex items-start justify-between gap-4 animate-in">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notlar</h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Kaynak referanslı bilimsel notlarınız. <code>[[bağlantı]]</code> ve{" "}
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            <span className="gradient-text">Post-it Notlar</span>
+          </h1>
+          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+            Renkli post-it panonuz. <code>[[bağlantı]]</code> ve{" "}
             <code>#etiket</code> destekli.
           </p>
         </div>
         <Link
           href="/notes/new"
-          className="shrink-0 rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+          className="btn-gradient shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold"
         >
           + Yeni Not
         </Link>
@@ -74,10 +86,10 @@ export default async function NotesPage({
           name="q"
           defaultValue={q}
           placeholder="Notlarda ara…"
-          className="flex-1 rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500"
+          className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500"
         />
         {tag && <input type="hidden" name="tag" value={tag} />}
-        <button className="rounded-md border border-stone-300 dark:border-stone-700 px-4 py-2 text-sm font-medium hover:bg-stone-100 dark:hover:bg-stone-800">
+        <button className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium transition-colors hover:bg-stone-500/10">
           Ara
         </button>
       </form>
@@ -86,10 +98,10 @@ export default async function NotesPage({
         <div className="flex flex-wrap gap-1.5">
           <Link
             href="/notes"
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               !tag
-                ? "bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900"
-                : "bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200"
+                ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white"
+                : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
             }`}
           >
             Tümü
@@ -98,10 +110,10 @@ export default async function NotesPage({
             <Link
               key={t.name}
               href={`/notes?tag=${encodeURIComponent(t.name)}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 tag === t.name
                   ? "bg-sky-600 text-white"
-                  : "bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 hover:bg-sky-100"
+                  : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
               }`}
             >
               #{t.name}
@@ -111,40 +123,55 @@ export default async function NotesPage({
       )}
 
       {notes && notes.length > 0 ? (
-        <div className="space-y-3">
-          {(notes as unknown as NoteRow[]).map((n) => (
-            <Link
-              key={n.id}
-              href={`/notes/${n.id}`}
-              className="block rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 hover:border-amber-400 transition-colors"
-            >
-              <h3 className="font-semibold">{n.title}</h3>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                {n.source_author}
-                {n.source_year && ` (${n.source_year})`} — {n.source_title}
-              </p>
-              {n.note_tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {n.note_tags
-                    .filter((t) => t.tags)
-                    .map((t) => (
-                      <span
-                        key={t.tags!.name}
-                        className="rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300"
-                      >
-                        #{t.tags!.name}
-                      </span>
-                    ))}
+        <div className="stagger grid grid-cols-1 gap-6 pt-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(notes as unknown as NoteRow[]).map((n) => {
+            const { cls, tilt } = postitStyle(n.id);
+            const tags = n.note_tags.filter((t) => t.tags);
+            return (
+              <Link
+                key={n.id}
+                href={`/notes/${n.id}`}
+                className={`postit ${cls}`}
+                style={{ transform: `rotate(${tilt})` }}
+              >
+                <span className="postit-pin" aria-hidden />
+                <h3 className="font-bold leading-snug line-clamp-2">{n.title}</h3>
+                {n.content && (
+                  <p className="mt-2 flex-1 whitespace-pre-wrap text-sm leading-snug line-clamp-6 opacity-90">
+                    {n.content.slice(0, 240)}
+                  </p>
+                )}
+                <div className="mt-3 space-y-1.5">
+                  {n.source_title && (
+                    <p className="text-[11px] italic opacity-70">
+                      {n.source_author}
+                      {n.source_year ? ` (${n.source_year})` : ""}
+                      {n.source_author || n.source_year ? " — " : ""}
+                      {n.source_title}
+                    </p>
+                  )}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {tags.map((t) => (
+                        <span
+                          key={t.tags!.name}
+                          className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
+                        >
+                          #{t.tags!.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center text-sm text-stone-500">
+        <p className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-10 text-center text-sm text-stone-500">
           {tag || q
             ? "Bu filtreye uyan not bulunamadı."
-            : "Henüz notunuz yok. İlk bilimsel notunuzu oluşturun."}
+            : "Henüz notunuz yok. İlk post-it'inizi oluşturun."}
         </p>
       )}
     </div>

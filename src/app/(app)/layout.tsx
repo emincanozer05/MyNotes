@@ -15,11 +15,15 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1">
+      <div className="aurora" aria-hidden />
       <Sidebar userEmail={user.email ?? ""} />
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-end border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-6 py-2.5">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_75%,transparent)] px-6 py-2.5 backdrop-blur-md">
+          <span className="text-xs font-medium text-stone-400">
+            Kuvvet &amp; Kondisyon Bilgi Platformu
+          </span>
           <form action={logout}>
-            <button className="text-xs font-medium text-stone-500 hover:text-stone-800 dark:hover:text-stone-200">
+            <button className="rounded-full px-3 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-rose-500/10 hover:text-rose-500">
               Çıkış yap
             </button>
           </form>
