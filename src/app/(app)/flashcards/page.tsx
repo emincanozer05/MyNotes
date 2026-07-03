@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ReviewDeck } from "./ReviewDeck";
+import { DeckStudy, type DeckCard } from "./DeckStudy";
 import { createFlashcard, deleteFlashcard } from "./actions";
 
 const inputCls =
@@ -18,22 +19,51 @@ export default async function FlashcardsPage() {
       .limit(50),
     supabase
       .from("flashcards")
-      .select("id, front, due_at, interval_days, repetitions")
+      .select("id, front, back, deck, due_at, interval_days, repetitions")
+      .order("deck")
       .order("due_at")
-      .limit(200),
+      .limit(500),
     supabase.from("notes").select("id, title").order("title"),
   ]);
+
+  const allCards = all ?? [];
+  const studyCards: DeckCard[] = allCards.map((c) => ({
+    id: c.id,
+    front: c.front,
+    back: c.back,
+    deck: c.deck ?? "Genel",
+  }));
+
+  // Existing deck names, offered as datalist suggestions in the new-card form.
+  const deckNames = [...new Set(studyCards.map((c) => c.deck))].sort((a, b) =>
+    a.localeCompare(b, "tr"),
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Flashcard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          <span className="gradient-text">Flashcard</span>
+        </h1>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
           Aralıklı tekrar (SM-2): doğru hatırladıkça tekrar aralığı uzar,
-          zorlandıkça sıklaşır.
+          zorlandıkça sıklaşır. Kendi destelerini hazırla ve istediğin desteye
+          çalış.
         </p>
       </div>
 
+      {/* ---- Study your decks (AnkiPro-style) ---- */}
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">
+          🎯 Kartlara Çalış{" "}
+          <span className="text-sm font-normal text-stone-500">
+            (hazırladığın desteler)
+          </span>
+        </h2>
+        <DeckStudy cards={studyCards} />
+      </section>
+
+      {/* ---- Due today ---- */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">
           Bugünün tekrarı{" "}
@@ -44,9 +74,27 @@ export default async function FlashcardsPage() {
         <ReviewDeck cards={due ?? []} />
       </section>
 
-      <section className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+      {/* ---- New card ---- */}
+      <section className="rounded-lg border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-950">
         <h2 className="text-lg font-semibold">Yeni kart</h2>
         <form action={createFlashcard} className="mt-3 space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="fc-deck" className="text-sm font-medium">
+              Deste
+            </label>
+            <input
+              id="fc-deck"
+              name="deck"
+              list="deck-options"
+              placeholder="Örn: Sakatlık Önleme (boşsa 'Genel')"
+              className={inputCls}
+            />
+            <datalist id="deck-options">
+              {deckNames.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+          </div>
           <div className="space-y-1">
             <label htmlFor="fc-front" className="text-sm font-medium">
               Ön yüz (soru)
@@ -92,26 +140,32 @@ export default async function FlashcardsPage() {
         </form>
       </section>
 
+      {/* ---- All cards ---- */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">
           Tüm kartlar{" "}
           <span className="text-sm font-normal text-stone-500">
-            ({all?.length ?? 0})
+            ({allCards.length})
           </span>
         </h2>
-        {all && all.length > 0 ? (
+        {allCards.length > 0 ? (
           <ul className="space-y-2">
-            {all.map((c) => {
+            {allCards.map((c) => {
               const dueDate = new Date(c.due_at);
               const isDue = dueDate <= new Date();
               return (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-4 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-4 py-2.5 dark:border-stone-800 dark:bg-stone-950"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{c.front}</p>
-                    <p className="text-xs text-stone-500">
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        {c.deck ?? "Genel"}
+                      </span>
+                      <p className="truncate text-sm font-medium">{c.front}</p>
+                    </div>
+                    <p className="mt-0.5 text-xs text-stone-500">
                       {isDue
                         ? "Tekrarı geldi"
                         : `Sonraki tekrar: ${dueDate.toLocaleDateString("tr-TR")}`}{" "}
@@ -129,7 +183,7 @@ export default async function FlashcardsPage() {
             })}
           </ul>
         ) : (
-          <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-6 text-center text-sm text-stone-500">
+          <p className="rounded-lg border border-dashed border-stone-300 p-6 text-center text-sm text-stone-500 dark:border-stone-700">
             Henüz kartınız yok.
           </p>
         )}

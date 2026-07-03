@@ -65,30 +65,67 @@ export async function addOwnArticle(formData: FormData) {
   const topic = String(formData.get("topic") ?? "").trim() || "Diğer";
   const abstract = String(formData.get("abstract") ?? "").trim() || null;
 
-  const { error } = await supabase.from("sources").insert({
-    user_id: user.id,
-    kind: "article",
-    title,
-    authors,
-    year: year && Number.isFinite(year) ? year : null,
-    journal,
-    doi,
-    url: doi ? `https://doi.org/${doi}` : null,
-    abstract,
-    metadata: { topic, manual: true },
-  });
+  const { data, error } = await supabase
+    .from("sources")
+    .insert({
+      user_id: user.id,
+      kind: "article",
+      title,
+      authors,
+      year: year && Number.isFinite(year) ? year : null,
+      journal,
+      doi,
+      url: doi ? `https://doi.org/${doi}` : null,
+      abstract,
+      // manual = added by the user; ownNote routes it to the "Not Aldıklarım"
+      // (my notes) tab rather than the curated "Kaydedilenler" list.
+      metadata: { topic, manual: true, ownNote: true },
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    const isDuplicate = error.code === "23505";
+  if (error || !data) {
+    const isDuplicate = error?.code === "23505";
     return {
       error: isDuplicate
         ? "Bu DOI ile kayıtlı bir makale zaten var."
-        : `Eklenemedi: ${error.message}`,
+        : `Eklenemedi: ${error?.message ?? "bilinmeyen hata"}`,
+      id: null,
     };
   }
 
   revalidatePath("/library");
-  return { error: null };
+  return { error: null, id: data.id };
+}
+
+/** Saves the rich-text (HTML) summary written for an article. */
+export async function saveArticleSummary(id: string, html: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    summary: html,
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "article");
+
+  revalidatePath(`/library/${id}`);
+  revalidatePath("/library");
+  return { error: error?.message ?? null };
 }
 
 export async function deleteArticle(formData: FormData) {

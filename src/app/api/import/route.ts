@@ -15,6 +15,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as {
     input?: string;
+    preview?: boolean;
   } | null;
 
   const parsed = body?.input ? parseArticleInput(body.input) : null;
@@ -33,6 +34,12 @@ export async function POST(request: Request) {
       { error: err instanceof Error ? err.message : "Makale bilgisi alınamadı." },
       { status: 502 },
     );
+  }
+
+  // Preview mode: return the fetched metadata without persisting anything,
+  // so a form can auto-fill its fields before the user confirms.
+  if (body?.preview) {
+    return NextResponse.json({ metadata }, { status: 200 });
   }
 
   const { data: source, error } = await supabase

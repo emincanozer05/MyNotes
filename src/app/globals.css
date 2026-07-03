@@ -191,15 +191,23 @@ body {
 --------------------------------------------------------------------------- */
 .postit {
   position: relative;
-  border-radius: 2px;
-  padding: 1.15rem 1.1rem 1.25rem;
-  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.5);
+  border-radius: 3px 3px 10px 3px;
+  padding: 1.25rem 1.15rem 1.35rem;
+  box-shadow: 0 12px 26px -14px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.28s ease;
   color: #2a2010;
-  min-height: 190px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
+  /* subtle paper texture via layered gradients */
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28),
+    transparent 22%
+  );
+  background-blend-mode: overlay;
 }
 .postit::after {
   /* folded corner */
@@ -207,14 +215,15 @@ body {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 26px;
-  height: 26px;
-  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.12) 50%);
-  border-bottom-right-radius: 2px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.14) 50%);
+  border-bottom-right-radius: 10px;
 }
 .postit:hover {
-  transform: rotate(0deg) scale(1.035) translateY(-4px);
-  box-shadow: 0 20px 34px -14px rgba(0, 0, 0, 0.55);
+  transform: rotate(0deg) scale(1.04) translateY(-5px) !important;
+  box-shadow: 0 24px 40px -16px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   z-index: 5;
 }
 .postit-pin {
@@ -228,12 +237,40 @@ body {
   background: radial-gradient(circle at 35% 30%, #fff6, #e11d48 60%, #9f1239);
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.35);
 }
-.postit-y { background: #fde68a; }
-.postit-p { background: #fbcfe8; }
-.postit-g { background: #bbf7d0; }
-.postit-b { background: #bfdbfe; }
-.postit-o { background: #fed7aa; }
-.postit-v { background: #ddd6fe; }
+/* Delete "×" button — top-right of the note */
+.postit-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  color: #7c2d12;
+  background: rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+.postit:hover .postit-close {
+  opacity: 1;
+}
+.postit-close:hover {
+  background: #e11d48;
+  color: #fff;
+  transform: scale(1.12);
+}
+.postit-y { background-color: #fde68a; }
+.postit-p { background-color: #fbcfe8; }
+.postit-g { background-color: #bbf7d0; }
+.postit-b { background-color: #bfdbfe; }
+.postit-o { background-color: #fed7aa; }
+.postit-v { background-color: #ddd6fe; }
 
 /* ---------------------------------------------------------------------------
    Rich-text editor (book summaries)

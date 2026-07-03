@@ -7,7 +7,7 @@ import type { Source } from "@/lib/types";
 import type { CuratedArticle } from "@/lib/curatedArticles";
 import { saveCuratedArticle, deleteArticle } from "./actions";
 import { AddArticleForm } from "./AddArticleForm";
-import { ImportForm } from "./ImportForm";
+import { TranslatableTitle } from "./TranslatableTitle";
 
 type TabId = "feed" | "saved" | "annotated";
 
@@ -31,6 +31,16 @@ function isOpenAccess(journal: string | null): boolean {
 function topicOf(a: Source): string {
   const t = (a.metadata as { topic?: string } | null)?.topic;
   return t && t.trim() ? t : "Diğer";
+}
+
+function isManual(a: Source): boolean {
+  return Boolean((a.metadata as { manual?: boolean } | null)?.manual);
+}
+
+function hasSummary(a: Source): boolean {
+  return Boolean(
+    (a.metadata as { summary?: string } | null)?.summary?.trim(),
+  );
 }
 
 function TopicChip({ topic }: { topic: string }) {
@@ -76,7 +86,10 @@ function FeedCard({
       </div>
 
       <h3 className="mt-3 text-[15px] font-extrabold italic leading-snug">
-        {article.title}
+        <TranslatableTitle
+          title={article.title}
+          href={`https://doi.org/${article.doi}`}
+        />
       </h3>
       <p className="mt-1.5 text-xs italic text-stone-500">
         {article.journal} · {article.authors.slice(0, 6).join(", ")}
@@ -144,26 +157,47 @@ export function LiteratureTabs({
   const [pending, startTransition] = useTransition();
   const [savingPmid, setSavingPmid] = useState<string | null>(null);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
+  const [topicFilter, setTopicFilter] = useState<string>("all");
 
   const savedPmids = useMemo(
     () => new Set(saved.map((a) => a.pmid).filter(Boolean) as string[]),
     [saved],
   );
 
-  const byTopic = useMemo(() => {
+  // "Kaydedilenler" = curated articles the user starred (not their own uploads).
+  const curatedSaved = useMemo(() => saved.filter((a) => !isManual(a)), [saved]);
+
+  // "Not Aldıklarım" = own uploads OR anything the user has taken notes on / summarised.
+  const annotated = useMemo(
+    () =>
+      saved.filter(
+        (a) => isManual(a) || (noteCounts[a.id] ?? 0) > 0 || hasSummary(a),
+      ),
+    [saved, noteCounts],
+  );
+
+  const savedTopics = useMemo(() => {
+    const s = new Set(curatedSaved.map(topicOf));
+    return [...s].sort((a, b) => a.localeCompare(b, "tr"));
+  }, [curatedSaved]);
+
+  const visibleSaved = useMemo(
+    () =>
+      topicFilter === "all"
+        ? curatedSaved
+        : curatedSaved.filter((a) => topicOf(a) === topicFilter),
+    [curatedSaved, topicFilter],
+  );
+
+  const savedByTopic = useMemo(() => {
     const m = new Map<string, Source[]>();
-    for (const a of saved) {
+    for (const a of visibleSaved) {
       const t = topicOf(a);
       if (!m.has(t)) m.set(t, []);
       m.get(t)!.push(a);
     }
     return m;
-  }, [saved]);
-
-  const annotated = useMemo(
-    () => saved.filter((a) => (noteCounts[a.id] ?? 0) > 0),
-    [saved, noteCounts],
-  );
+  }, [visibleSaved]);
 
   function handleSave(pmid: string) {
     setSavingPmid(pmid);
@@ -181,7 +215,12 @@ export function LiteratureTabs({
 
   const tabs: { id: TabId; label: string; icon: string; count?: number }[] = [
     { id: "feed", label: "Günlük Akış", icon: "📰" },
-    { id: "saved", label: "Kaydedilenler", icon: "★", count: saved.length },
+    {
+      id: "saved",
+      label: "Kaydedilenler",
+      icon: "★",
+      count: curatedSaved.length,
+    },
     {
       id: "annotated",
       label: "Not Aldıklarım",
@@ -229,19 +268,12 @@ export function LiteratureTabs({
               Kendi makaleni ekle
             </h3>
             <p className="mt-0.5 text-xs text-stone-500">
-              Önerilen makalelerle sınırlı değilsin — istediğin makaleyi ekle,
-              sonra üzerine not al.
+              DOI yapıştır, bilgiler otomatik dolsun. Kaydettiğinde
+              &quot;Not Aldıklarım&quot; sekmesine eklenir ve makale özeti
+              sayfası açılır.
             </p>
           </div>
           <AddArticleForm onAdded={() => setShowAdd(false)} />
-          <details className="rounded-xl border border-[var(--border)] p-3">
-            <summary className="cursor-pointer text-xs font-semibold text-stone-600 dark:text-stone-400">
-              Ya da DOI / PubMed kimliği ile otomatik içe aktar
-            </summary>
-            <div className="mt-3">
-              <ImportForm />
-            </div>
-          </details>
         </div>
       )}
 
@@ -271,21 +303,51 @@ export function LiteratureTabs({
         </div>
       )}
 
-      {/* ---------- Tab: Saved (grouped by topic) ---------- */}
+      {/* ---------- Tab: Saved (topic filter + grouped by topic) ---------- */}
       {tab === "saved" &&
-        (saved.length > 0 ? (
-          <div className="space-y-6">
-            {[...byTopic.keys()].sort().map((topic) => (
+        (curatedSaved.length > 0 ? (
+          <div className="space-y-5">
+            {/* Topic filter */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold text-stone-500">
+                Konu:
+              </span>
+              <button
+                onClick={() => setTopicFilter("all")}
+                className={`rounded-full px-3 py-1 text-xs font-bold italic transition-colors ${
+                  topicFilter === "all"
+                    ? "bg-lime-400 text-stone-900"
+                    : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
+                }`}
+              >
+                Tümü
+              </button>
+              {savedTopics.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTopicFilter(t)}
+                  className={`rounded-full px-3 py-1 text-xs font-bold italic transition-colors ${
+                    topicFilter === t
+                      ? "bg-lime-400 text-stone-900"
+                      : "bg-lime-400/10 text-lime-700 hover:bg-lime-400/20 dark:text-lime-300"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {[...savedByTopic.keys()].sort().map((topic) => (
               <div key={topic}>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-extrabold italic">
                   <span className="h-2 w-2 rounded-full bg-lime-400" />
                   {topic}
                   <span className="text-xs font-normal not-italic text-stone-400">
-                    ({byTopic.get(topic)!.length})
+                    ({savedByTopic.get(topic)!.length})
                   </span>
                 </h3>
                 <div className="space-y-2">
-                  {byTopic.get(topic)!.map((a) => {
+                  {savedByTopic.get(topic)!.map((a) => {
                     const noteCount = noteCounts[a.id] ?? 0;
                     return (
                       <article
@@ -296,14 +358,15 @@ export function LiteratureTabs({
                           <div className="min-w-0">
                             <div className="mb-1 flex items-center gap-2">
                               {isOpenAccess(a.journal) && <OpenAccessBadge />}
-                              {(a.metadata as { manual?: boolean })?.manual && (
-                                <span className="rounded border border-sky-500/50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                                  Kendi eklediğim
-                                </span>
-                              )}
                             </div>
                             <h4 className="text-sm font-bold italic leading-snug">
-                              {a.title}
+                              <TranslatableTitle
+                                title={a.title}
+                                href={
+                                  a.url ??
+                                  (a.doi ? `https://doi.org/${a.doi}` : null)
+                                }
+                              />
                             </h4>
                             <p className="mt-1 text-xs italic text-stone-500">
                               {a.authors.slice(0, 4).join(", ")}
@@ -330,16 +393,12 @@ export function LiteratureTabs({
                           </details>
                         )}
                         <div className="mt-2 flex items-center gap-3 text-xs">
-                          {a.doi && (
-                            <a
-                              href={`https://doi.org/${a.doi}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-stone-500 hover:text-lime-600 dark:hover:text-lime-400"
-                            >
-                              DOI ↗
-                            </a>
-                          )}
+                          <Link
+                            href={`/library/${a.id}`}
+                            className="font-bold text-lime-700 hover:underline dark:text-lime-400"
+                          >
+                            📝 Makale özeti
+                          </Link>
                           <Link
                             href={`/notes/new?source=${a.id}`}
                             className="font-bold text-lime-700 hover:underline dark:text-lime-400"
@@ -361,50 +420,79 @@ export function LiteratureTabs({
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-            Henüz kaydedilmiş makale yok. Günlük Akış&apos;tan kaydet veya
-            kendi makaleni ekle.
+            Henüz kaydedilmiş makale yok. Günlük Akış&apos;tan ★ ile kaydet.
           </p>
         ))}
 
-      {/* ---------- Tab: Annotated (printable) ---------- */}
+      {/* ---------- Tab: Annotated / my notes ---------- */}
       {tab === "annotated" &&
         (annotated.length > 0 ? (
           <div className="space-y-2">
-            {annotated.map((a) => (
-              <div
-                key={a.id}
-                className="glass-card flex items-center justify-between gap-3 rounded-xl p-4"
-              >
-                <div className="min-w-0">
-                  <h4 className="truncate text-sm font-bold italic">
-                    {a.title}
-                  </h4>
-                  <p className="text-xs text-stone-500">
-                    {noteCounts[a.id]} not · {a.authors.slice(0, 2).join(", ")}
-                    {a.year && ` (${a.year})`}
-                  </p>
+            {annotated.map((a) => {
+              const noteCount = noteCounts[a.id] ?? 0;
+              return (
+                <div
+                  key={a.id}
+                  className="glass-card flex items-center justify-between gap-3 rounded-xl p-4"
+                >
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2">
+                      <TopicChip topic={topicOf(a)} />
+                      {isManual(a) && (
+                        <span className="rounded border border-sky-500/50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                          Kendi eklediğim
+                        </span>
+                      )}
+                      {hasSummary(a) && (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          ✓ Özet
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-bold italic leading-snug">
+                      <TranslatableTitle
+                        title={a.title}
+                        href={
+                          a.url ?? (a.doi ? `https://doi.org/${a.doi}` : null)
+                        }
+                      />
+                    </h4>
+                    <p className="text-xs text-stone-500">
+                      {a.authors.slice(0, 2).join(", ")}
+                      {a.year && ` (${a.year})`}
+                      {noteCount > 0 && ` · ${noteCount} not`}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link
+                      href={`/library/${a.id}`}
+                      className="rounded-full bg-lime-400 px-4 py-1.5 text-xs font-bold text-stone-900 transition-colors hover:bg-lime-300"
+                    >
+                      📝 Özet
+                    </Link>
+                    {noteCount > 0 && (
+                      <Link
+                        href={`/library/print/${a.id}`}
+                        className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
+                      >
+                        🖨 Yazdır
+                      </Link>
+                    )}
+                    <form action={deleteArticle}>
+                      <input type="hidden" name="id" value={a.id} />
+                      <button className="text-xs text-stone-400 hover:text-rose-500">
+                        Sil
+                      </button>
+                    </form>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Link
-                    href={`/notes/new?source=${a.id}`}
-                    className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-                  >
-                    + Not al
-                  </Link>
-                  <Link
-                    href={`/library/print/${a.id}`}
-                    className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-                  >
-                    🖨 Yazdır (A4)
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-            Bir makaleyi kaydedip &quot;+ Not al&quot; ile not aldığında burada
-            yazdırılabilir olarak görünecek.
+            Kendi makaleni ekle ya da bir makaleye not/özet al — burada
+            görünecek.
           </p>
         ))}
     </div>
