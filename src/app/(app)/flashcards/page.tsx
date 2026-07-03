@@ -44,7 +44,7 @@ export default async function FlashcardsPage() {
         <ReviewDeck cards={due ?? []} />
       </section>
 
-      <section className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+      <section className="card p-5">
         <h2 className="text-lg font-semibold">Yeni kart</h2>
         <form action={createFlashcard} className="mt-3 space-y-3">
           <div className="space-y-1">
@@ -86,7 +86,7 @@ export default async function FlashcardsPage() {
               ))}
             </select>
           </div>
-          <button className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+          <button className="btn-primary">
             Kart Ekle
           </button>
         </form>
@@ -107,7 +107,7 @@ export default async function FlashcardsPage() {
               return (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-4 py-2.5"
+                  className="flex items-center justify-between gap-3 card px-4 py-2.5"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{c.front}</p>

@@ -17,14 +17,16 @@ export default async function AppLayout({
     <div className="flex flex-1">
       <Sidebar userEmail={user.email ?? ""} />
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-end border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-6 py-2.5">
+        <header className="sticky top-0 z-10 flex items-center justify-end border-b border-stone-200/80 dark:border-stone-800/80 bg-white/60 dark:bg-stone-950/60 px-6 py-2.5 backdrop-blur-xl">
           <form action={logout}>
-            <button className="text-xs font-medium text-stone-500 hover:text-stone-800 dark:hover:text-stone-200">
+            <button className="rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium text-stone-500 transition-colors hover:border-stone-200 hover:bg-white hover:text-stone-800 dark:hover:border-stone-800 dark:hover:bg-stone-900 dark:hover:text-stone-200">
               Çıkış yap
             </button>
           </form>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="animate-fade-up">{children}</div>
+        </main>
       </div>
     </div>
   );

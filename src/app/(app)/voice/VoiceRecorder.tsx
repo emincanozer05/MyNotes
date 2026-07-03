@@ -108,7 +108,7 @@ export function VoiceRecorder() {
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5 space-y-4">
+    <div className="card p-5 space-y-4">
       <div className="flex items-center gap-3">
         {!recording ? (
           <button
@@ -149,7 +149,7 @@ export function VoiceRecorder() {
       <button
         onClick={save}
         disabled={saving || !finalText.trim()}
-        className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+        className="btn-primary disabled:opacity-50"
       >
         {saving ? "Kaydediliyor…" : "Ses Notunu Kaydet"}
       </button>

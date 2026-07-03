@@ -63,7 +63,7 @@ export default async function NotesPage({
         </div>
         <Link
           href="/notes/new"
-          className="shrink-0 rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+          className="btn-primary shrink-0"
         >
           + Yeni Not
         </Link>
@@ -116,7 +116,7 @@ export default async function NotesPage({
             <Link
               key={n.id}
               href={`/notes/${n.id}`}
-              className="block rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 hover:border-amber-400 transition-colors"
+              className="card card-link block p-4"
             >
               <h3 className="font-semibold">{n.title}</h3>
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">

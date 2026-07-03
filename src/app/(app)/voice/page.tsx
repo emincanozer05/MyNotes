@@ -29,7 +29,7 @@ export default async function VoicePage() {
             {voiceNotes.map((v) => (
               <li
                 key={v.id}
-                className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4"
+                className="card p-4"
               >
                 <p className="text-sm leading-relaxed">{v.transcript}</p>
                 <div className="mt-3 flex items-center justify-between">

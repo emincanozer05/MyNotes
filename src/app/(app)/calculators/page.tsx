@@ -71,7 +71,7 @@ export default async function CalculatorsPage() {
       {sections.map((s) => (
         <section
           key={s.title}
-          className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5"
+          className="card p-5"
         >
           <h2 className="text-lg font-semibold">{s.title}</h2>
           <p className="mt-0.5 mb-4 text-sm text-stone-500 dark:text-stone-400">
@@ -88,7 +88,7 @@ export default async function CalculatorsPage() {
             {(history as CalcRow[]).map((row) => (
               <li
                 key={row.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-4 py-2.5"
+                className="flex items-center justify-between gap-3 card px-4 py-2.5"
               >
                 <div className="min-w-0">
                   <span className="mr-2 rounded bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">

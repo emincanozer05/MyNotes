@@ -72,7 +72,7 @@ export default async function InsightsPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4"
+            className="card p-4"
           >
             <p className="text-3xl font-bold">{s.value}</p>
             <p className="text-sm text-stone-500 dark:text-stone-400">{s.label}</p>
@@ -81,7 +81,7 @@ export default async function InsightsPage() {
       </div>
 
       {rows.length > 0 ? (
-        <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+        <div className="card p-5">
           <h2 className="text-sm font-semibold">
             Konu başına benzersiz kaynak sayısı
           </h2>

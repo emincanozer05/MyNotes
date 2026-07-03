@@ -264,7 +264,7 @@ export function FvProfileCalc() {
 
       <button
         onClick={compute}
-        className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+        className="btn-primary"
       >
         Profili Analiz Et
       </button>

@@ -41,7 +41,7 @@ export default async function HighlightsPage() {
           {rows.map((h) => (
             <div
               key={h.id}
-              className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4"
+              className="card p-4"
             >
               <blockquote className="border-l-2 border-amber-400 pl-3 text-[15px] italic leading-relaxed">
                 “{h.text}”

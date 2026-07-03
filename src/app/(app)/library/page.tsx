@@ -9,7 +9,7 @@ function ArticleCard({ article }: { article: Source }) {
       : article.authors.join(", ");
 
   return (
-    <article className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4">
+    <article className="card p-4">
       <h3 className="font-semibold leading-snug">{article.title}</h3>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
         {authorLine}

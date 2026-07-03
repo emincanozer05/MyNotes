@@ -87,7 +87,7 @@ export default async function NoteDetailPage({
         </div>
       )}
 
-      <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+      <div className="card p-5">
         {note.content ? (
           <HighlightCapture noteId={id}>
             <NoteContent content={note.content} linkMap={linkMap} />

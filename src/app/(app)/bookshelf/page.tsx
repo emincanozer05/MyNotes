@@ -104,7 +104,7 @@ export default async function BookshelfPage() {
         </p>
       )}
 
-      <section className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+      <section className="card p-5">
         <h2 className="text-lg font-semibold">Kitap ekle</h2>
         <form action={addBook} className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
@@ -138,7 +138,7 @@ export default async function BookshelfPage() {
             <input id="bk-cover" name="cover_url" type="url" className={inputCls} />
           </div>
           <div className="sm:col-span-2">
-            <button className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+            <button className="btn-primary">
               Rafa Ekle
             </button>
           </div>

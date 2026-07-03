@@ -192,7 +192,7 @@ export function NoteForm({
         </p>
       </div>
 
-      <button className="rounded-md bg-amber-600 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+      <button className="btn-primary px-5">
         {note?.id ? "Güncelle" : "Notu Kaydet"}
       </button>
     </form>
