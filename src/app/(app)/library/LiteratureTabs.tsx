@@ -7,6 +7,7 @@ import type { Source } from "@/lib/types";
 import type { CuratedArticle } from "@/lib/curatedArticles";
 import {
   saveCuratedArticle,
+  saveFetchedArticle,
   unsaveCuratedArticle,
   deleteArticle,
 } from "./actions";
@@ -55,6 +56,24 @@ function articleLink(a: Source): string | null {
   return a.url ?? (a.doi ? `https://doi.org/${a.doi}` : null);
 }
 
+/** Shape shown in the feed — curated or live-fetched (year may be missing). */
+interface FeedArticle {
+  title: string;
+  authors: string[];
+  year: number | null;
+  journal: string;
+  doi: string;
+  pmid: string;
+  topic: string;
+  abstract: string;
+}
+
+function feedLink(a: FeedArticle): string {
+  return a.doi
+    ? `https://doi.org/${a.doi}`
+    : `https://pubmed.ncbi.nlm.nih.gov/${a.pmid}/`;
+}
+
 function OpenAccessBadge() {
   return (
     <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
@@ -72,7 +91,7 @@ function FeedCard({
   onSave,
   onUnsave,
 }: {
-  article: CuratedArticle;
+  article: FeedArticle;
   isSaved: boolean;
   busy: boolean;
   error: string | null;
@@ -80,6 +99,7 @@ function FeedCard({
   onUnsave: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const link = feedLink(article);
 
   return (
     <article className="glass-card flex flex-col rounded-2xl border-t-2 border-t-amber-400/70 p-5">
@@ -88,44 +108,47 @@ function FeedCard({
           {article.topic}
         </span>
         {isOpenAccess(article.journal) && <OpenAccessBadge />}
-        <span className="ml-auto text-xs font-medium text-stone-400">
-          {article.year}
-        </span>
+        {article.year && (
+          <span className="ml-auto text-xs font-medium text-stone-400">
+            {article.year}
+          </span>
+        )}
       </div>
 
       <h3 className="mt-3 text-[15px] font-bold leading-snug">
-        <TranslatedTitle
-          text={article.title}
-          href={`https://doi.org/${article.doi}`}
-        />
+        <TranslatedTitle text={article.title} href={link} />
       </h3>
       <p className="mt-1.5 text-xs text-stone-500">
         {article.journal} · {article.authors.slice(0, 6).join(", ")}
         {article.authors.length > 6 ? " ve diğerleri" : ""}
       </p>
 
-      <p
-        className={`mt-3 flex-1 text-xs leading-relaxed text-stone-600 dark:text-stone-400 ${
-          expanded ? "" : "line-clamp-4"
-        }`}
-      >
-        {article.abstract}
-      </p>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="mt-1 w-fit text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
-      >
-        {expanded ? "Daralt ↑" : "Devamını oku ↓"}
-      </button>
+      {article.abstract && (
+        <>
+          <p
+            className={`mt-3 flex-1 text-xs leading-relaxed text-stone-600 dark:text-stone-400 ${
+              expanded ? "" : "line-clamp-4"
+            }`}
+          >
+            {article.abstract}
+          </p>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-1 w-fit text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
+          >
+            {expanded ? "Daralt ↑" : "Devamını oku ↓"}
+          </button>
+        </>
+      )}
 
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-[var(--border)] pt-3">
         <a
-          href={`https://doi.org/${article.doi}`}
+          href={link}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-medium text-stone-500 hover:text-amber-600 dark:hover:text-amber-400"
         >
-          DOI ↗
+          {article.doi ? "DOI ↗" : "PubMed ↗"}
         </a>
         {isSaved ? (
           <button
@@ -172,6 +195,9 @@ export function LiteratureTabs({
   const [busyPmid, setBusyPmid] = useState<string | null>(null);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [topicFilter, setTopicFilter] = useState<string>("all");
+  const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
+  const [fetching, setFetching] = useState(false);
+  const [fetchErr, setFetchErr] = useState<string | null>(null);
 
   const savedPmids = useMemo(
     () => new Set(saved.map((a) => a.pmid).filter(Boolean) as string[]),
@@ -232,6 +258,27 @@ export function LiteratureTabs({
     });
   }
 
+  function handleSaveFetched(article: FeedArticle) {
+    const pmid = article.pmid;
+    setBusyPmid(pmid);
+    setSaveErrors((prev) => ({ ...prev, [pmid]: "" }));
+    startTransition(async () => {
+      const res = await saveFetchedArticle({
+        title: article.title,
+        authors: article.authors,
+        year: article.year,
+        journal: article.journal || null,
+        doi: article.doi || null,
+        pmid: article.pmid || null,
+        topic: article.topic,
+        abstract: article.abstract || null,
+      });
+      if (res.error) setSaveErrors((prev) => ({ ...prev, [pmid]: res.error! }));
+      else router.refresh();
+      setBusyPmid(null);
+    });
+  }
+
   function handleUnsave(pmid: string) {
     setBusyPmid(pmid);
     setSaveErrors((prev) => ({ ...prev, [pmid]: "" }));
@@ -241,6 +288,27 @@ export function LiteratureTabs({
       else router.refresh();
       setBusyPmid(null);
     });
+  }
+
+  // Fetch 6 fresh RCTs from PubMed for the "Makaleleri Getir" button.
+  async function handleFetchArticles() {
+    setFetching(true);
+    setFetchErr(null);
+    try {
+      const res = await fetch("/api/articles/fetch");
+      const data = await res.json();
+      if (!res.ok) {
+        setFetchErr(data.error ?? "Makaleler getirilemedi.");
+      } else if (!data.articles || data.articles.length === 0) {
+        setFetchErr("Yeni makale bulunamadı, tekrar dene.");
+      } else {
+        setFetched(data.articles as FeedArticle[]);
+      }
+    } catch {
+      setFetchErr("Sunucuya ulaşılamadı.");
+    } finally {
+      setFetching(false);
+    }
   }
 
   const tabs: { id: TabId; label: string; icon: string; count?: number }[] = [
@@ -302,10 +370,63 @@ export function LiteratureTabs({
             <p className="text-sm font-medium text-stone-500">
               📅 {todayLabel} · günün seçimleri
             </p>
-            <span className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold">
-              {curated.length} makale
-            </span>
+            <button
+              onClick={handleFetchArticles}
+              disabled={fetching}
+              className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold disabled:opacity-60"
+            >
+              {fetching ? "Getiriliyor…" : "🔄 Makaleleri Getir"}
+            </button>
           </div>
+
+          {fetchErr && (
+            <p className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+              {fetchErr}
+            </p>
+          )}
+
+          {/* Live-fetched articles */}
+          {fetched && fetched.length > 0 && (
+            <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-400/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-bold">
+                  🔄 Yeni getirilen makaleler{" "}
+                  <span className="font-normal text-stone-500">
+                    ({fetched.length})
+                  </span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleFetchArticles}
+                    disabled={fetching}
+                    className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10 disabled:opacity-60"
+                  >
+                    ↻ Yenile
+                  </button>
+                  <button
+                    onClick={() => setFetched(null)}
+                    className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10"
+                  >
+                    ✕ Kapat
+                  </button>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {fetched.map((a) => (
+                  <FeedCard
+                    key={a.pmid}
+                    article={a}
+                    isSaved={savedPmids.has(a.pmid)}
+                    busy={pending && busyPmid === a.pmid}
+                    error={saveErrors[a.pmid] || null}
+                    onSave={() => handleSaveFetched(a)}
+                    onUnsave={() => handleUnsave(a.pmid)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {curated.map((a) => (
               <FeedCard
