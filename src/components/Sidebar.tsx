@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/voice", label: "Ses Notu", icon: "♪" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
   { href: "/insights", label: "Bilgi Derinliği", icon: "◔" },
+  { href: "/backup", label: "Yedekleme", icon: "💾" },
 ];
 
 export function Sidebar({ userEmail }: { userEmail: string }) {
