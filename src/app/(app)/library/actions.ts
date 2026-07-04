@@ -43,6 +43,59 @@ export async function saveCuratedArticle(pmid: string) {
   return { error: null };
 }
 
+export interface FetchedArticleInput {
+  title: string;
+  authors: string[];
+  year: number | null;
+  journal: string | null;
+  doi: string | null;
+  pmid: string | null;
+  topic: string;
+  abstract: string | null;
+}
+
+/** Saves a live-fetched PubMed article (from "Makaleleri Getir"). */
+export async function saveFetchedArticle(article: FetchedArticleInput) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  if (!article?.title) return { error: "Makale bilgisi eksik." };
+
+  const doi = article.doi || null;
+  const { error } = await supabase.from("sources").insert({
+    user_id: user.id,
+    kind: "article",
+    title: article.title,
+    authors: article.authors ?? [],
+    year: article.year,
+    journal: article.journal || null,
+    doi,
+    pmid: article.pmid || null,
+    url: doi
+      ? `https://doi.org/${doi}`
+      : article.pmid
+        ? `https://pubmed.ncbi.nlm.nih.gov/${article.pmid}/`
+        : null,
+    abstract: article.abstract || null,
+    metadata: { topic: article.topic || "Diğer" },
+  });
+
+  if (error) {
+    const isDuplicate = error.code === "23505";
+    return {
+      error: isDuplicate
+        ? "Bu makale zaten kütüphanenizde."
+        : `Kaydedilemedi: ${error.message}`,
+    };
+  }
+
+  revalidatePath("/library");
+  return { error: null };
+}
+
 /** Removes a curated article that was saved (undo of saveCuratedArticle). */
 export async function unsaveCuratedArticle(pmid: string) {
   const supabase = await createClient();
