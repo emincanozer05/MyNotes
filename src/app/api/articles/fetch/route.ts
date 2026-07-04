@@ -24,6 +24,47 @@ function stripTags(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** esearch that returns the total count + a page of PMIDs (empty on failure). */
+async function esearch(
+  term: string,
+  retstart: number,
+): Promise<{ count: number; ids: string[] }> {
+  const res = await fetch(
+    `${EUTILS}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}` +
+      `&retmax=6&retstart=${retstart}&retmode=json`,
+  );
+  if (!res.ok) return { count: 0, ids: [] };
+  const data = (await res.json()) as {
+    esearchresult?: { count?: string; idlist?: string[] };
+  };
+  return {
+    count: Number(data.esearchresult?.count ?? 0) || 0,
+    ids: data.esearchresult?.idlist ?? [],
+  };
+}
+
+/** Finds 6 PMIDs for a topic, keeping the random offset within range and
+ *  falling back to a broader query so results are (almost) never empty. */
+async function findIds(bucketTerm: string): Promise<string[]> {
+  // Publication-type filter must use the spaced form; the no-space token
+  // "randomizedcontrolledtrial[pt]" matches nothing on PubMed.
+  const rct = `(${bucketTerm}) AND "randomized controlled trial"[pt] AND hasabstract[text] AND English[lang]`;
+  const broad = `(${bucketTerm}) AND hasabstract[text] AND English[lang]`;
+
+  for (const term of [rct, broad, "(athletes) AND hasabstract[text]"]) {
+    // First hit gives the real result count so the offset never overshoots.
+    const head = await esearch(term, 0);
+    if (head.count === 0) continue;
+    if (head.count <= 6) return head.ids;
+    const maxStart = Math.min(head.count - 6, 120);
+    const retstart = Math.floor(Math.random() * (maxStart + 1));
+    const page = await esearch(term, retstart);
+    if (page.ids.length > 0) return page.ids;
+    if (head.ids.length > 0) return head.ids;
+  }
+  return [];
+}
+
 interface FetchedArticle {
   title: string;
   authors: string[];
@@ -45,25 +86,10 @@ export async function GET() {
   }
 
   const bucket = TOPICS[Math.floor(Math.random() * TOPICS.length)];
-  const retstart = Math.floor(Math.random() * 60);
-  const term = `(${bucket.term}) AND randomizedcontrolledtrial[pt] AND hasabstract[text] AND English[lang]`;
 
   try {
-    // 1) esearch — recent PMIDs for this topic
-    const searchRes = await fetch(
-      `${EUTILS}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}` +
-        `&retmax=6&retstart=${retstart}&retmode=json&sort=date`,
-    );
-    if (!searchRes.ok) {
-      return NextResponse.json(
-        { error: `PubMed arama hatası (HTTP ${searchRes.status})` },
-        { status: 502 },
-      );
-    }
-    const search = (await searchRes.json()) as {
-      esearchresult?: { idlist?: string[] };
-    };
-    const ids = search.esearchresult?.idlist ?? [];
+    // 1) find PMIDs (offset kept in range + broadening fallback)
+    const ids = await findIds(bucket.term);
     if (ids.length === 0) {
       return NextResponse.json({ articles: [] });
     }
