@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { PostitCard } from "./PostitCard";
 
 interface NoteRow {
   id: string;
@@ -126,44 +127,24 @@ export default async function NotesPage({
         <div className="stagger grid grid-cols-1 gap-6 pt-3 sm:grid-cols-2 lg:grid-cols-3">
           {(notes as unknown as NoteRow[]).map((n) => {
             const { cls, tilt } = postitStyle(n.id);
-            const tags = n.note_tags.filter((t) => t.tags);
+            const tags = n.note_tags
+              .filter((t) => t.tags)
+              .map((t) => ({ name: t.tags!.name }));
             return (
-              <Link
+              <PostitCard
                 key={n.id}
-                href={`/notes/${n.id}`}
-                className={`postit ${cls}`}
-                style={{ transform: `rotate(${tilt})` }}
-              >
-                <span className="postit-pin" aria-hidden />
-                <h3 className="font-bold leading-snug line-clamp-2">{n.title}</h3>
-                {n.content && (
-                  <p className="mt-2 flex-1 whitespace-pre-wrap text-sm leading-snug line-clamp-6 opacity-90">
-                    {n.content.slice(0, 240)}
-                  </p>
-                )}
-                <div className="mt-3 space-y-1.5">
-                  {n.source_title && (
-                    <p className="text-[11px] italic opacity-70">
-                      {n.source_author}
-                      {n.source_year ? ` (${n.source_year})` : ""}
-                      {n.source_author || n.source_year ? " — " : ""}
-                      {n.source_title}
-                    </p>
-                  )}
-                  {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {tags.map((t) => (
-                        <span
-                          key={t.tags!.name}
-                          className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
-                        >
-                          #{t.tags!.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
+                note={{
+                  id: n.id,
+                  title: n.title,
+                  content: n.content,
+                  source_title: n.source_title,
+                  source_author: n.source_author,
+                  source_year: n.source_year,
+                  tags,
+                  cls,
+                  tilt,
+                }}
+              />
             );
           })}
         </div>
