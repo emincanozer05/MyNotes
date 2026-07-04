@@ -151,6 +151,28 @@ body {
   color: #78716c;
 }
 
+/* Rendered (read-only) note body: mirrors the editor's element styles. */
+.note-html {
+  line-height: 1.7;
+}
+.note-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  display: block;
+}
+.note-html h1 { font-size: 1.6rem; font-weight: 700; margin: 0.6rem 0; }
+.note-html h2 { font-size: 1.3rem; font-weight: 700; margin: 0.5rem 0; }
+.note-html ul { list-style: disc; padding-left: 1.4rem; }
+.note-html ol { list-style: decimal; padding-left: 1.4rem; }
+.note-html blockquote {
+  border-left: 3px solid #f59e0b;
+  padding-left: 0.9rem;
+  font-style: italic;
+  color: #78716c;
+}
+
 /* ---------------------------------------------------------------------------
    Custom scrollbar (subtle, solid)
 --------------------------------------------------------------------------- */

@@ -71,51 +71,72 @@ async function syncLinks(
   }
 }
 
-export async function saveNote(formData: FormData) {
+export interface NoteInput {
+  id?: string | null;
+  title: string;
+  /** Rich-text HTML (may also be legacy plain text). */
+  content: string;
+  source_id?: string | null;
+  source_title?: string;
+  source_author?: string;
+  source_year?: number | null;
+  source_page?: string | null;
+  tags?: string;
+}
+
+/**
+ * Creates or updates a note and returns its id, so the client editor can keep
+ * auto-saving a freshly created note. [[wiki links]] and #hashtags are parsed
+ * from the text content (HTML tags stripped first so markers aren't hidden
+ * behind element boundaries).
+ */
+export async function upsertNote(
+  input: NoteInput,
+): Promise<{ id?: string; error?: string | null }> {
   const { supabase, user } = await requireUser();
 
-  const id = String(formData.get("id") ?? "");
-  const content = String(formData.get("content") ?? "");
-  // Source reference is now optional; columns default to '' so blank is fine.
+  const title = input.title.trim();
+  if (!title) return { error: "Not başlığı zorunludur." };
+
+  const content = input.content ?? "";
   const payload = {
-    title: String(formData.get("title") ?? "").trim(),
+    title,
     content,
-    source_id: String(formData.get("source_id") ?? "") || null,
-    source_title: String(formData.get("source_title") ?? "").trim(),
-    source_author: String(formData.get("source_author") ?? "").trim(),
-    source_year: Number(formData.get("source_year")) || null,
-    source_page: String(formData.get("source_page") ?? "").trim() || null,
+    source_id: input.source_id || null,
+    source_title: (input.source_title ?? "").trim(),
+    source_author: (input.source_author ?? "").trim(),
+    source_year: input.source_year || null,
+    source_page: (input.source_page ?? "").trim() || null,
   };
 
-  if (!payload.title) {
-    redirect(`/notes/${id ? `${id}/edit` : "new"}?error=${encodeURIComponent("Not başlığı zorunludur.")}`);
-  }
-
-  let noteId = id;
-  if (id) {
-    const { error } = await supabase.from("notes").update(payload).eq("id", id);
-    if (error) redirect(`/notes/${id}/edit?error=${encodeURIComponent(error.message)}`);
+  let noteId = input.id ?? "";
+  if (noteId) {
+    const { error } = await supabase.from("notes").update(payload).eq("id", noteId);
+    if (error) return { error: error.message };
   } else {
     const { data, error } = await supabase
       .from("notes")
       .insert({ ...payload, user_id: user.id })
       .select("id")
       .single();
-    if (error || !data) redirect(`/notes/new?error=${encodeURIComponent(error?.message ?? "Kaydedilemedi")}`);
+    if (error || !data) return { error: error?.message ?? "Kaydedilemedi" };
     noteId = data.id;
   }
 
+  // Strip tags to whitespace so [[…]] / #… at the edge of an element are seen.
+  const plain = content.replace(/<[^>]*>/g, " ");
   const tagNames = [
     ...new Set([
-      ...parseTagInput(String(formData.get("tags") ?? "")),
-      ...extractHashtags(content),
+      ...parseTagInput(input.tags ?? ""),
+      ...extractHashtags(plain),
     ]),
   ];
   await syncTags(supabase, user.id, noteId, tagNames);
-  await syncLinks(supabase, user.id, noteId, extractWikiLinks(content));
+  await syncLinks(supabase, user.id, noteId, extractWikiLinks(plain));
 
   revalidatePath("/notes");
-  redirect(`/notes/${noteId}`);
+  revalidatePath(`/notes/${noteId}`);
+  return { id: noteId, error: null };
 }
 
 export async function deleteNote(formData: FormData) {
