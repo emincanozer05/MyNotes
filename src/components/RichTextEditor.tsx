@@ -94,7 +94,7 @@ export function RichTextEditor({
   }, [onSave, onChange]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Currently selected image (for resizing) + overlay geometry.
+  // Image whose controls are shown (on hover) + overlay geometry.
   const selectedImg = useRef<HTMLImageElement | null>(null);
   const [box, setBox] = useState<{
     left: number;
@@ -102,6 +102,11 @@ export function RichTextEditor({
     width: number;
     height: number;
   } | null>(null);
+  // Hover bookkeeping: keep controls up while the pointer is over the image or
+  // the overlay; hide after a short grace period so crossing the small gap
+  // between them doesn't flicker. Suspended while a resize drag is in flight.
+  const resizingRef = useRef(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ringCls = accent === "lime" ? "ring-lime-500" : "ring-amber-500";
   const handleColor = accent === "lime" ? "#84cc16" : "#f59e0b";
@@ -151,6 +156,7 @@ export function RichTextEditor({
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
       if (latestHtmlRef.current !== lastSavedRef.current) {
         void onSaveRef.current(latestHtmlRef.current);
       }
@@ -227,15 +233,35 @@ export function RichTextEditor({
     }
   }
 
-  function handleEditorClick(e: React.MouseEvent) {
+  function cancelHide() {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  }
+
+  function scheduleHide() {
+    cancelHide();
+    hideTimer.current = setTimeout(() => selectImage(null), 160);
+  }
+
+  // Show the resize/align controls when the pointer is over an image (or over
+  // the controls themselves); hide them otherwise. Replaces click-to-select.
+  function handleEditorHover(e: React.MouseEvent) {
+    if (resizingRef.current) return;
     const t = e.target as HTMLElement;
     if (t.tagName === "IMG") {
-      // Select for resizing; never delete on click.
-      e.preventDefault();
-      selectImage(t as HTMLImageElement);
-    } else {
-      selectImage(null);
+      cancelHide();
+      if (selectedImg.current !== (t as HTMLImageElement)) {
+        selectImage(t as HTMLImageElement);
+      }
+      return;
     }
+    if (t.closest?.("[data-img-overlay]")) {
+      cancelHide();
+      return;
+    }
+    if (selectedImg.current) scheduleHide();
   }
 
   function deleteSelectedImage() {
@@ -243,6 +269,16 @@ export function RichTextEditor({
     if (!img) return;
     img.remove();
     selectImage(null);
+    handleInput();
+  }
+
+  function setImageAlign(align: "left" | "center" | "right") {
+    const img = selectedImg.current;
+    if (!img) return;
+    img.style.display = "block";
+    img.style.marginLeft = align === "left" ? "0" : "auto";
+    img.style.marginRight = align === "right" ? "0" : "auto";
+    measure();
     handleInput();
   }
 
@@ -259,6 +295,8 @@ export function RichTextEditor({
     const startWidth = img.getBoundingClientRect().width;
     const maxWidth = ref.current?.clientWidth ?? container.clientWidth;
     const dir = anchor === "left" ? -1 : 1;
+    resizingRef.current = true;
+    cancelHide();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     function onMove(ev: PointerEvent) {
@@ -272,6 +310,7 @@ export function RichTextEditor({
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      resizingRef.current = false;
       handleInput();
     }
     window.addEventListener("pointermove", onMove);
@@ -426,7 +465,14 @@ export function RichTextEditor({
       </div>
 
       {/* Editable area + resize overlay */}
-      <div ref={containerRef} className="relative">
+      <div
+        ref={containerRef}
+        className="relative"
+        onMouseMove={handleEditorHover}
+        onMouseLeave={() => {
+          if (!resizingRef.current) scheduleHide();
+        }}
+      >
         <div
           ref={ref}
           contentEditable
@@ -435,23 +481,49 @@ export function RichTextEditor({
           onInput={handleInput}
           onBlur={() => void doSave()}
           onPaste={handlePaste}
-          onClick={handleEditorClick}
+          onClick={(e) => {
+            // Click never deletes; it just keeps controls up for the image.
+            const t = e.target as HTMLElement;
+            if (t.tagName === "IMG") {
+              e.preventDefault();
+              cancelHide();
+              selectImage(t as HTMLImageElement);
+            }
+          }}
           className={`rte mt-3 rounded-lg text-[15px] focus:outline-none focus:ring-2 ${ringCls}`}
         />
 
         {box && (
-          <>
+          <div data-img-overlay>
             {/* selection frame */}
             <div
               className={`pointer-events-none absolute rounded ring-2 ${ringCls}`}
               style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
             />
-            {/* toolbar above image: preset widths + delete */}
+            {/* toolbar above image: align + preset widths + delete */}
             <div
               className="absolute z-10 flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-1.5 py-1 shadow-md"
               style={{ left: box.left, top: Math.max(0, box.top - 34) }}
               onMouseDown={(e) => e.preventDefault()}
             >
+              {(
+                [
+                  { a: "left", icon: "⇤", title: "Sola hizala" },
+                  { a: "center", icon: "↔", title: "Ortala" },
+                  { a: "right", icon: "⇥", title: "Sağa hizala" },
+                ] as const
+              ).map(({ a, icon, title }) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setImageAlign(a)}
+                  title={title}
+                  className="rounded px-1 text-xs text-stone-500 hover:bg-stone-500/15"
+                >
+                  {icon}
+                </button>
+              ))}
+              <span className="mx-0.5 h-3 w-px bg-[var(--border)]" />
               {[25, 50, 75, 100].map((p) => (
                 <button
                   key={p}
@@ -506,7 +578,7 @@ export function RichTextEditor({
                 background: handleColor,
               }}
             />
-          </>
+          </div>
         )}
       </div>
 
@@ -520,7 +592,7 @@ export function RichTextEditor({
         </button>
         {statusEl}
         <span className="ml-auto hidden text-[11px] text-stone-400 sm:block">
-          Görsele tıkla → köşeden sürükle veya %25–100 · 🗑 sil
+          Görselin üzerine gel → hizala (⇤ ↔ ⇥) · kenardan sürükle veya %25–100 · 🗑 sil
         </span>
       </div>
     </div>
