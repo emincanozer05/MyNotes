@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Modal } from "@/components/Modal";
 import { addBook } from "./actions";
 
 const inputCls =
@@ -8,15 +10,34 @@ const inputCls =
 
 /** Compact top-right "add book" trigger that opens a centered modal form. */
 export function AddBookModal() {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
+  const [cover, setCover] = useState("");
+  const [pending, startTransition] = useTransition();
 
-  // Close on Escape and lock body scroll while the modal is open.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  function reset() {
+    setCover("");
+    formRef.current?.reset();
+  }
+
+  function handleFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => setCover(String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
+  function handleSubmit(fd: FormData) {
+    // Uploaded image (data URL) takes precedence; else the typed URL is used.
+    if (cover) fd.set("cover_url", cover);
+    startTransition(async () => {
+      await addBook(fd);
+      reset();
+      setOpen(false);
+      router.refresh();
+    });
+  }
 
   return (
     <>
@@ -28,89 +49,118 @@ export function AddBookModal() {
         + Kitap Ekle
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      <Modal open={open} onClose={() => setOpen(false)} labelledBy="add-book-title">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 id="add-book-title" className="text-lg font-bold">
+              Kitap ekle
+            </h2>
+            <p className="mt-0.5 text-xs text-stone-500">
+              Kapak, kitap adından otomatik bulunur — ya da kendiniz ekleyin.
+            </p>
+          </div>
+          <button
+            type="button"
             onClick={() => setOpen(false)}
-          />
-          <div className="animate-pop glass-card relative z-10 w-full max-w-lg rounded-2xl p-6">
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-bold">Kitap ekle</h2>
-                <p className="mt-0.5 text-xs text-stone-500">
-                  Kapak, kitap adından otomatik bulunur.
-                </p>
-              </div>
+            aria-label="Kapat"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-stone-400 transition-colors hover:bg-stone-500/10 hover:text-stone-600"
+          >
+            ×
+          </button>
+        </div>
+
+        <form ref={formRef} action={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1 sm:col-span-2">
+            <label htmlFor="bk-title" className="text-sm font-medium">
+              Kitap adı *
+            </label>
+            <input id="bk-title" name="title" required className={inputCls} />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <label htmlFor="bk-authors" className="text-sm font-medium">
+              Yazar(lar) *{" "}
+              <span className="font-normal text-stone-400">(virgülle)</span>
+            </label>
+            <input id="bk-authors" name="authors" required className={inputCls} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="bk-year" className="text-sm font-medium">
+              Yıl
+            </label>
+            <input id="bk-year" name="year" type="number" className={inputCls} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="bk-cover" className="text-sm font-medium">
+              Kapak URL{" "}
+              <span className="font-normal text-stone-400">(boşsa otomatik)</span>
+            </label>
+            <input
+              id="bk-cover"
+              name="cover_url"
+              type="url"
+              placeholder="https://…"
+              value={cover.startsWith("data:") ? "" : cover}
+              onChange={(e) => setCover(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+
+          {/* Cover image upload */}
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
+            >
+              🖼 Görsel ekle
+            </button>
+            {cover.startsWith("data:") && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover}
+                alt="Kapak önizleme"
+                className="h-16 w-11 rounded border border-[var(--border)] object-cover"
+              />
+            )}
+            {cover.startsWith("data:") && (
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-stone-400 transition-colors hover:bg-stone-500/10 hover:text-stone-600"
+                onClick={() => setCover("")}
+                className="text-xs text-stone-400 hover:text-rose-500"
               >
-                ×
+                Kaldır
               </button>
-            </div>
-
-            <form
-              action={async (fd) => {
-                await addBook(fd);
-                setOpen(false);
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                e.target.value = "";
               }}
-              className="grid gap-3 sm:grid-cols-2"
-            >
-              <div className="space-y-1 sm:col-span-2">
-                <label htmlFor="bk-title" className="text-sm font-medium">
-                  Kitap adı *
-                </label>
-                <input id="bk-title" name="title" required className={inputCls} />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label htmlFor="bk-authors" className="text-sm font-medium">
-                  Yazar(lar) *{" "}
-                  <span className="font-normal text-stone-400">(virgülle)</span>
-                </label>
-                <input id="bk-authors" name="authors" required className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="bk-year" className="text-sm font-medium">
-                  Yıl
-                </label>
-                <input id="bk-year" name="year" type="number" className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="bk-cover" className="text-sm font-medium">
-                  Kapak URL{" "}
-                  <span className="font-normal text-stone-400">(boşsa otomatik)</span>
-                </label>
-                <input
-                  id="bk-cover"
-                  name="cover_url"
-                  type="url"
-                  placeholder="https://…"
-                  className={inputCls}
-                />
-              </div>
-              <div className="flex gap-2 sm:col-span-2">
-                <button className="btn-gradient rounded-full px-5 py-2 text-sm font-semibold">
-                  Rafa Ekle
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </form>
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex gap-2 sm:col-span-2">
+            <button
+              disabled={pending}
+              className="btn-gradient rounded-full px-5 py-2 text-sm font-semibold disabled:opacity-60"
+            >
+              {pending ? "Ekleniyor…" : "Rafa Ekle"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
+            >
+              Vazgeç
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

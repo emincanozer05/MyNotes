@@ -50,21 +50,23 @@ export function PostitCard({ note }: { note: PostitData }) {
             e.stopPropagation();
             if (!window.confirm("Bu not silinsin mi?")) e.preventDefault();
           }}
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10 text-sm font-bold leading-none text-stone-700/70 opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+          className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs font-bold leading-none text-stone-700/70 opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
         >
           ×
         </button>
       </form>
 
-      <h3 className="pr-6 font-bold leading-snug line-clamp-2">{note.title}</h3>
+      <h3 className="pl-3.5 pr-5 text-[13px] font-bold leading-snug line-clamp-2">
+        {note.title}
+      </h3>
       {note.content && (
-        <p className="mt-2 flex-1 whitespace-pre-wrap text-sm leading-snug line-clamp-6 opacity-90">
-          {note.content.slice(0, 240)}
+        <p className="mt-1.5 flex-1 whitespace-pre-wrap text-[11px] leading-snug line-clamp-4 opacity-90">
+          {note.content.slice(0, 160)}
         </p>
       )}
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-2 space-y-1">
         {note.source_title && (
-          <p className="text-[11px] italic opacity-70">
+          <p className="line-clamp-1 text-[10px] italic opacity-70">
             {note.source_author}
             {note.source_year ? ` (${note.source_year})` : ""}
             {note.source_author || note.source_year ? " — " : ""}
@@ -73,10 +75,10 @@ export function PostitCard({ note }: { note: PostitData }) {
         )}
         {note.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {note.tags.map((t) => (
+            {note.tags.slice(0, 3).map((t) => (
               <span
                 key={t.name}
-                className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
+                className="rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] font-medium"
               >
                 #{t.name}
               </span>

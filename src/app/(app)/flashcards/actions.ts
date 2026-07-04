@@ -35,6 +35,14 @@ export async function deleteFlashcard(formData: FormData) {
   revalidatePath("/flashcards");
 }
 
+/** Deletes a card by id (callable directly from client study session). */
+export async function deleteFlashcardById(id: string) {
+  const supabase = await createClient();
+  if (id) await supabase.from("flashcards").delete().eq("id", id);
+  revalidatePath("/flashcards");
+  return { error: null };
+}
+
 export async function gradeFlashcard(id: string, quality: Sm2Quality) {
   const supabase = await createClient();
 

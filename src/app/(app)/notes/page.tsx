@@ -124,7 +124,7 @@ export default async function NotesPage({
       )}
 
       {notes && notes.length > 0 ? (
-        <div className="stagger grid grid-cols-1 gap-6 pt-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
           {(notes as unknown as NoteRow[]).map((n) => {
             const { cls, tilt } = postitStyle(n.id);
             const tags = n.note_tags

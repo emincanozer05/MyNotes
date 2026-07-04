@@ -103,6 +103,25 @@ export async function saveBookSummary(id: string, html: string) {
   return { error: error?.message ?? null };
 }
 
+/** Sets a book cover from an uploaded image (data URL) or a pasted URL. */
+export async function setBookCover(id: string, cover: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ cover_url: cover || null })
+    .eq("id", id)
+    .eq("kind", "book");
+
+  revalidatePath(`/bookshelf/${id}`);
+  revalidatePath("/bookshelf");
+  return { error: error?.message ?? null };
+}
+
 /** Retries the automatic cover lookup for a book that has none. */
 export async function refreshCover(formData: FormData) {
   const supabase = await createClient();

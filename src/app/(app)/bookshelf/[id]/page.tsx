@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BookEditor } from "./BookEditor";
+import { CoverUpload } from "./CoverUpload";
 import { refreshCover } from "../actions";
 
 interface BookRow {
@@ -71,6 +72,7 @@ export default async function BookDetailPage({
                 {noteCount} bağlı not
               </Link>
             )}
+            <CoverUpload bookId={book.id} />
             {!book.cover_url && (
               <form action={refreshCover}>
                 <input type="hidden" name="id" value={book.id} />
