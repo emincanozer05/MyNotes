@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { GraphView, type GraphEdge, type GraphNode } from "./GraphView";
 
 const LEGEND = [
-  { label: "Not", cls: "bg-[#2a78d6] dark:bg-[#3987e5]" },
-  { label: "Etiket", cls: "bg-[#1baf7a] dark:bg-[#199e70]" },
-  { label: "Kaynak", cls: "bg-[#eda100] dark:bg-[#c98500]" },
+  { label: "Not", cls: "bg-[#337ea9] dark:bg-[#529cca]" },
+  { label: "Etiket", cls: "bg-[#448361] dark:bg-[#4f9768]" },
+  { label: "Kaynak", cls: "bg-[#d9730d] dark:bg-[#e0791a]" },
 ];
 
 export default async function GraphPage() {
@@ -52,27 +52,32 @@ export default async function GraphPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Bilgi Grafiği</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+        <h1 className="text-3xl font-bold tracking-tight">Bilgi Grafiği</h1>
+        <p className="mt-1.5 text-sm text-[var(--muted)]">
           Notlar, etiketler ve kaynaklar arasındaki ilişki ağı. Düğümleri
           sürükleyebilir, üzerine gelerek komşularını görebilir, nota veya
           etikete tıklayarak gidebilirsiniz.
         </p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-wrap items-center gap-2">
         {LEGEND.map((l) => (
-          <span key={l.label} className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400">
-            <span className={`inline-block h-3 w-3 rounded-full ${l.cls}`} />
+          <span
+            key={l.label}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs font-medium text-[var(--muted)]"
+          >
+            <span className={`inline-block h-2.5 w-2.5 rounded-full ${l.cls}`} />
             {l.label}
           </span>
         ))}
       </div>
 
       {nodes.length > 0 ? (
-        <GraphView nodes={nodes} edges={edges} />
+        <div className="glass-card rounded-2xl p-2">
+          <GraphView nodes={nodes} edges={edges} />
+        </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center text-sm text-stone-500">
+        <p className="rounded-xl border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--muted)]">
           Grafik için önce not oluşturun; notlar, etiketler ve kaynaklar burada
           ağ olarak görünecek.
         </p>

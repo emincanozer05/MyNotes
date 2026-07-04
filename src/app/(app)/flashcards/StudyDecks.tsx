@@ -152,7 +152,7 @@ export function StudyDecks({ cards }: { cards: Card[] }) {
 
         {current ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-8">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-8">
               <p className="text-center text-lg font-medium leading-relaxed">
                 {current.front}
               </p>
@@ -166,7 +166,7 @@ export function StudyDecks({ cards }: { cards: Card[] }) {
             {!revealed ? (
               <button
                 onClick={() => setRevealed(true)}
-                className="w-full rounded-md bg-amber-600 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+                className="btn-gradient w-full rounded-md py-2.5 text-sm font-semibold"
               >
                 Cevabı Göster
               </button>

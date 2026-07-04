@@ -9,10 +9,19 @@ interface TagDepth {
 
 function depthBadge(sourceCount: number) {
   if (sourceCount >= 5)
-    return { label: "Derin", icon: "●", cls: "text-[#006300] dark:text-[#0ca30c]" };
+    return {
+      label: "Derin",
+      cls: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
+    };
   if (sourceCount >= 2)
-    return { label: "Orta", icon: "◐", cls: "text-stone-600 dark:text-stone-400" };
-  return { label: "Yüzeysel", icon: "○", cls: "text-[#d03b3b]" };
+    return {
+      label: "Orta",
+      cls: "bg-amber-500/12 text-amber-700 dark:text-amber-400",
+    };
+  return {
+    label: "Yüzeysel",
+    cls: "bg-rose-500/12 text-rose-700 dark:text-rose-400",
+  };
 }
 
 export default async function InsightsPage() {
@@ -61,35 +70,34 @@ export default async function InsightsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Bilgi Derinliği</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+        <h1 className="text-3xl font-bold tracking-tight">Bilgi Derinliği</h1>
+        <p className="mt-1.5 text-sm text-[var(--muted)]">
           Her konuda kaç <em>benzersiz kaynaktan</em> not aldığınızı gösterir —
           tek kaynağa dayanan konular yüzeysel kalma riski taşır.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Etiketli konu", value: rows.length },
           { label: "Benzersiz kaynak", value: totalSources },
           { label: "Yüzeysel konu", value: shallow.length },
         ].map((s) => (
-          <div
-            key={s.label}
-            className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4"
-          >
-            <p className="text-3xl font-bold">{s.value}</p>
-            <p className="text-sm text-stone-500 dark:text-stone-400">{s.label}</p>
+          <div key={s.label} className="glass-card rounded-xl p-4">
+            <p className="text-3xl font-bold [font-variant-numeric:tabular-nums]">
+              {s.value}
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">{s.label}</p>
           </div>
         ))}
       </div>
 
       {rows.length > 0 ? (
-        <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
-          <h2 className="text-sm font-semibold">
+        <div className="glass-card rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-[var(--muted)]">
             Konu başına benzersiz kaynak sayısı
           </h2>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-4 space-y-3.5">
             {rows.map((r) => {
               const badge = depthBadge(r.sourceCount);
               return (
@@ -101,16 +109,18 @@ export default async function InsightsPage() {
                     >
                       #{r.tag}
                     </Link>
-                    <span className="shrink-0 text-xs text-stone-500 [font-variant-numeric:tabular-nums]">
-                      {r.sourceCount} kaynak · {r.noteCount} not ·{" "}
-                      <span className={`font-semibold ${badge.cls}`}>
-                        {badge.icon} {badge.label}
+                    <span className="flex shrink-0 items-center gap-2 text-xs text-[var(--muted)] [font-variant-numeric:tabular-nums]">
+                      {r.sourceCount} kaynak · {r.noteCount} not
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}
+                      >
+                        {badge.label}
                       </span>
                     </span>
                   </div>
-                  <div className="mt-1 h-2 w-full rounded-full bg-stone-100 dark:bg-stone-800">
+                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--surface-2)]">
                     <div
-                      className="h-2 rounded-full bg-[#2a78d6] dark:bg-[#3987e5]"
+                      className="h-full rounded-full bg-[var(--brand-4)]"
                       style={{ width: `${(r.sourceCount / maxSources) * 100}%` }}
                     />
                   </div>
@@ -119,7 +129,7 @@ export default async function InsightsPage() {
             })}
           </ul>
           {shallow.length > 0 && (
-            <p className="mt-4 border-t border-stone-100 dark:border-stone-900 pt-3 text-xs text-stone-500">
+            <p className="mt-4 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
               💡 {shallow.map((r) => `#${r.tag}`).join(", ")} konularında tek
               kaynağa dayanıyorsunuz — farklı yazarlardan ikinci bir kaynak
               eklemek bakış açınızı genişletir.
@@ -127,7 +137,7 @@ export default async function InsightsPage() {
           )}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center text-sm text-stone-500">
+        <p className="rounded-xl border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--muted)]">
           Analiz için etiketli not gerekiyor. Notlarınıza <code>#etiket</code>{" "}
           ekledikçe bu panel dolacak.
         </p>

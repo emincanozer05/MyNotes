@@ -4,7 +4,7 @@ import { StudyDecks } from "./StudyDecks";
 import { createFlashcard, deleteFlashcard } from "./actions";
 
 const inputCls =
-  "w-full rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
+  "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-1)]";
 
 interface CardRow {
   id: string;
@@ -51,8 +51,8 @@ export default async function FlashcardsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Flashcard</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+        <h1 className="text-3xl font-bold tracking-tight">Flashcard</h1>
+        <p className="mt-1.5 text-sm text-[var(--muted)]">
           Aralıklı tekrar (SM-2): doğru hatırladıkça tekrar aralığı uzar,
           zorlandıkça sıklaşır.
         </p>
@@ -60,7 +60,7 @@ export default async function FlashcardsPage() {
 
       <section>
         <h2 className="mb-1 text-lg font-semibold">Kartlara çalış</h2>
-        <p className="mb-3 text-sm text-stone-500">
+        <p className="mb-3 text-sm text-[var(--muted)]">
           Bir deste seçin ve AnkiPro gibi hazırladığınız kartların tümüne
           çalışın.
         </p>
@@ -70,17 +70,17 @@ export default async function FlashcardsPage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold">
           Bugünün tekrarı{" "}
-          <span className="text-sm font-normal text-stone-500">
+          <span className="text-sm font-normal text-[var(--muted)]">
             ({due?.length ?? 0} kart)
           </span>
         </h2>
-        <p className="mb-3 text-sm text-stone-500">
+        <p className="mb-3 text-sm text-[var(--muted)]">
           Tüm destelerden tekrarı gelen kartlar (SM-2).
         </p>
         <ReviewDeck cards={due ?? []} />
       </section>
 
-      <section className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
+      <section className="glass-card rounded-xl p-5">
         <h2 className="text-lg font-semibold">Yeni kart</h2>
         <form action={createFlashcard} className="mt-3 space-y-3">
           <div className="space-y-1">
@@ -100,7 +100,7 @@ export default async function FlashcardsPage() {
                 <option key={d} value={d} />
               ))}
             </datalist>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-[var(--muted)]">
               Yeni bir deste adı yazabilir ya da mevcut bir desteyi seçebilirsiniz.
             </p>
           </div>
@@ -143,7 +143,7 @@ export default async function FlashcardsPage() {
               ))}
             </select>
           </div>
-          <button className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+          <button className="btn-gradient rounded-md px-4 py-2 text-sm font-semibold">
             Kart Ekle
           </button>
         </form>
@@ -152,7 +152,7 @@ export default async function FlashcardsPage() {
       <section>
         <h2 className="mb-3 text-lg font-semibold">
           Tüm kartlar{" "}
-          <span className="text-sm font-normal text-stone-500">
+          <span className="text-sm font-normal text-[var(--muted)]">
             ({all.length})
           </span>
         </h2>
@@ -164,7 +164,7 @@ export default async function FlashcardsPage() {
               return (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-4 py-2.5"
+                  className="glass-card flex items-center justify-between gap-3 rounded-lg px-4 py-2.5"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export default async function FlashcardsPage() {
                       </span>
                       <p className="truncate text-sm font-medium">{c.front}</p>
                     </div>
-                    <p className="mt-0.5 text-xs text-stone-500">
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
                       {isDue
                         ? "Tekrarı geldi"
                         : `Sonraki tekrar: ${dueDate.toLocaleDateString("tr-TR")}`}{" "}
@@ -191,7 +191,7 @@ export default async function FlashcardsPage() {
             })}
           </ul>
         ) : (
-          <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-6 text-center text-sm text-stone-500">
+          <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--muted)]">
             Henüz kartınız yok.
           </p>
         )}

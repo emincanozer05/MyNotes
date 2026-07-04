@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f5f4;
-  --foreground: #1c1917;
+  /* Notion-inspired warm neutral palette */
+  --background: #f7f7f5;
+  --foreground: #37352f;
   --surface: #ffffff;
-  --border: #e7e5e4;
-  /* Brand accent stops (used sparingly, no animation) */
-  --brand-1: #f59e0b;
-  --brand-2: #f43f5e;
-  --brand-3: #8b5cf6;
-  --brand-4: #06b6d4;
+  --surface-2: #f1f1ef;
+  --border: #e9e9e7;
+  --muted: #787774;
+  /* Accent stops (warm; used sparingly) */
+  --brand-1: #d9730d;
+  --brand-2: #de5451;
+  --brand-3: #9065b0;
+  --brand-4: #337ea9;
 }
 
 @theme inline {
@@ -21,16 +24,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0b;
-    --foreground: #e7e5e4;
-    --surface: #16151a;
-    --border: #2a2830;
+    --background: #191919;
+    --foreground: #e6e6e4;
+    --surface: #202020;
+    --surface-2: #2a2a28;
+    --border: #2f2f2e;
+    --muted: #9b9a97;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ---------------------------------------------------------------------------
@@ -52,22 +58,23 @@ body {
 }
 
 .glass-card {
-  /* Solid surface — no backdrop-filter blur (much cheaper to paint) */
+  /* Solid surface, subtle border — Notion-like flat card */
   background: var(--surface);
   border: 1px solid var(--border);
-  transition: border-color 0.15s ease;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
 }
 .glass-card:hover {
-  border-color: color-mix(in srgb, var(--brand-1) 40%, var(--border));
+  border-color: color-mix(in srgb, var(--foreground) 16%, var(--border));
 }
 
 .btn-gradient {
-  background: linear-gradient(100deg, var(--brand-1), var(--brand-2));
+  /* Solid warm accent button (calm, not flashy) */
+  background: var(--brand-1);
   color: #fff;
-  transition: filter 0.15s ease;
+  transition: filter 0.12s ease;
 }
 .btn-gradient:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.05);
 }
 
 /* Accent bar is now a no-op (kept for markup compatibility) */
