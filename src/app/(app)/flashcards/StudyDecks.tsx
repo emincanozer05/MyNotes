@@ -114,9 +114,6 @@ export function StudyDecks({ cards }: { cards: Card[] }) {
               onClick={() => startDeck(name)}
               className="glass-card group relative overflow-hidden rounded-2xl p-4 text-left"
             >
-              <div
-                className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${deckColor(name)} opacity-20 blur-xl transition-opacity group-hover:opacity-40`}
-              />
               <p className="font-bold">{name}</p>
               <p className="mt-1 text-xs text-stone-500">
                 {info.total} kart

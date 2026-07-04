@@ -19,10 +19,10 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] backdrop-blur-md">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
       <div className="px-4 py-5">
-        <Link href="/" className="group flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 via-rose-500 to-violet-500 text-sm font-black text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-6">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 text-sm font-black text-white">
             S
           </span>
           <span className="text-lg font-extrabold tracking-tight gradient-text">
@@ -40,20 +40,18 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+              className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? "bg-gradient-to-r from-amber-500/15 to-rose-500/10 text-amber-700 dark:text-amber-300"
-                  : "text-stone-600 hover:bg-stone-500/10 hover:translate-x-0.5 dark:text-stone-400"
+                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-400"
               }`}
             >
               {active && (
-                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-amber-500 to-rose-500" />
+                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-amber-500" />
               )}
               <span
                 aria-hidden
-                className={`w-4 text-center transition-transform group-hover:scale-125 ${
-                  active ? "text-rose-500" : ""
-                }`}
+                className={`w-4 text-center ${active ? "text-rose-500" : ""}`}
               >
                 {item.icon}
               </span>
