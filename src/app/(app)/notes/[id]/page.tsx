@@ -5,6 +5,7 @@ import { NoteContent } from "@/components/NoteContent";
 import { HighlightCapture } from "./HighlightCapture";
 import { FeynmanPanel } from "./FeynmanPanel";
 import { deleteNote } from "../actions";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 export default async function NoteDetailPage({
   params,
@@ -69,9 +70,12 @@ export default async function NoteDetailPage({
           </Link>
           <form action={deleteNote}>
             <input type="hidden" name="id" value={id} />
-            <button className="rounded-md border border-red-300 dark:border-red-900 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
+            <ConfirmSubmit
+              message="Bu not silinsin mi?"
+              className="rounded-md border border-red-300 dark:border-red-900 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+            >
               Sil
-            </button>
+            </ConfirmSubmit>
           </form>
         </div>
       </div>

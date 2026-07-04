@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ReviewDeck } from "./ReviewDeck";
 import { StudyDecks } from "./StudyDecks";
 import { createFlashcard, deleteFlashcard } from "./actions";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 const inputCls =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--brand-1)]";
@@ -182,9 +183,12 @@ export default async function FlashcardsPage() {
                   </div>
                   <form action={deleteFlashcard}>
                     <input type="hidden" name="id" value={c.id} />
-                    <button className="text-xs text-stone-400 hover:text-red-600">
+                    <ConfirmSubmit
+                      message="Bu kart silinsin mi?"
+                      className="text-xs text-stone-400 hover:text-red-600"
+                    >
                       Sil
-                    </button>
+                    </ConfirmSubmit>
                   </form>
                 </li>
               );

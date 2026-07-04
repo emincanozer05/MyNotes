@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { convertToNote, deleteVoiceNote } from "./actions";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 interface VoiceRow {
   id: string;
@@ -103,9 +104,12 @@ export default async function VoicePage() {
                     )}
                     <form action={deleteVoiceNote}>
                       <input type="hidden" name="id" value={v.id} />
-                      <button className="text-xs text-stone-400 hover:text-red-600">
+                      <ConfirmSubmit
+                        message="Bu ses notu silinsin mi?"
+                        className="text-xs text-stone-400 hover:text-red-600"
+                      >
                         Sil
-                      </button>
+                      </ConfirmSubmit>
                     </form>
                   </div>
                 </li>

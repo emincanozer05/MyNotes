@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 
 export async function saveVoiceNote(
   transcript: string,
@@ -10,9 +10,7 @@ export async function saveVoiceNote(
   audioPath?: string | null,
 ) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const trimmed = transcript.trim();
@@ -58,9 +56,7 @@ export async function deleteVoiceNote(formData: FormData) {
 /** Converts a voice transcript into a regular note and links them. */
 export async function convertToNote(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return;
 
   const id = String(formData.get("id") ?? "");

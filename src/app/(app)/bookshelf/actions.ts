@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 
 /** Looks up a cover image for a book by title via Open Library (no API key). */
 async function findCoverByTitle(
@@ -35,9 +35,7 @@ async function findCoverByTitle(
 
 export async function addBook(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return;
 
   const title = String(formData.get("title") ?? "").trim();
@@ -76,9 +74,7 @@ export async function deleteBook(formData: FormData) {
 /** Saves the rich-text (HTML) summary written for a book. */
 export async function saveBookSummary(id: string, html: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { data: existing } = await supabase
@@ -106,9 +102,7 @@ export async function saveBookSummary(id: string, html: string) {
 /** Sets a book cover from an uploaded image (data URL) or a pasted URL. */
 export async function setBookCover(id: string, cover: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { error } = await supabase
