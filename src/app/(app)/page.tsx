@@ -51,9 +51,6 @@ export default async function DashboardPage() {
             href={s.href}
             className="glass-card group relative overflow-hidden rounded-2xl p-5"
           >
-            <div
-              className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${s.grad} opacity-20 blur-xl transition-opacity group-hover:opacity-40`}
-            />
             <p className={`bg-gradient-to-br ${s.grad} bg-clip-text text-4xl font-black text-transparent`}>
               {s.value}
             </p>
@@ -88,7 +85,7 @@ export default async function DashboardPage() {
               className="glass-card group rounded-2xl p-5"
             >
               <span
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white shadow-lg transition-transform group-hover:scale-110 group-hover:-rotate-6`}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white`}
               >
                 {m.icon}
               </span>

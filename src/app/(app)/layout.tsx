@@ -16,10 +16,9 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1">
-      <div className="aurora" aria-hidden />
       <Sidebar userEmail={user.email ?? ""} />
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_75%,transparent)] px-6 py-2.5 backdrop-blur-md">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-6 py-2.5">
           <div className="flex items-center gap-3">
             <BackButton />
             <span className="hidden text-xs font-medium text-stone-400 sm:inline">
