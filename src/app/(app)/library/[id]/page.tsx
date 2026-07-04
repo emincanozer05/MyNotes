@@ -95,7 +95,15 @@ export default async function ArticleDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-2 text-lg font-bold">Makale Özetin</h2>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-lg font-bold">Makale Özetin</h2>
+          <Link
+            href={`/print/${article.id}`}
+            className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
+          >
+            🖨 Çıktı al (A4)
+          </Link>
+        </div>
         <p className="mb-3 text-sm text-stone-500">
           Makaleden çıkardığın bilgileri buraya yaz — yazı tipini, boyutunu ve
           rengini ayarlayabilir, görsel ekleyip boyutlandırabilirsin.

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { BookEditor } from "./BookEditor";
 import { CoverUpload } from "./CoverUpload";
+import { TitledNotes } from "@/components/TitledNotes";
+import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { refreshCover } from "../actions";
 
 interface BookRow {
@@ -11,7 +12,16 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  metadata: { summary?: string } | null;
+  metadata: { summary?: string; notes?: TitledNote[] } | null;
+}
+
+/** Uses saved titled notes, or seeds one from a legacy single summary. */
+function seedNotes(meta: BookRow["metadata"]): TitledNote[] {
+  if (Array.isArray(meta?.notes)) return meta.notes;
+  const s = meta?.summary ?? "";
+  return s.replace(/<[^>]*>/g, "").trim()
+    ? [{ id: "legacy", title: "Özet", html: s }]
+    : [];
 }
 
 export default async function BookDetailPage({
@@ -86,12 +96,16 @@ export default async function BookDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-2 text-lg font-bold">Kitap Özeti</h2>
+        <h2 className="mb-2 text-lg font-bold">Kitap Notları</h2>
         <p className="mb-3 text-sm text-stone-500">
-          Kitaptan aldığınız bilgileri buraya yazın — yazı tipini, boyutunu ve
-          rengini ayarlayabilir, görsel ekleyebilirsiniz.
+          Her başlık için ayrı bir not tut — yazı tipini, boyutunu ve rengini
+          ayarlayabilir, görsel ekleyebilirsin. Sağ üstten A4 çıktısı alabilirsin.
         </p>
-        <BookEditor bookId={book.id} initialHtml={book.metadata?.summary ?? ""} />
+        <TitledNotes
+          sourceId={book.id}
+          initialNotes={seedNotes(book.metadata)}
+          printHref={`/print/${book.id}`}
+        />
       </div>
     </div>
   );

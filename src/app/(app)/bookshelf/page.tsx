@@ -23,7 +23,14 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  metadata: { summary?: string } | null;
+  metadata: { summary?: string; notes?: { html?: string }[] } | null;
+}
+
+function hasAnyNote(meta: BookRow["metadata"]): boolean {
+  if (Array.isArray(meta?.notes)) {
+    return meta.notes.some((n) => (n.html ?? "").replace(/<[^>]*>/g, "").trim());
+  }
+  return Boolean(meta?.summary?.replace(/<[^>]*>/g, "").trim());
 }
 
 export default async function BookshelfPage() {
@@ -65,7 +72,7 @@ export default async function BookshelfPage() {
         <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {books.map((b) => {
             const noteCount = countBySource.get(b.id) ?? 0;
-            const hasSummary = Boolean(b.metadata?.summary?.trim());
+            const hasSummary = hasAnyNote(b.metadata);
             return (
               <div
                 key={b.id}

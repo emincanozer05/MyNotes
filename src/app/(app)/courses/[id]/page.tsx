@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CourseEditor } from "./CourseEditor";
 import { CourseControls } from "./CourseControls";
-import { SummaryReadModal } from "../../library/SummaryReadModal";
+import { TitledNotes } from "@/components/TitledNotes";
+import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { normalizeStatus } from "../status";
 
 interface CourseRow {
@@ -13,7 +13,16 @@ interface CourseRow {
   year: number | null;
   cover_url: string | null;
   url: string | null;
-  metadata: { status?: string; summary?: string } | null;
+  metadata: { status?: string; summary?: string; notes?: TitledNote[] } | null;
+}
+
+/** Uses saved titled notes, or seeds one from a legacy single summary. */
+function seedNotes(meta: CourseRow["metadata"]): TitledNote[] {
+  if (Array.isArray(meta?.notes)) return meta.notes;
+  const s = meta?.summary ?? "";
+  return s.replace(/<[^>]*>/g, "").trim()
+    ? [{ id: "legacy", title: "Genel", html: s }]
+    : [];
 }
 
 export default async function CourseDetailPage({
@@ -33,8 +42,8 @@ export default async function CourseDetailPage({
 
   if (!data) notFound();
   const course = data as CourseRow;
-  const summary = course.metadata?.summary ?? "";
   const status = normalizeStatus(course.metadata?.status);
+  const seededNotes = seedNotes(course.metadata);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -79,13 +88,14 @@ export default async function CourseDetailPage({
       <div>
         <h2 className="mb-2 text-lg font-bold">Notların</h2>
         <p className="mb-3 text-sm text-stone-500">
-          Kurstan/eğitimden çıkardığın bilgileri buraya yaz — biçimlendir, görsel
-          ekleyip boyutlandır.
+          Her başlık için ayrı bir not tut — biçimlendir, görsel ekleyip
+          boyutlandır. Sağ üstten A4 çıktısı alabilirsin.
         </p>
-        <CourseEditor courseId={course.id} initialHtml={summary} />
-        <div className="mt-3">
-          <SummaryReadModal html={summary} title={course.title} />
-        </div>
+        <TitledNotes
+          sourceId={course.id}
+          initialNotes={seededNotes}
+          printHref={`/print/${course.id}`}
+        />
       </div>
     </div>
   );
