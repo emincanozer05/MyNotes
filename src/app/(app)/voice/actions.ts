@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function saveVoiceNote(transcript: string) {
+export async function saveVoiceNote(
+  transcript: string,
+  title?: string,
+  audioPath?: string | null,
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,11 +16,20 @@ export async function saveVoiceNote(transcript: string) {
   if (!user) return { error: "Oturum bulunamadı." };
 
   const trimmed = transcript.trim();
-  if (!trimmed) return { error: "Boş transkript kaydedilemez." };
+  // A recording with no transcript is still valid (audio-only note).
+  if (!trimmed && !audioPath) {
+    return { error: "Kaydedilecek ses veya transkript yok." };
+  }
+
+  const cleanTitle =
+    (title ?? "").trim() ||
+    `Ses notu — ${new Date().toLocaleDateString("tr-TR")}`;
 
   const { error } = await supabase.from("voice_notes").insert({
     user_id: user.id,
     transcript: trimmed,
+    title: cleanTitle,
+    audio_path: audioPath ?? null,
   });
 
   revalidatePath("/voice");
@@ -26,7 +39,19 @@ export async function saveVoiceNote(transcript: string) {
 export async function deleteVoiceNote(formData: FormData) {
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
-  if (id) await supabase.from("voice_notes").delete().eq("id", id);
+  if (!id) return;
+
+  // Remove the stored audio file too, if any.
+  const { data: row } = await supabase
+    .from("voice_notes")
+    .select("audio_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (row?.audio_path) {
+    await supabase.storage.from("voice-notes").remove([row.audio_path]);
+  }
+
+  await supabase.from("voice_notes").delete().eq("id", id);
   revalidatePath("/voice");
 }
 
@@ -41,7 +66,7 @@ export async function convertToNote(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const { data: voice } = await supabase
     .from("voice_notes")
-    .select("transcript, created_at")
+    .select("transcript, title, created_at")
     .eq("id", id)
     .maybeSingle();
   if (!voice?.transcript) return;
@@ -51,7 +76,7 @@ export async function convertToNote(formData: FormData) {
     .from("notes")
     .insert({
       user_id: user.id,
-      title: `Saha notu — ${date}`,
+      title: voice.title?.trim() || `Saha notu — ${date}`,
       content: voice.transcript,
       source_title: "Saha ses kaydı",
       source_author: "Kendi gözlemim",

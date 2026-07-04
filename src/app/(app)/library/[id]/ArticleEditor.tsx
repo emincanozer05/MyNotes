@@ -13,7 +13,7 @@ export function ArticleEditor({
   return (
     <RichTextEditor
       initialHtml={initialHtml}
-      accent="lime"
+      accent="amber"
       saveLabel="Özeti Kaydet"
       placeholder="Makaleden çıkardığın bilgileri buraya özetle… Biçimlendir, görsel ekle."
       onSave={(html) => saveArticleSummary(articleId, html)}

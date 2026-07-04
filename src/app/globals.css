@@ -194,44 +194,33 @@ body {
 .postit {
   position: relative;
   cursor: pointer;
-  border-radius: 4px 4px 3px 3px;
-  padding: 1.25rem 1.15rem 1.35rem;
-  /* soft paper shadow + subtle top sheen for a printed-paper feel */
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08), 0 12px 24px -14px rgba(0, 0, 0, 0.5);
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.28s ease;
+  border-radius: 14px;
+  padding: 0.85rem 0.9rem 0.95rem;
+  /* clean, modern soft shadow (less skeuomorphic) */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 18px -12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease;
   color: #2a2010;
-  min-height: 200px;
+  min-height: 132px;
   display: flex;
   flex-direction: column;
 }
 .postit::before {
-  /* faint diagonal paper sheen */
+  /* faint diagonal sheen */
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.35),
-    transparent 42%
+    rgba(255, 255, 255, 0.3),
+    transparent 46%
   );
   pointer-events: none;
 }
-.postit::after {
-  /* folded corner */
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.14) 50%);
-  border-bottom-right-radius: 3px;
-}
 .postit:hover {
-  transform: rotate(0deg) scale(1.04) translateY(-5px);
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1), 0 24px 38px -14px rgba(0, 0, 0, 0.55);
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 18px 30px -14px rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
 .postit:focus-visible {
@@ -240,29 +229,17 @@ body {
 }
 .postit-pin {
   position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 18px;
-  height: 18px;
+  top: 0.7rem;
+  left: 0.8rem;
+  width: 9px;
+  height: 9px;
   border-radius: 9999px;
-  background: radial-gradient(circle at 35% 28%, #fff8, #e11d48 58%, #9f1239);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.35), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+  background: radial-gradient(circle at 35% 28%, #fff8, #e11d48 60%, #9f1239);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
-.postit-pin::after {
-  /* pin highlight dot */
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 4px;
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.75);
-}
-.postit-y { background: linear-gradient(160deg, #fef3c7, #fde68a); }
+.postit-y { background: linear-gradient(160deg, #fef6cf, #fde68a); }
 .postit-p { background: linear-gradient(160deg, #fce7f3, #fbcfe8); }
-.postit-g { background: linear-gradient(160deg, #d1fae5, #bbf7d0); }
+.postit-g { background: linear-gradient(160deg, #d7fbe4, #bbf7d0); }
 .postit-b { background: linear-gradient(160deg, #dbeafe, #bfdbfe); }
 .postit-o { background: linear-gradient(160deg, #ffedd5, #fed7aa); }
 .postit-v { background: linear-gradient(160deg, #ede9fe, #ddd6fe); }

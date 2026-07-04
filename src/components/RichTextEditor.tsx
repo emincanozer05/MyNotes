@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 const FONTS = [
   { label: "Varsayılan", value: "" },
@@ -66,6 +67,7 @@ export function RichTextEditor({
   accent?: Accent;
   saveLabel?: string;
 }) {
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -217,6 +219,9 @@ export function RichTextEditor({
         setError(res.error);
       } else {
         setSavedAt(new Date().toLocaleTimeString("tr-TR"));
+        // Refresh so server-rendered views of the summary (e.g. "Özeti oku")
+        // reflect what was just saved.
+        router.refresh();
       }
     });
   }

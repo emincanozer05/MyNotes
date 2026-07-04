@@ -43,6 +43,55 @@ export async function saveCuratedArticle(pmid: string) {
   return { error: null };
 }
 
+/** Removes a curated article that was saved (undo of saveCuratedArticle). */
+export async function unsaveCuratedArticle(pmid: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { error } = await supabase
+    .from("sources")
+    .delete()
+    .eq("kind", "article")
+    .eq("pmid", pmid);
+
+  if (error) return { error: `Geri alınamadı: ${error.message}` };
+  revalidatePath("/library");
+  return { error: null };
+}
+
+/** Updates (or sets) the topic of a saved / own article. */
+export async function updateArticleTopic(id: string, topic: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    topic: topic.trim() || "Diğer",
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "article");
+
+  if (error) return { error: error.message };
+  revalidatePath("/library");
+  return { error: null };
+}
+
 /** Adds an article entered manually by the user (own reading list). */
 export async function addOwnArticle(formData: FormData) {
   const supabase = await createClient();

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { gradeFlashcard } from "./actions";
+import { Modal } from "@/components/Modal";
+import { gradeFlashcard, deleteFlashcardById } from "./actions";
 import type { Sm2Quality } from "@/lib/sm2";
 
 interface Card {
@@ -83,123 +84,144 @@ export function StudyDecks({ cards }: { cards: Card[] }) {
     setQueue((q) => (quality < 3 ? [...q.slice(1), current] : q.slice(1)));
   }
 
-  // ---- Deck list ("Kartlara çalış") ----
-  if (!activeDeck) {
-    if (decks.length === 0) {
-      return (
+  async function removeCurrent() {
+    const current = queue[0];
+    if (!current) return;
+    if (!window.confirm("Bu kart destenizden silinsin mi?")) return;
+    setPending(true);
+    await deleteFlashcardById(current.id);
+    setPending(false);
+    setRevealed(false);
+    // Drop every instance of this card from the session queue.
+    setQueue((q) => q.filter((c) => c.id !== current.id));
+  }
+
+  const current = queue[0];
+
+  return (
+    <>
+      {/* ---- Deck list ("Kartlara çalış") ---- */}
+      {decks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-6 text-center text-sm text-stone-500">
           Henüz desteniz yok. Aşağıdan kart ekleyin — kartlar seçtiğiniz desteye
           eklenir.
         </p>
-      );
-    }
-    return (
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {decks.map(([name, info]) => (
-          <button
-            key={name}
-            onClick={() => startDeck(name)}
-            className="glass-card group relative overflow-hidden rounded-2xl p-4 text-left"
-          >
-            <div
-              className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${deckColor(name)} opacity-20 blur-xl transition-opacity group-hover:opacity-40`}
-            />
-            <p className="font-bold">{name}</p>
-            <p className="mt-1 text-xs text-stone-500">
-              {info.total} kart
-              {info.due > 0 && (
-                <span className="ml-1 font-semibold text-amber-600 dark:text-amber-400">
-                  · {info.due} tekrarı geldi
-                </span>
-              )}
-            </p>
-            <span
-              className={`mt-3 inline-block rounded-full bg-gradient-to-r ${deckColor(name)} px-3 py-1 text-xs font-semibold text-white`}
-            >
-              ▶ Çalış
-            </span>
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  // ---- Active study session ----
-  const current = queue[0];
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-bold">{activeDeck}</p>
-          <p className="text-xs text-stone-500">
-            Kuyrukta {queue.length} kart · bu oturumda {done} değerlendirme
-          </p>
-        </div>
-        <button
-          onClick={exitDeck}
-          className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-        >
-          ✕ Bitir
-        </button>
-      </div>
-
-      {current ? (
-        <>
-          <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-8">
-            <p className="text-center text-lg font-medium leading-relaxed">
-              {current.front}
-            </p>
-            {revealed && (
-              <p className="mt-6 border-t border-dashed border-stone-200 dark:border-stone-800 pt-6 text-center text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
-                {current.back}
-              </p>
-            )}
-          </div>
-
-          {!revealed ? (
-            <button
-              onClick={() => setRevealed(true)}
-              className="w-full rounded-md bg-amber-600 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
-            >
-              Cevabı Göster
-            </button>
-          ) : (
-            <div className="grid grid-cols-4 gap-2">
-              {GRADES.map((g) => (
-                <button
-                  key={g.label}
-                  disabled={pending}
-                  onClick={() => grade(g.quality)}
-                  className={`rounded-md border py-2.5 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-stone-900 disabled:opacity-50 ${g.cls}`}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
       ) : (
-        <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 p-8 text-center">
-          <p className="font-semibold">
-            🎉 &quot;{activeDeck}&quot; destesini bitirdiniz — {done} değerlendirme.
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {decks.map(([name, info]) => (
             <button
-              onClick={() => startDeck(activeDeck)}
-              className="rounded-full bg-amber-600 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+              key={name}
+              onClick={() => startDeck(name)}
+              className="glass-card group relative overflow-hidden rounded-2xl p-4 text-left"
             >
-              Baştan çalış
+              <div
+                className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${deckColor(name)} opacity-20 blur-xl transition-opacity group-hover:opacity-40`}
+              />
+              <p className="font-bold">{name}</p>
+              <p className="mt-1 text-xs text-stone-500">
+                {info.total} kart
+                {info.due > 0 && (
+                  <span className="ml-1 font-semibold text-amber-600 dark:text-amber-400">
+                    · {info.due} tekrarı geldi
+                  </span>
+                )}
+              </p>
+              <span
+                className={`mt-3 inline-block rounded-full bg-gradient-to-r ${deckColor(name)} px-3 py-1 text-xs font-semibold text-white`}
+              >
+                ▶ Çalış
+              </span>
             </button>
-            <button
-              onClick={exitDeck}
-              className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
-            >
-              Destelere dön
-            </button>
-          </div>
+          ))}
         </div>
       )}
-    </div>
+
+      {/* ---- Active study session (centered modal, blurred backdrop) ---- */}
+      <Modal open={activeDeck !== null} onClose={exitDeck} maxWidth="max-w-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold">{activeDeck}</p>
+            <p className="text-xs text-stone-500">
+              Kuyrukta {queue.length} kart · bu oturumda {done} değerlendirme
+            </p>
+          </div>
+          <button
+            onClick={exitDeck}
+            className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
+          >
+            ✕ Bitir
+          </button>
+        </div>
+
+        {current ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-8">
+              <p className="text-center text-lg font-medium leading-relaxed">
+                {current.front}
+              </p>
+              {revealed && (
+                <p className="mt-6 border-t border-dashed border-stone-200 dark:border-stone-800 pt-6 text-center text-[15px] leading-relaxed text-stone-700 dark:text-stone-300">
+                  {current.back}
+                </p>
+              )}
+            </div>
+
+            {!revealed ? (
+              <button
+                onClick={() => setRevealed(true)}
+                className="w-full rounded-md bg-amber-600 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+              >
+                Cevabı Göster
+              </button>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {GRADES.map((g) => (
+                  <button
+                    key={g.label}
+                    disabled={pending}
+                    onClick={() => grade(g.quality)}
+                    className={`rounded-md border py-2.5 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-stone-900 disabled:opacity-50 ${g.cls}`}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <button
+                onClick={removeCurrent}
+                disabled={pending}
+                className="text-xs font-medium text-stone-400 transition-colors hover:text-rose-500 disabled:opacity-50"
+              >
+                🗑 Bu kartı desteden sil
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 p-8 text-center">
+            <p className="font-semibold">
+              🎉 &quot;{activeDeck}&quot; destesi bitti — {done} değerlendirme.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              {activeDeck && (
+                <button
+                  onClick={() => startDeck(activeDeck)}
+                  className="rounded-full bg-amber-600 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                >
+                  Baştan çalış
+                </button>
+              )}
+              <button
+                onClick={exitDeck}
+                className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
+              >
+                Destelere dön
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }

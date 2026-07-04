@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addOwnArticle } from "./actions";
 
 const inputCls =
-  "w-full rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-lime-500";
+  "w-full rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
 
 interface Fields {
   title: string;
@@ -111,8 +111,8 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
   return (
     <div className="space-y-3">
       {/* DOI auto-fill row */}
-      <div className="rounded-xl border border-lime-500/30 bg-lime-400/5 p-3">
-        <label className="mb-1.5 block text-xs font-bold italic text-lime-700 dark:text-lime-400">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-400/5 p-3">
+        <label className="mb-1.5 block text-xs font-bold italic text-amber-700 dark:text-amber-400">
           DOI / PubMed ile otomatik doldur
         </label>
         <div className="flex gap-2">
@@ -132,7 +132,7 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
             type="button"
             onClick={autofill}
             disabled={fetching}
-            className="shrink-0 rounded-md bg-lime-500 px-4 py-2 text-xs font-bold text-stone-900 transition-colors hover:bg-lime-400 disabled:opacity-50"
+            className="shrink-0 rounded-md bg-amber-500 px-4 py-2 text-xs font-bold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
           >
             {fetching ? "Getiriliyor…" : "Doldur"}
           </button>
@@ -192,7 +192,7 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
           type="button"
           onClick={handleSubmit}
           disabled={pending}
-          className="rounded-full bg-lime-400 px-5 py-2 text-xs font-bold text-stone-900 transition-colors hover:bg-lime-300 disabled:opacity-50"
+          className="rounded-full bg-amber-400 px-5 py-2 text-xs font-bold text-stone-900 transition-colors hover:bg-amber-300 disabled:opacity-50"
         >
           {pending ? "Kaydediliyor…" : "Kaydet (Notlarım'a)"}
         </button>
