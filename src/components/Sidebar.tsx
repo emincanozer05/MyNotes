@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/flashcards", label: "Flashcard", icon: "▤" },
   { href: "/voice", label: "Ses Notu", icon: "♪" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
+  { href: "/courses", label: "Kurslar / Eğitimler", icon: "🎓" },
   { href: "/insights", label: "Bilgi Derinliği", icon: "◔" },
   { href: "/backup", label: "Yedekleme", icon: "💾" },
 ];
