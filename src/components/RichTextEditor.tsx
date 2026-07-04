@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const FONTS = [
   { label: "Varsayılan", value: "" },
@@ -49,10 +48,16 @@ function ToolBtn({
   );
 }
 
+type SaveState = "idle" | "saving" | "saved" | "error";
+
 /**
- * Reusable rich-text editor (book + article summaries).
- * Supports formatting, image upload/URL, image paste, and Notion-style
- * click-and-drag image resizing.
+ * Reusable rich-text editor (book / course / article notes).
+ *
+ * Content is managed imperatively (innerHTML set once on mount) so React
+ * re-renders never wipe what the user typed or the images they inserted.
+ * Auto-saves (debounced) while typing, on blur, and flushes on unmount.
+ * Images can be selected (overlay with resize handle + preset widths +
+ * explicit delete) — clicking an image never deletes it.
  */
 export function RichTextEditor({
   initialHtml,
@@ -67,13 +72,22 @@ export function RichTextEditor({
   accent?: Accent;
   saveLabel?: string;
 }) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [pending, startTransition] = useTransition();
+
+  const [saveState, setSaveState] = useState<SaveState>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-save bookkeeping (refs so handlers always see the latest values).
+  const latestHtmlRef = useRef(initialHtml);
+  const lastSavedRef = useRef(initialHtml);
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Currently selected image (for resizing) + overlay geometry.
   const selectedImg = useRef<HTMLImageElement | null>(null);
@@ -85,8 +99,58 @@ export function RichTextEditor({
   } | null>(null);
 
   const ringCls = accent === "lime" ? "ring-lime-500" : "ring-amber-500";
-  const btnCls = accent === "lime" ? "bg-lime-400 text-stone-900 hover:bg-lime-300" : "btn-gradient text-white";
+  const handleColor = accent === "lime" ? "#84cc16" : "#f59e0b";
 
+  // ---- Content persistence (imperative, mount-only) --------------------
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== initialHtml) {
+      ref.current.innerHTML = initialHtml;
+    }
+    latestHtmlRef.current = initialHtml;
+    lastSavedRef.current = initialHtml;
+    // Only on mount; later prop changes must not wipe user edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const doSave = useCallback(async () => {
+    const html = ref.current?.innerHTML ?? latestHtmlRef.current;
+    latestHtmlRef.current = html;
+    if (html === lastSavedRef.current) return;
+    setSaveState("saving");
+    setError(null);
+    const res = await onSaveRef.current(html);
+    if (res?.error) {
+      setSaveState("error");
+      setError(res.error);
+    } else {
+      lastSavedRef.current = html;
+      setSaveState("saved");
+      setSavedAt(new Date().toLocaleTimeString("tr-TR"));
+    }
+  }, []);
+
+  const scheduleSave = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => void doSave(), 900);
+  }, [doSave]);
+
+  function handleInput() {
+    latestHtmlRef.current = ref.current?.innerHTML ?? "";
+    setSaveState("saving");
+    scheduleSave();
+  }
+
+  // Flush the pending save when leaving (e.g. switching title tabs).
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (latestHtmlRef.current !== lastSavedRef.current) {
+        void onSaveRef.current(latestHtmlRef.current);
+      }
+    };
+  }, []);
+
+  // ---- Formatting ------------------------------------------------------
   function exec(command: string, value?: string) {
     ref.current?.focus();
     try {
@@ -95,8 +159,10 @@ export function RichTextEditor({
       /* not all browsers support styleWithCSS */
     }
     document.execCommand(command, false, value);
+    handleInput();
   }
 
+  // ---- Images ----------------------------------------------------------
   const measure = useCallback(() => {
     const img = selectedImg.current;
     const container = containerRef.current;
@@ -123,6 +189,7 @@ export function RichTextEditor({
   function insertImageFromDataUrl(dataUrl: string) {
     ref.current?.focus();
     document.execCommand("insertImage", false, dataUrl);
+    handleInput();
   }
 
   function insertImageFromFile(file: File) {
@@ -133,11 +200,11 @@ export function RichTextEditor({
 
   function insertImageFromUrl() {
     const url = window.prompt("Görsel URL'si:");
-    if (url) exec("insertImage", url);
+    if (url) {
+      exec("insertImage", url);
+    }
   }
 
-  // Paste handler: grab image files off the clipboard (screenshots, copied
-  // images) and inline them as data URLs, like Notion.
   function handlePaste(e: React.ClipboardEvent) {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -156,10 +223,20 @@ export function RichTextEditor({
   function handleEditorClick(e: React.MouseEvent) {
     const t = e.target as HTMLElement;
     if (t.tagName === "IMG") {
+      // Select for resizing; never delete on click.
+      e.preventDefault();
       selectImage(t as HTMLImageElement);
     } else {
       selectImage(null);
     }
+  }
+
+  function deleteSelectedImage() {
+    const img = selectedImg.current;
+    if (!img) return;
+    img.remove();
+    selectImage(null);
+    handleInput();
   }
 
   // Drag the bottom-right handle to resize the selected image.
@@ -179,11 +256,11 @@ export function RichTextEditor({
       img!.style.height = "auto";
       measure();
     }
-    function onUp(ev: PointerEvent) {
+    function onUp() {
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      void ev;
+      handleInput();
     }
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -195,6 +272,7 @@ export function RichTextEditor({
     img.style.width = `${pct}%`;
     img.style.height = "auto";
     measure();
+    handleInput();
   }
 
   // Keep the overlay aligned while the editor scrolls or the window resizes.
@@ -210,21 +288,20 @@ export function RichTextEditor({
     };
   }, [box, measure]);
 
-  function handleSave() {
-    setError(null);
-    const html = ref.current?.innerHTML ?? "";
-    startTransition(async () => {
-      const res = await onSave(html);
-      if (res?.error) {
-        setError(res.error);
-      } else {
-        setSavedAt(new Date().toLocaleTimeString("tr-TR"));
-        // Refresh so server-rendered views of the summary (e.g. "Özeti oku")
-        // reflect what was just saved.
-        router.refresh();
-      }
-    });
-  }
+  const statusEl =
+    saveState === "saving" ? (
+      <span className="text-xs text-stone-400">Kaydediliyor…</span>
+    ) : saveState === "error" ? (
+      <span className="text-xs text-rose-600 dark:text-rose-400">
+        {error ?? "Kaydedilemedi"}
+      </span>
+    ) : saveState === "saved" && savedAt ? (
+      <span className="text-xs text-emerald-600 dark:text-emerald-400">
+        ✓ Otomatik kaydedildi · {savedAt}
+      </span>
+    ) : (
+      <span className="text-xs text-stone-400">Değişiklikler otomatik kaydedilir</span>
+    );
 
   return (
     <div className="glass-card rounded-2xl p-4">
@@ -343,10 +420,11 @@ export function RichTextEditor({
           contentEditable
           suppressContentEditableWarning
           data-placeholder={placeholder}
+          onInput={handleInput}
+          onBlur={() => void doSave()}
           onPaste={handlePaste}
           onClick={handleEditorClick}
-          className={`rte mt-3 text-[15px] focus:outline-none focus:ring-2 ${ringCls} rounded-lg`}
-          dangerouslySetInnerHTML={{ __html: initialHtml }}
+          className={`rte mt-3 rounded-lg text-[15px] focus:outline-none focus:ring-2 ${ringCls}`}
         />
 
         {box && (
@@ -356,9 +434,9 @@ export function RichTextEditor({
               className={`pointer-events-none absolute rounded ring-2 ${ringCls}`}
               style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
             />
-            {/* preset size chips */}
+            {/* toolbar above image: preset widths + delete */}
             <div
-              className="absolute z-10 flex gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-1.5 py-1 shadow-md"
+              className="absolute z-10 flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-1.5 py-1 shadow-md"
               style={{ left: box.left, top: Math.max(0, box.top - 34) }}
               onMouseDown={(e) => e.preventDefault()}
             >
@@ -372,15 +450,24 @@ export function RichTextEditor({
                   {p}%
                 </button>
               ))}
+              <span className="mx-0.5 h-3 w-px bg-[var(--border)]" />
+              <button
+                type="button"
+                onClick={deleteSelectedImage}
+                title="Görseli sil"
+                className="rounded px-1 text-[11px] text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
+              >
+                🗑
+              </button>
             </div>
             {/* drag handle (bottom-right) */}
             <div
               onPointerDown={startResize}
-              className={`absolute z-10 h-3.5 w-3.5 cursor-nwse-resize rounded-full border-2 border-white bg-${accent}-500 shadow`}
+              className="absolute z-10 h-3.5 w-3.5 cursor-nwse-resize rounded-full border-2 border-white shadow"
               style={{
                 left: box.left + box.width - 7,
                 top: box.top + box.height - 7,
-                background: accent === "lime" ? "#84cc16" : "#f59e0b",
+                background: handleColor,
               }}
             />
           </>
@@ -390,22 +477,14 @@ export function RichTextEditor({
       <div className="mt-3 flex items-center gap-3 border-t border-[var(--border)] pt-3">
         <button
           type="button"
-          onClick={handleSave}
-          disabled={pending}
-          className={`rounded-full px-5 py-2 text-sm font-semibold disabled:opacity-60 ${btnCls}`}
+          onClick={() => void doSave()}
+          className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm font-semibold transition-colors hover:bg-stone-500/10"
         >
-          {pending ? "Kaydediliyor…" : saveLabel}
+          {saveLabel}
         </button>
-        {savedAt && !error && (
-          <span className="text-xs text-emerald-600 dark:text-emerald-400">
-            ✓ {savedAt}&apos;de kaydedildi
-          </span>
-        )}
-        {error && (
-          <span className="text-xs text-rose-600 dark:text-rose-400">{error}</span>
-        )}
+        {statusEl}
         <span className="ml-auto hidden text-[11px] text-stone-400 sm:block">
-          Görsele tıkla → köşeden sürükleyerek boyutlandır
+          Görsele tıkla → köşeden sürükle veya %25–100 · 🗑 sil
         </span>
       </div>
     </div>
