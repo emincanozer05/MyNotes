@@ -42,19 +42,13 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 active
-                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                  : "text-stone-600 hover:bg-stone-500/10 dark:text-stone-400"
+                  ? "bg-[var(--surface-2)] font-semibold text-[var(--foreground)]"
+                  : "font-medium text-[var(--muted)] hover:bg-[var(--surface-2)]"
               }`}
             >
-              {active && (
-                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-amber-500" />
-              )}
-              <span
-                aria-hidden
-                className={`w-4 text-center ${active ? "text-rose-500" : ""}`}
-              >
+              <span aria-hidden className="w-4 text-center opacity-80">
                 {item.icon}
               </span>
               {item.label}

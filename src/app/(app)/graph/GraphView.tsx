@@ -14,10 +14,10 @@ export interface GraphEdge {
   target: string;
 }
 
-// Categorical identity colors (validated palette): note=blue, tag=aqua, source=yellow
+// Categorical identity colors (Notion-toned): note=blue, tag=green, source=orange
 const COLORS = {
-  light: { note: "#2a78d6", tag: "#1baf7a", source: "#eda100", label: "#52514e", edge: "#e1e0d9", halo: "#fcfcfb" },
-  dark: { note: "#3987e5", tag: "#199e70", source: "#c98500", label: "#c3c2b7", edge: "#2c2c2a", halo: "#1a1a19" },
+  light: { note: "#337ea9", tag: "#448361", source: "#d9730d", label: "#787774", edge: "#e9e9e7", halo: "#ffffff" },
+  dark: { note: "#529cca", tag: "#4f9768", source: "#e0791a", label: "#9b9a97", edge: "#32322f", halo: "#202020" },
 };
 
 const RADIUS = { note: 7, tag: 5, source: 6 };
@@ -241,7 +241,7 @@ export function GraphView({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEd
   return (
     <canvas
       ref={canvasRef}
-      className="w-full rounded-lg border border-stone-200 dark:border-stone-800 bg-[#fcfcfb] dark:bg-[#1a1a19]"
+      className="w-full rounded-xl bg-[var(--surface-2)]"
     />
   );
 }
