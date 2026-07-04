@@ -15,10 +15,13 @@ export async function createFlashcard(formData: FormData) {
   const back = String(formData.get("back") ?? "").trim();
   if (!front || !back) return;
 
+  const deck = String(formData.get("deck") ?? "").trim() || "Genel";
+
   await supabase.from("flashcards").insert({
     user_id: user.id,
     front,
     back,
+    deck,
     note_id: String(formData.get("note_id") ?? "") || null,
   });
 

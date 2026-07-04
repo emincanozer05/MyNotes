@@ -1,15 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { ReviewDeck } from "./ReviewDeck";
+import { StudyDecks } from "./StudyDecks";
 import { createFlashcard, deleteFlashcard } from "./actions";
 
 const inputCls =
   "w-full rounded-md border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
 
+interface CardRow {
+  id: string;
+  front: string;
+  back: string;
+  deck?: string | null;
+  due_at: string;
+  interval_days: number;
+  repetitions: number;
+}
+
 export default async function FlashcardsPage() {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
-  const [{ data: due }, { data: all }, { data: notes }] = await Promise.all([
+  // Select "*" so a missing `deck` column (pre-migration) doesn't error.
+  const [{ data: due }, { data: allData }, { data: notes }] = await Promise.all([
     supabase
       .from("flashcards")
       .select("id, front, back")
@@ -18,11 +30,23 @@ export default async function FlashcardsPage() {
       .limit(50),
     supabase
       .from("flashcards")
-      .select("id, front, due_at, interval_days, repetitions")
+      .select("*")
       .order("due_at")
-      .limit(200),
+      .limit(500),
     supabase.from("notes").select("id, title").order("title"),
   ]);
+
+  const all = (allData ?? []) as CardRow[];
+  const studyCards = all.map((c) => ({
+    id: c.id,
+    front: c.front,
+    back: c.back,
+    deck: c.deck || "Genel",
+    due_at: c.due_at,
+  }));
+  const deckNames = [...new Set(studyCards.map((c) => c.deck))].sort((a, b) =>
+    a.localeCompare(b, "tr"),
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -35,18 +59,51 @@ export default async function FlashcardsPage() {
       </div>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">
+        <h2 className="mb-1 text-lg font-semibold">Kartlara çalış</h2>
+        <p className="mb-3 text-sm text-stone-500">
+          Bir deste seçin ve AnkiPro gibi hazırladığınız kartların tümüne
+          çalışın.
+        </p>
+        <StudyDecks cards={studyCards} />
+      </section>
+
+      <section>
+        <h2 className="mb-1 text-lg font-semibold">
           Bugünün tekrarı{" "}
           <span className="text-sm font-normal text-stone-500">
             ({due?.length ?? 0} kart)
           </span>
         </h2>
+        <p className="mb-3 text-sm text-stone-500">
+          Tüm destelerden tekrarı gelen kartlar (SM-2).
+        </p>
         <ReviewDeck cards={due ?? []} />
       </section>
 
       <section className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
         <h2 className="text-lg font-semibold">Yeni kart</h2>
         <form action={createFlashcard} className="mt-3 space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="fc-deck" className="text-sm font-medium">
+              Deste
+            </label>
+            <input
+              id="fc-deck"
+              name="deck"
+              list="deck-options"
+              defaultValue="Genel"
+              placeholder="Örn: Enerji Sistemleri, Biyomekanik…"
+              className={inputCls}
+            />
+            <datalist id="deck-options">
+              {deckNames.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+            <p className="text-xs text-stone-500">
+              Yeni bir deste adı yazabilir ya da mevcut bir desteyi seçebilirsiniz.
+            </p>
+          </div>
           <div className="space-y-1">
             <label htmlFor="fc-front" className="text-sm font-medium">
               Ön yüz (soru)
@@ -96,10 +153,10 @@ export default async function FlashcardsPage() {
         <h2 className="mb-3 text-lg font-semibold">
           Tüm kartlar{" "}
           <span className="text-sm font-normal text-stone-500">
-            ({all?.length ?? 0})
+            ({all.length})
           </span>
         </h2>
-        {all && all.length > 0 ? (
+        {all.length > 0 ? (
           <ul className="space-y-2">
             {all.map((c) => {
               const dueDate = new Date(c.due_at);
@@ -110,8 +167,13 @@ export default async function FlashcardsPage() {
                   className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 px-4 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{c.front}</p>
-                    <p className="text-xs text-stone-500">
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        {c.deck || "Genel"}
+                      </span>
+                      <p className="truncate text-sm font-medium">{c.front}</p>
+                    </div>
+                    <p className="mt-0.5 text-xs text-stone-500">
                       {isDue
                         ? "Tekrarı geldi"
                         : `Sonraki tekrar: ${dueDate.toLocaleDateString("tr-TR")}`}{" "}

@@ -75,7 +75,8 @@ export async function addOwnArticle(formData: FormData) {
     doi,
     url: doi ? `https://doi.org/${doi}` : null,
     abstract,
-    metadata: { topic, manual: true },
+    // mynote: own-added articles land in the "Notlarım" tab (not "Kaydedilenler").
+    metadata: { topic, manual: true, mynote: true },
   });
 
   if (error) {
@@ -89,6 +90,36 @@ export async function addOwnArticle(formData: FormData) {
 
   revalidatePath("/library");
   return { error: null };
+}
+
+/** Saves the rich-text (HTML) summary written for an article. */
+export async function saveArticleSummary(id: string, html: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    summary: html,
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "article");
+
+  revalidatePath(`/library/${id}`);
+  revalidatePath("/library");
+  return { error: error?.message ?? null };
 }
 
 export async function deleteArticle(formData: FormData) {

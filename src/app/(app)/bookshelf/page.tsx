@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { addBook, deleteBook } from "./actions";
-
-const inputCls =
-  "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
+import { deleteBook } from "./actions";
+import { AddBookModal } from "./AddBookModal";
 
 const SPINE_COLORS = [
   "from-amber-600 to-orange-700",
@@ -49,146 +47,101 @@ export default async function BookshelfPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div className="animate-in">
-        <h1 className="text-4xl font-extrabold tracking-tight">
-          <span className="gradient-text">Kitap Rafı</span>
-        </h1>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-          Kapak görselleriyle dijital kütüphaneniz. Her kitap için zengin metin
-          özeti yazın, görsel ekleyin.
-        </p>
+    <div className="mx-auto max-w-5xl space-y-8">
+      <div className="flex items-start justify-between gap-4 animate-in">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            <span className="gradient-text">Kitap Rafı</span>
+          </h1>
+          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+            Kapak görselleriyle dijital kütüphaneniz. Her kitap için zengin metin
+            özeti yazın, görsel ekleyin.
+          </p>
+        </div>
+        <AddBookModal />
       </div>
 
       {books.length > 0 ? (
-        <div className="stagger space-y-3">
+        <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {books.map((b) => {
             const noteCount = countBySource.get(b.id) ?? 0;
             const hasSummary = Boolean(b.metadata?.summary?.trim());
             return (
               <div
                 key={b.id}
-                className="glass-card accent-bar group flex gap-4 rounded-2xl p-3"
+                className="glass-card group relative flex flex-col overflow-hidden rounded-2xl p-2.5"
               >
-                <Link href={`/bookshelf/${b.id}`} className="shrink-0">
+                <form action={deleteBook} className="absolute right-1.5 top-1.5 z-10">
+                  <input type="hidden" name="id" value={b.id} />
+                  <button
+                    aria-label="Kitabı sil"
+                    title="Sil"
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/30 text-sm leading-none text-white/80 opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                  >
+                    ×
+                  </button>
+                </form>
+
+                <Link href={`/bookshelf/${b.id}`} className="block">
                   {b.cover_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={b.cover_url}
                       alt={`${b.title} kapağı`}
-                      className="h-28 w-20 rounded-md border border-[var(--border)] object-cover shadow-md transition-transform group-hover:scale-105"
+                      className="aspect-[2/3] w-full rounded-lg border border-[var(--border)] object-cover shadow-md transition-transform group-hover:scale-[1.03]"
                     />
                   ) : (
                     <div
-                      className={`flex h-28 w-20 items-center justify-center rounded-md bg-gradient-to-br p-2 text-center shadow-md transition-transform group-hover:scale-105 ${spineColor(b.title)}`}
+                      className={`flex aspect-[2/3] w-full items-center justify-center rounded-lg bg-gradient-to-br p-2 text-center shadow-md transition-transform group-hover:scale-[1.03] ${spineColor(b.title)}`}
                     >
-                      <span className="line-clamp-4 text-[10px] font-semibold leading-tight text-white">
+                      <span className="line-clamp-5 text-[11px] font-semibold leading-tight text-white">
                         {b.title}
                       </span>
                     </div>
                   )}
                 </Link>
 
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div className="mt-2 flex min-w-0 flex-1 flex-col">
                   <Link href={`/bookshelf/${b.id}`} className="min-w-0">
-                    <h3 className="font-bold leading-snug hover:text-amber-600">
+                    <h3 className="line-clamp-2 text-xs font-bold leading-snug hover:text-amber-600">
                       {b.title}
                     </h3>
-                    <p className="mt-0.5 text-sm text-stone-500">
+                    <p className="mt-0.5 line-clamp-1 text-[11px] text-stone-500">
                       {b.authors.join(", ")}
                       {b.year ? ` · ${b.year}` : ""}
                     </p>
                   </Link>
-                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 text-xs">
+                  <div className="mt-auto flex flex-wrap items-center gap-1 pt-1.5">
                     <span
-                      className={`rounded-full px-2 py-0.5 font-medium ${
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                         hasSummary
                           ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                           : "bg-stone-500/10 text-stone-500"
                       }`}
                     >
-                      {hasSummary ? "✓ Özet var" : "Özet yok"}
+                      {hasSummary ? "✓ Özet" : "Özet yok"}
                     </span>
                     {noteCount > 0 && (
                       <Link
                         href={`/notes?source=${b.id}`}
-                        className="rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
+                        className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
                       >
                         {noteCount} not
                       </Link>
                     )}
-                    <Link
-                      href={`/bookshelf/${b.id}`}
-                      className="text-amber-700 hover:underline dark:text-amber-500"
-                    >
-                      Özeti düzenle →
-                    </Link>
                   </div>
                 </div>
-
-                <form action={deleteBook} className="shrink-0">
-                  <input type="hidden" name="id" value={b.id} />
-                  <button className="text-xs text-stone-400 opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                    Sil
-                  </button>
-                </form>
               </div>
             );
           })}
         </div>
       ) : (
         <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
-          Rafınız henüz boş. Aşağıdan ilk kitabınızı ekleyin.
+          Rafınız henüz boş. Sağ üstteki{" "}
+          <b className="text-amber-600">+ Kitap Ekle</b> ile ilk kitabınızı
+          ekleyin.
         </p>
       )}
-
-      <section className="glass-card rounded-2xl p-5">
-        <h2 className="text-lg font-bold">Kitap ekle</h2>
-        <p className="mb-3 mt-1 text-xs text-stone-500">
-          Kapak, kitap adından otomatik bulunur.
-        </p>
-        <form action={addBook} className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label htmlFor="bk-title" className="text-sm font-medium">
-              Kitap adı *
-            </label>
-            <input id="bk-title" name="title" required className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="bk-authors" className="text-sm font-medium">
-              Yazar(lar) *{" "}
-              <span className="font-normal text-stone-400">(virgülle)</span>
-            </label>
-            <input id="bk-authors" name="authors" required className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="bk-year" className="text-sm font-medium">
-              Yıl
-            </label>
-            <input id="bk-year" name="year" type="number" className={inputCls} />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="bk-cover" className="text-sm font-medium">
-              Kapak URL{" "}
-              <span className="font-normal text-stone-400">
-                (isteğe bağlı — boşsa otomatik)
-              </span>
-            </label>
-            <input
-              id="bk-cover"
-              name="cover_url"
-              type="url"
-              placeholder="https://…"
-              className={inputCls}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <button className="btn-gradient rounded-full px-5 py-2 text-sm font-semibold">
-              Rafa Ekle
-            </button>
-          </div>
-        </form>
-      </section>
     </div>
   );
 }
