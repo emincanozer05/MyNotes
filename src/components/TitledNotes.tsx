@@ -11,6 +11,21 @@ function newId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/** Moves the item with id `fromId` to the position of `toId`. */
+function reorder(
+  list: TitledNote[],
+  fromId: string,
+  toId: string,
+): TitledNote[] {
+  const from = list.findIndex((n) => n.id === fromId);
+  const to = list.findIndex((n) => n.id === toId);
+  if (from < 0 || to < 0 || from === to) return list;
+  const copy = [...list];
+  const [moved] = copy.splice(from, 1);
+  copy.splice(to, 0, moved);
+  return copy;
+}
+
 /**
  * Multiple titled notes for a single source: a row of title chips + an
  * "Başlık Ekle" button, with each title keeping its own rich-text note.
@@ -29,8 +44,22 @@ export function TitledNotes({
   const [activeId, setActiveId] = useState<string | null>(
     initialNotes[0]?.id ?? null,
   );
+  const [dragId, setDragId] = useState<string | null>(null);
 
   const active = notes.find((n) => n.id === activeId) ?? null;
+
+  function handleDragEnter(id: string) {
+    if (dragId && dragId !== id) {
+      setNotes((prev) => reorder(prev, dragId, id));
+    }
+  }
+
+  async function handleDragEnd() {
+    const dragged = dragId;
+    setDragId(null);
+    // Persist the new order.
+    if (dragged) await saveSourceNotes(sourceId, notes);
+  }
 
   async function addTitle() {
     const title = window.prompt("Başlık:")?.trim();
@@ -85,7 +114,7 @@ export function TitledNotes({
         </Link>
       </div>
 
-      {/* Title chips */}
+      {/* Title chips (drag to reorder) */}
       {notes.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {notes.map((n) => {
@@ -93,18 +122,32 @@ export function TitledNotes({
             return (
               <span
                 key={n.id}
-                className={`inline-flex items-center gap-1 rounded-full border px-1 py-0.5 text-xs font-semibold ${
+                draggable
+                onDragStart={() => setDragId(n.id)}
+                onDragEnter={() => handleDragEnter(n.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnd={handleDragEnd}
+                className={`inline-flex cursor-grab items-center gap-1 rounded-full border px-1 py-0.5 text-xs font-semibold active:cursor-grabbing ${
+                  dragId === n.id ? "opacity-50" : ""
+                } ${
                   isActive
                     ? "border-amber-500/60 bg-amber-400/10 text-amber-700 dark:text-amber-300"
                     : "border-[var(--border)] text-stone-500"
                 }`}
               >
+                <span
+                  aria-hidden
+                  title="Sürükleyerek sırala"
+                  className="select-none pl-1 text-stone-400"
+                >
+                  ⠿
+                </span>
                 <button
                   type="button"
                   onClick={() => setActiveId(n.id)}
                   onDoubleClick={() => renameTitle(n.id)}
                   title="Seç (çift tıkla: yeniden adlandır)"
-                  className="px-2 py-0.5"
+                  className="py-0.5 pr-1"
                 >
                   {n.title}
                 </button>
