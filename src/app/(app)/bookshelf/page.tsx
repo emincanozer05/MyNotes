@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { deleteBook } from "./actions";
 import { AddBookModal } from "./AddBookModal";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 const SPINE_COLORS = [
   "from-amber-600 to-orange-700",
@@ -80,13 +81,14 @@ export default async function BookshelfPage() {
               >
                 <form action={deleteBook} className="absolute right-1.5 top-1.5 z-10">
                   <input type="hidden" name="id" value={b.id} />
-                  <button
-                    aria-label="Kitabı sil"
+                  <ConfirmSubmit
+                    ariaLabel="Kitabı sil"
                     title="Sil"
+                    message={`"${b.title}" kitabı ve notları silinsin mi?`}
                     className="flex h-6 w-6 items-center justify-center rounded-full bg-black/30 text-sm leading-none text-white/80 opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
-                  </button>
+                  </ConfirmSubmit>
                 </form>
 
                 <Link href={`/bookshelf/${b.id}`} className="block">

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 
 export interface TitledNote {
   id: string;
@@ -16,9 +16,7 @@ export interface TitledNote {
  */
 export async function saveSourceNotes(id: string, notes: TitledNote[]) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { data: existing } = await supabase

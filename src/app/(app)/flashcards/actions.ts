@@ -1,14 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { sm2Review, type Sm2Quality } from "@/lib/sm2";
 
 export async function createFlashcard(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return;
 
   const front = String(formData.get("front") ?? "").trim();

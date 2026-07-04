@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { deleteHighlight } from "../notes/actions";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 interface HighlightRow {
   id: string;
@@ -71,9 +72,12 @@ export default async function HighlightsPage() {
                 </p>
                 <form action={deleteHighlight}>
                   <input type="hidden" name="id" value={h.id} />
-                  <button className="text-xs text-stone-400 hover:text-red-600">
+                  <ConfirmSubmit
+                    message="Bu alıntı kaldırılsın mı?"
+                    className="text-xs text-stone-400 hover:text-red-600"
+                  >
                     Kaldır
-                  </button>
+                  </ConfirmSubmit>
                 </form>
               </div>
             </div>

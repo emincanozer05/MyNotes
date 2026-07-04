@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { BackButton } from "@/components/BackButton";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The proxy middleware already validated/refreshed auth for this request,
+  // so read the user from the session cookie (no extra network round-trip).
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
 
   if (!user) redirect("/login");
 

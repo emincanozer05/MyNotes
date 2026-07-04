@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteCourse } from "./actions";
 import { AddCourseModal } from "./AddCourseModal";
 import { STATUS_META, normalizeStatus } from "./status";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 interface CourseRow {
   id: string;
@@ -69,13 +70,14 @@ export default async function CoursesPage() {
                   className="absolute right-2 top-2 z-10"
                 >
                   <input type="hidden" name="id" value={c.id} />
-                  <button
-                    aria-label="Sil"
+                  <ConfirmSubmit
+                    ariaLabel="Sil"
                     title="Sil"
+                    message={`"${c.title}" silinsin mi?`}
                     className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-sm leading-none text-white/80 opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
-                  </button>
+                  </ConfirmSubmit>
                 </form>
 
                 <Link href={`/courses/${c.id}`} className="block">

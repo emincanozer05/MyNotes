@@ -1,15 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
 
 /** Saves one of the curated RCT articles to the user's library (idempotent). */
 export async function saveCuratedArticle(pmid: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const article = CURATED_ARTICLES.find((a) => a.pmid === pmid);
@@ -57,9 +55,7 @@ export interface FetchedArticleInput {
 /** Saves a live-fetched PubMed article (from "Makaleleri Getir"). */
 export async function saveFetchedArticle(article: FetchedArticleInput) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   if (!article?.title) return { error: "Makale bilgisi eksik." };
@@ -99,9 +95,7 @@ export async function saveFetchedArticle(article: FetchedArticleInput) {
 /** Removes a curated article that was saved (undo of saveCuratedArticle). */
 export async function unsaveCuratedArticle(pmid: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { error } = await supabase
@@ -118,9 +112,7 @@ export async function unsaveCuratedArticle(pmid: string) {
 /** Updates (or sets) the topic of a saved / own article. */
 export async function updateArticleTopic(id: string, topic: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { data: existing } = await supabase
@@ -148,9 +140,7 @@ export async function updateArticleTopic(id: string, topic: string) {
 /** Adds an article entered manually by the user (own reading list). */
 export async function addOwnArticle(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const title = String(formData.get("title") ?? "").trim();
@@ -197,9 +187,7 @@ export async function addOwnArticle(formData: FormData) {
 /** Saves the rich-text (HTML) summary written for an article. */
 export async function saveArticleSummary(id: string, html: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return { error: "Oturum bulunamadı." };
 
   const { data: existing } = await supabase

@@ -521,7 +521,13 @@ export function LiteratureTabs({
                             </div>
                             <form action={deleteArticle}>
                               <input type="hidden" name="id" value={a.id} />
-                              <button className="shrink-0 text-xs text-stone-400 hover:text-rose-500">
+                              <button
+                                onClick={(e) => {
+                                  if (!window.confirm("Bu makale silinsin mi?"))
+                                    e.preventDefault();
+                                }}
+                                className="shrink-0 text-xs text-stone-400 hover:text-rose-500"
+                              >
                                 Sil
                               </button>
                             </form>
