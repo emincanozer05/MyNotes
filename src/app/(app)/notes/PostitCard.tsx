@@ -22,6 +22,13 @@ export interface PostitData {
 export function PostitCard({ note }: { note: PostitData }) {
   const router = useRouter();
 
+  // Content may be rich HTML; show a clean text preview on the card.
+  const preview = note.content
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
   function open() {
     router.push(`/notes/${note.id}`);
   }
@@ -59,9 +66,9 @@ export function PostitCard({ note }: { note: PostitData }) {
       <h3 className="pl-3.5 pr-5 text-[13px] font-bold leading-snug line-clamp-2">
         {note.title}
       </h3>
-      {note.content && (
+      {preview && (
         <p className="mt-1.5 flex-1 whitespace-pre-wrap text-[11px] leading-snug line-clamp-4 opacity-90">
-          {note.content.slice(0, 160)}
+          {preview.slice(0, 160)}
         </p>
       )}
       <div className="mt-2 space-y-1">

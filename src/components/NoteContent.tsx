@@ -3,9 +3,40 @@ import type { ReactNode } from "react";
 
 const INLINE_RE = /\[\[([^\]]+)\]\]|(^|[\s(“"'])#([\p{L}\p{N}_-]+)/gu;
 
+function looksLikeHtml(s: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(s);
+}
+
+/** Turns [[links]] / #tags inside a plain text run into anchor HTML. */
+function linkifyToHtml(text: string, linkMap: Map<string, string>): string {
+  return text.replace(INLINE_RE, (_m, wiki, pre, tag) => {
+    if (wiki !== undefined) {
+      const title = String(wiki).trim();
+      const id = linkMap.get(title.toLocaleLowerCase("tr"));
+      return id
+        ? `<a href="/notes/${id}" class="rounded bg-amber-100 dark:bg-amber-950 px-1 font-medium text-amber-800 dark:text-amber-300 hover:underline">${title}</a>`
+        : `<span title="Bu başlıkta bir not yok" class="rounded bg-stone-100 dark:bg-stone-800 px-1 text-stone-500">${title}</span>`;
+    }
+    const preChar = pre ?? "";
+    const t = String(tag);
+    const href = `/notes?tag=${encodeURIComponent(t.toLocaleLowerCase("tr"))}`;
+    return `${preChar}<a href="${href}" class="font-medium text-sky-700 dark:text-sky-400 hover:underline">#${t}</a>`;
+  });
+}
+
+/** Linkifies text nodes only, leaving HTML tags (and image data URLs) intact. */
+function renderRichHtml(content: string, linkMap: Map<string, string>): string {
+  return content.replace(/(<[^>]+>)|([^<]+)/g, (_m, tag, text) =>
+    tag ? tag : linkifyToHtml(text, linkMap),
+  );
+}
+
 /**
  * Renders note content with [[wiki links]] resolved to note pages and
  * #hashtags linked to the tag-filtered note list.
+ *
+ * Rich notes are stored as HTML (formatting + images); legacy notes are plain
+ * text. Both are supported here.
  */
 export function NoteContent({
   content,
@@ -15,6 +46,16 @@ export function NoteContent({
   /** lowercase note title -> note id */
   linkMap: Map<string, string>;
 }) {
+  if (looksLikeHtml(content)) {
+    return (
+      <div
+        className="note-html text-[15px] leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: renderRichHtml(content, linkMap) }}
+      />
+    );
+  }
+
+  // ---- Legacy plain-text path -----------------------------------------
   const nodes: ReactNode[] = [];
   let cursor = 0;
   let key = 0;

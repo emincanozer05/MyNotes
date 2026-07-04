@@ -62,12 +62,15 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 export function RichTextEditor({
   initialHtml,
   onSave,
+  onChange,
   placeholder = "Buraya yazın… Biçimlendirin, görsel ekleyin.",
   accent = "amber",
   saveLabel = "Kaydet",
 }: {
   initialHtml: string;
   onSave: (html: string) => Promise<{ error?: string | null }>;
+  /** Fires on every content change (live), separate from the debounced save. */
+  onChange?: (html: string) => void;
   placeholder?: string;
   accent?: Accent;
   saveLabel?: string;
@@ -84,9 +87,11 @@ export function RichTextEditor({
   const latestHtmlRef = useRef(initialHtml);
   const lastSavedRef = useRef(initialHtml);
   const onSaveRef = useRef(onSave);
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
     onSaveRef.current = onSave;
-  }, [onSave]);
+    onChangeRef.current = onChange;
+  }, [onSave, onChange]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Currently selected image (for resizing) + overlay geometry.
@@ -135,7 +140,9 @@ export function RichTextEditor({
   }, [doSave]);
 
   function handleInput() {
-    latestHtmlRef.current = ref.current?.innerHTML ?? "";
+    const html = ref.current?.innerHTML ?? "";
+    latestHtmlRef.current = html;
+    onChangeRef.current?.(html);
     setSaveState("saving");
     scheduleSave();
   }
@@ -239,19 +246,24 @@ export function RichTextEditor({
     handleInput();
   }
 
-  // Drag the bottom-right handle to resize the selected image.
-  function startResize(e: React.PointerEvent) {
+  // Drag an edge/corner handle to resize the selected image (Notion-style).
+  // `anchor` is the fixed side: dragging the right/corner handle grows the
+  // width with the cursor; the left handle grows it the opposite way.
+  function startResize(e: React.PointerEvent, anchor: "left" | "right") {
     e.preventDefault();
+    e.stopPropagation();
     const img = selectedImg.current;
     const container = containerRef.current;
     if (!img || !container) return;
     const startX = e.clientX;
     const startWidth = img.getBoundingClientRect().width;
     const maxWidth = ref.current?.clientWidth ?? container.clientWidth;
+    const dir = anchor === "left" ? -1 : 1;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     function onMove(ev: PointerEvent) {
-      const next = Math.max(48, Math.min(maxWidth, startWidth + (ev.clientX - startX)));
+      const delta = (ev.clientX - startX) * dir;
+      const next = Math.max(48, Math.min(maxWidth, startWidth + delta));
       img!.style.width = `${Math.round(next)}px`;
       img!.style.height = "auto";
       measure();
@@ -460,9 +472,33 @@ export function RichTextEditor({
                 🗑
               </button>
             </div>
-            {/* drag handle (bottom-right) */}
+            {/* left edge handle */}
             <div
-              onPointerDown={startResize}
+              onPointerDown={(e) => startResize(e, "left")}
+              title="Kenardan sürükleyerek boyutlandır"
+              className="absolute z-10 flex h-9 w-3 cursor-ew-resize items-center justify-center"
+              style={{ left: box.left - 6, top: box.top + box.height / 2 - 18 }}
+            >
+              <span
+                className="h-8 w-1.5 rounded-full border border-white shadow"
+                style={{ background: handleColor }}
+              />
+            </div>
+            {/* right edge handle */}
+            <div
+              onPointerDown={(e) => startResize(e, "right")}
+              title="Kenardan sürükleyerek boyutlandır"
+              className="absolute z-10 flex h-9 w-3 cursor-ew-resize items-center justify-center"
+              style={{ left: box.left + box.width - 6, top: box.top + box.height / 2 - 18 }}
+            >
+              <span
+                className="h-8 w-1.5 rounded-full border border-white shadow"
+                style={{ background: handleColor }}
+              />
+            </div>
+            {/* corner handle (bottom-right, diagonal) */}
+            <div
+              onPointerDown={(e) => startResize(e, "right")}
               className="absolute z-10 h-3.5 w-3.5 cursor-nwse-resize rounded-full border-2 border-white shadow"
               style={{
                 left: box.left + box.width - 7,
