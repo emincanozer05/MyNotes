@@ -609,7 +609,7 @@ export function RichTextEditor({
               setFloating({ kind: "mark", top: rect.top - 42, left: rect.left, mark });
             }
           }}
-          className={`rte mt-3 rounded-lg text-[15px] focus:outline-none focus:ring-2 ${ringCls}`}
+          className="rte mt-3 rounded-lg text-[15px] focus:outline-none"
         />
 
         {box && (
