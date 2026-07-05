@@ -99,6 +99,33 @@ export async function saveBookSummary(id: string, html: string) {
   return { error: error?.message ?? null };
 }
 
+/** Saves a short free-text description shown under the book's title. */
+export async function saveBookDescription(id: string, description: string) {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    description: description.trim(),
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "book");
+
+  revalidatePath(`/bookshelf/${id}`);
+  return { error: error?.message ?? null };
+}
+
 /** Sets a book cover from an uploaded image (data URL) or a pasted URL. */
 export async function setBookCover(id: string, cover: string) {
   const supabase = await createClient();
