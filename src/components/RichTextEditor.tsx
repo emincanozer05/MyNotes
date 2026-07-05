@@ -14,6 +14,7 @@ type Accent = "amber" | "lime";
 /** Fixed text-colour choices (no full palette) for the selection toolbar. */
 const TEXT_COLORS = [
   { name: "Siyah", hex: "#111827" },
+  { name: "Beyaz", hex: "#ffffff" },
   { name: "Kırmızı", hex: "#dc2626" },
   { name: "Turuncu", hex: "#ea580c" },
   { name: "Sarı", hex: "#ca8a04" },
@@ -191,18 +192,11 @@ export function RichTextEditor({
       /* not all browsers support styleWithCSS */
     }
     document.execCommand(command, false, value);
+    // The panel is docked in the margin, so it doesn't need to follow the
+    // selection; just keep the range current for chained edits.
     const after = window.getSelection();
     if (after && after.rangeCount > 0) {
       pendingRangeRef.current = after.getRangeAt(0).cloneRange();
-      const rect = after.getRangeAt(0).getBoundingClientRect();
-      // Keep the toolbar pinned above the (possibly reflowed) selection.
-      if (rect.top || rect.left) {
-        setFloating((f) =>
-          f && f.kind === "select"
-            ? { ...f, top: rect.top - 42, left: rect.left }
-            : f,
-        );
-      }
     }
     handleInput();
   }
@@ -321,6 +315,26 @@ export function RichTextEditor({
   }
 
   // ---- Text tagging ------------------------------------------------------
+  // Dock the format toolbar in the margin beside the editor (to the right when
+  // there's room, otherwise left), vertically near the selection — so it never
+  // covers the text or jumps around horizontally as it did over the selection.
+  function panelPosition(rect: DOMRect): { top: number; left: number } {
+    const PANEL_W = 176;
+    const GAP = 10;
+    const cont = containerRef.current?.getBoundingClientRect();
+    const vw = window.innerWidth;
+    let left: number;
+    if (cont && vw - cont.right >= PANEL_W + GAP) {
+      left = cont.right + GAP;
+    } else if (cont && cont.left >= PANEL_W + GAP) {
+      left = cont.left - PANEL_W - GAP;
+    } else {
+      left = Math.max(8, Math.min(rect.left, vw - PANEL_W - 8));
+    }
+    const top = Math.max(8, Math.min(rect.top, window.innerHeight - 340));
+    return { top, left };
+  }
+
   function handleSelectionUp() {
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
@@ -330,7 +344,7 @@ export function RichTextEditor({
     const rect = range.getBoundingClientRect();
     pendingRangeRef.current = range.cloneRange();
     setPickerOpen(false);
-    setFloating({ kind: "select", top: rect.top - 42, left: rect.left, text });
+    setFloating({ kind: "select", ...panelPosition(rect), text });
   }
 
   function applyTagToSelection(tag: UserTag) {
@@ -674,7 +688,7 @@ export function RichTextEditor({
               </button>
             </div>
           ) : !pickerOpen ? (
-            <div className="flex max-w-[92vw] flex-wrap items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-1 shadow-xl">
+            <div className="flex w-44 flex-wrap items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-xl">
               {(
                 [
                   { cmd: "bold", label: <b>B</b>, title: "Kalın" },
@@ -695,7 +709,7 @@ export function RichTextEditor({
                 </button>
               ))}
 
-              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
               {(
                 [
@@ -718,7 +732,7 @@ export function RichTextEditor({
                 </button>
               ))}
 
-              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
               {(
                 [
@@ -739,7 +753,7 @@ export function RichTextEditor({
                 </button>
               ))}
 
-              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
               {(
                 [
@@ -760,7 +774,7 @@ export function RichTextEditor({
                 </button>
               ))}
 
-              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
               {TEXT_COLORS.map((c) => (
                 <button
@@ -786,7 +800,7 @@ export function RichTextEditor({
                 />
               </label>
 
-              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
               <button
                 type="button"
