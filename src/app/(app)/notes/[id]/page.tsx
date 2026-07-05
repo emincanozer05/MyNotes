@@ -30,22 +30,10 @@ export default async function NoteDetailPage({
   );
   const titleById = new Map((allNotes ?? []).map((n) => [n.id, n.title]));
 
-  const [{ data: outLinks }, { data: backLinks }, { data: tagHighlights }] =
-    await Promise.all([
-      supabase.from("note_links").select("to_note").eq("from_note", id),
-      supabase.from("note_links").select("from_note").eq("to_note", id),
-      supabase
-        .from("tag_highlights")
-        .select("id, text, created_at, tags(name, color)")
-        .eq("note_id", id)
-        .order("created_at", { ascending: false }),
-    ]);
-
-  const highlights = (tagHighlights ?? []) as unknown as {
-    id: string;
-    text: string;
-    tags: { name: string; color: string | null } | null;
-  }[];
+  const [{ data: outLinks }, { data: backLinks }] = await Promise.all([
+    supabase.from("note_links").select("to_note").eq("from_note", id),
+    supabase.from("note_links").select("from_note").eq("to_note", id),
+  ]);
 
   const tags = (note.note_tags as { tags: { name: string } | null }[])
     .map((t) => t.tags?.name)
@@ -107,7 +95,8 @@ export default async function NoteDetailPage({
         )}
         <p className="mt-4 border-t border-stone-100 dark:border-stone-900 pt-2 text-xs text-stone-400">
           İpucu: <Link href={`/notes/${id}/edit`} className="underline">Düzenle</Link>&apos;de
-          bir pasaj seçince 🏷 Etiket ekle düğmesi çıkar.
+          bir pasaj seçince 🏷 Etiket ekle düğmesi çıkar; etiketlediğin
+          metinlere göre post-it&apos;in rengi de yumuşak bir tona döner.
         </p>
       </div>
 
@@ -153,34 +142,6 @@ export default async function NoteDetailPage({
           </div>
         </div>
       ) : null}
-
-      {highlights.length > 0 && (
-        <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Bu nottaki etiketler</h2>
-            <Link
-              href="/highlights"
-              className="text-xs text-amber-700 dark:text-amber-400 hover:underline"
-            >
-              Tüm Etiketler →
-            </Link>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {highlights.map((h) => (
-              <li
-                key={h.id}
-                className="border-l-2 pl-3 text-sm italic text-stone-600 dark:text-stone-400"
-                style={{ borderColor: h.tags?.color ?? "#f59e0b" }}
-              >
-                “{h.text}”{" "}
-                <span className="not-italic text-xs font-medium text-stone-400">
-                  · {h.tags?.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

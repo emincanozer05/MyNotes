@@ -151,11 +151,12 @@ body {
   color: #78716c;
 }
 
-/* Tagged (highlighted) text — colour set inline per tag, style here is shared. */
+/* Tagged (highlighted) text — background colour set inline per tag. */
 .tag-mark {
   border-radius: 3px;
   padding: 0 2px;
   cursor: pointer;
+  color: #fff;
 }
 
 /* Rendered (read-only) note body: mirrors the editor's element styles. */

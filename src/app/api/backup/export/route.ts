@@ -8,7 +8,6 @@ const TABLES = [
   "tags",
   "note_tags",
   "note_links",
-  "tag_highlights",
   "flashcards",
   "voice_notes",
 ] as const;

@@ -21,3 +21,19 @@ export const TAG_COLOR_SWATCHES = [
   "#84cc16", // lime
   "#78716c", // stone
 ];
+
+/** Mixes a `#rrggbb` color with white for a soft, post-it-friendly pastel tone. */
+export function pastelize(hex: string | null | undefined, mixWithWhite = 0.75): string {
+  const color = hex && /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : DEFAULT_TAG_COLOR;
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * mixWithWhite);
+  const toHex = (c: number) => c.toString(16).padStart(2, "0");
+  return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+}
+
+/** First tag id referenced by a `<mark data-tag-id="…">` in stored HTML content. */
+export function firstTagIdInHtml(html: string | null | undefined): string | null {
+  return html?.match(/data-tag-id="([^"]+)"/)?.[1] ?? null;
+}

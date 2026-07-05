@@ -184,11 +184,6 @@ export function TitledNotes({
             saveLabel="Notu Kaydet"
             placeholder="Bu başlık altındaki notunu buraya yaz…"
             onSave={saveActiveHtml}
-            tagContext={() => ({
-              sourceId,
-              sectionId: active.id,
-              sectionTitle: active.title,
-            })}
           />
         </div>
       ) : (
