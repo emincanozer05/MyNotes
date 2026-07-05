@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PostitCard } from "./PostitCard";
+import { firstTagIdInHtml, pastelize } from "@/lib/color";
 
 interface NoteRow {
   id: string;
@@ -61,6 +62,18 @@ export default async function NotesPage({
     query,
     supabase.from("tags").select("name").order("name"),
   ]);
+
+  // Derive each post-it's colour from the first tagged (highlighted) passage
+  // in its content, so the card reflects the tag's colour in a soft tone.
+  const rows = (notes ?? []) as unknown as NoteRow[];
+  const tagIdByNote = new Map(
+    rows.map((n) => [n.id, firstTagIdInHtml(n.content)]),
+  );
+  const tagIds = [...new Set([...tagIdByNote.values()].filter((v): v is string => Boolean(v)))];
+  const { data: tagColors } = tagIds.length
+    ? await supabase.from("tags").select("id, color").in("id", tagIds)
+    : { data: [] as { id: string; color: string | null }[] };
+  const colorByTagId = new Map((tagColors ?? []).map((t) => [t.id, t.color]));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -123,13 +136,15 @@ export default async function NotesPage({
         </div>
       )}
 
-      {notes && notes.length > 0 ? (
+      {rows.length > 0 ? (
         <div className="stagger grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
-          {(notes as unknown as NoteRow[]).map((n) => {
+          {rows.map((n) => {
             const { cls, tilt } = postitStyle(n.id);
             const tags = n.note_tags
               .filter((t) => t.tags)
               .map((t) => ({ name: t.tags!.name }));
+            const tagId = tagIdByNote.get(n.id);
+            const color = tagId ? pastelize(colorByTagId.get(tagId)) : null;
             return (
               <PostitCard
                 key={n.id}
@@ -143,6 +158,7 @@ export default async function NotesPage({
                   tags,
                   cls,
                   tilt,
+                  color,
                 }}
               />
             );

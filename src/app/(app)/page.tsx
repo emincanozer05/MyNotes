@@ -17,19 +17,19 @@ export default async function DashboardPage() {
   const [
     { count: articleCount },
     { count: noteCount },
-    { count: highlightCount },
+    { count: tagCount },
     { count: dueCount },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
     supabase.from("notes").select("*", { count: "exact", head: true }),
-    supabase.from("tag_highlights").select("*", { count: "exact", head: true }),
+    supabase.from("tags").select("*", { count: "exact", head: true }),
     supabase.from("flashcards").select("*", { count: "exact", head: true }).lte("due_at", nowIso),
   ]);
 
   const stats = [
     { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
     { label: "Not", value: noteCount ?? 0, href: "/notes", grad: "from-amber-500 to-yellow-500" },
-    { label: "Etiket", value: highlightCount ?? 0, href: "/highlights", grad: "from-violet-500 to-fuchsia-500" },
+    { label: "Etiket", value: tagCount ?? 0, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
     { label: "Tekrarı gelen kart", value: dueCount ?? 0, href: "/flashcards", grad: "from-cyan-500 to-sky-500" },
   ];
 

@@ -18,7 +18,7 @@ export interface UserTag {
   color: string | null;
 }
 
-/** All of the current user's tags, for the "add tag" picker (newest-created first). */
+/** All of the current user's tags, for the "add tag" picker. */
 export async function getUserTags(): Promise<UserTag[]> {
   const { supabase } = await requireUser();
   const { data } = await supabase
@@ -56,46 +56,13 @@ export async function createOrGetTag(
   if (error || !data) return { error: error?.message ?? "Etiket oluşturulamadı." };
 
   revalidatePath("/notes");
-  revalidatePath("/highlights");
   return { tag: data };
 }
 
-export interface AddTagHighlightInput {
-  tagId: string;
-  text: string;
-  noteId?: string | null;
-  sourceId?: string | null;
-  sectionId?: string | null;
-  sectionTitle?: string | null;
-}
-
-/** Records that a passage of text was tagged (for the "Etiketler" list page). */
-export async function addTagHighlight(
-  input: AddTagHighlightInput,
-): Promise<{ error?: string | null }> {
-  const { supabase, user } = await requireUser();
-  const text = input.text.trim();
-  if (!text) return { error: "Boş metin etiketlenemez." };
-  if (!input.noteId && !input.sourceId) return { error: "Bağlam bulunamadı." };
-
-  const { error } = await supabase.from("tag_highlights").insert({
-    user_id: user.id,
-    tag_id: input.tagId,
-    text,
-    note_id: input.noteId || null,
-    source_id: input.sourceId || null,
-    section_id: input.sectionId || null,
-    section_title: input.sectionTitle || null,
-  });
-
-  revalidatePath("/highlights");
-  if (input.noteId) revalidatePath(`/notes/${input.noteId}`);
-  return { error: error?.message ?? null };
-}
-
-export async function deleteTagHighlight(formData: FormData) {
+/** Deletes a tag entirely (removes it from any notes it was applied to). */
+export async function deleteTag(tagId: string): Promise<{ error?: string | null }> {
   const { supabase } = await requireUser();
-  const id = String(formData.get("id") ?? "");
-  if (id) await supabase.from("tag_highlights").delete().eq("id", id);
-  revalidatePath("/highlights");
+  const { error } = await supabase.from("tags").delete().eq("id", tagId);
+  revalidatePath("/notes");
+  return { error: error?.message ?? null };
 }

@@ -17,6 +17,8 @@ export interface PostitData {
   tags: Tag[];
   cls: string;
   tilt: string;
+  /** Soft pastel colour derived from a tagged passage's tag; overrides `cls`. */
+  color: string | null;
 }
 
 export function PostitCard({ note }: { note: PostitData }) {
@@ -42,7 +44,10 @@ export function PostitCard({ note }: { note: PostitData }) {
       role="link"
       tabIndex={0}
       className={`postit group ${note.cls}`}
-      style={{ transform: `rotate(${note.tilt})` }}
+      style={{
+        transform: `rotate(${note.tilt})`,
+        ...(note.color ? { background: note.color } : {}),
+      }}
     >
       <span className="postit-pin" aria-hidden />
 

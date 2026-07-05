@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  addTagHighlight,
   createOrGetTag,
+  deleteTag,
   getUserTags,
   type UserTag,
-} from "@/app/(app)/tagHighlightsActions";
+} from "@/app/(app)/tagsActions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 
 const FONTS = [
@@ -57,14 +57,6 @@ function ToolBtn({
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
-/** Where a tagged passage lives — a post-it/article note, or a book/course section. */
-export interface TagContext {
-  noteId?: string | null;
-  sourceId?: string | null;
-  sectionId?: string | null;
-  sectionTitle?: string | null;
-}
-
 type FloatingUI =
   | { kind: "select"; top: number; left: number; text: string }
   | { kind: "mark"; top: number; left: number; mark: HTMLElement };
@@ -85,7 +77,6 @@ export function RichTextEditor({
   placeholder = "Buraya yazın… Biçimlendirin, görsel ekleyin.",
   accent = "amber",
   saveLabel = "Kaydet",
-  tagContext,
 }: {
   initialHtml: string;
   onSave: (html: string) => Promise<{ error?: string | null }>;
@@ -94,8 +85,6 @@ export function RichTextEditor({
   placeholder?: string;
   accent?: Accent;
   saveLabel?: string;
-  /** Identifies where a tagged selection should be recorded (for the Etiketler list). */
-  tagContext?: () => TagContext;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -138,10 +127,6 @@ export function RichTextEditor({
   const [newTagColor, setNewTagColor] = useState(TAG_COLOR_SWATCHES[0]);
   const pendingRangeRef = useRef<Range | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const tagContextRef = useRef(tagContext);
-  useEffect(() => {
-    tagContextRef.current = tagContext;
-  }, [tagContext]);
 
   useEffect(() => {
     void getUserTags().then(setTags);
@@ -306,7 +291,6 @@ export function RichTextEditor({
 
   function applyTagToSelection(tag: UserTag) {
     const range = pendingRangeRef.current;
-    const text = floating?.kind === "select" ? floating.text : "";
     if (!range) return;
 
     const mark = document.createElement("mark");
@@ -315,6 +299,7 @@ export function RichTextEditor({
     mark.dataset.tagName = tag.name;
     mark.dataset.tagColor = tag.color ?? "#78716c";
     mark.style.backgroundColor = tagHighlightBg(tag.color);
+    mark.style.color = "#fff";
     try {
       range.surroundContents(mark);
     } catch {
@@ -328,18 +313,6 @@ export function RichTextEditor({
     setFloating(null);
     setPickerOpen(false);
     handleInput();
-
-    const ctx = tagContextRef.current?.();
-    if (ctx && (ctx.noteId || ctx.sourceId) && text) {
-      void addTagHighlight({
-        tagId: tag.id,
-        text,
-        noteId: ctx.noteId ?? null,
-        sourceId: ctx.sourceId ?? null,
-        sectionId: ctx.sectionId ?? null,
-        sectionTitle: ctx.sectionTitle ?? null,
-      });
-    }
   }
 
   async function handleCreateTag() {
@@ -356,6 +329,12 @@ export function RichTextEditor({
       setNewTagName("");
       applyTagToSelection(created);
     }
+  }
+
+  async function handleDeleteTag(tagId: string) {
+    if (!window.confirm("Bu etiket tamamen silinsin mi? Tüm notlardan kaldırılır.")) return;
+    await deleteTag(tagId);
+    setTags((prev) => prev.filter((t) => t.id !== tagId));
   }
 
   function removeMark(mark: HTMLElement) {
@@ -751,17 +730,27 @@ export function RichTextEditor({
           ) : (
             <div className="w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">
               {tags.length > 0 && (
-                <div className="mb-2 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                <div className="mb-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto pt-1.5 pr-1.5">
                   {tags.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => applyTagToSelection(t)}
-                      className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
-                      style={{ background: t.color ?? "#78716c" }}
-                    >
-                      {t.name}
-                    </button>
+                    <span key={t.id} className="relative inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => applyTagToSelection(t)}
+                        className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                        style={{ background: t.color ?? "#78716c" }}
+                      >
+                        {t.name}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteTag(t.id)}
+                        title="Etiketi sil"
+                        aria-label={`${t.name} etiketini sil`}
+                        className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white hover:bg-rose-600"
+                      >
+                        ×
+                      </button>
+                    </span>
                   ))}
                 </div>
               )}
