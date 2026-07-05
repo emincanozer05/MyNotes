@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PostitCard } from "./PostitCard";
 import { firstTagIdInHtml, pastelize } from "@/lib/color";
+import { extractMarkTags } from "@/lib/wiki";
 import { deleteTagAction } from "@/app/(app)/tagsActions";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
@@ -33,30 +34,11 @@ export default async function NotesPage({
   const { tag, q, source } = await searchParams;
   const supabase = await createClient();
 
-  let noteIdsForTag: string[] | null = null;
-  if (tag) {
-    const { data: tagRow } = await supabase
-      .from("tags")
-      .select("id")
-      .eq("name", tag)
-      .maybeSingle();
-    if (tagRow) {
-      const { data: nt } = await supabase
-        .from("note_tags")
-        .select("note_id")
-        .eq("tag_id", tagRow.id);
-      noteIdsForTag = (nt ?? []).map((r) => r.note_id);
-    } else {
-      noteIdsForTag = [];
-    }
-  }
-
   let query = supabase
     .from("notes")
     .select("id, title, content, source_title, source_author, source_year, updated_at, note_tags(tags(name))")
     .order("updated_at", { ascending: false });
 
-  if (noteIdsForTag !== null) query = query.in("id", noteIdsForTag);
   if (source) query = query.eq("source_id", source);
   if (q) query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
 
@@ -65,9 +47,22 @@ export default async function NotesPage({
     supabase.from("tags").select("id, name").order("name"),
   ]);
 
+  // A note's tags come from two places that must be unioned: the note_tags
+  // join table (#hashtags + manual tags) and inline <mark data-tag-name="…">
+  // highlights applied in the editor. Deriving marks here at read time means
+  // a passage tagged in the editor shows on the post-it (and filters) even if
+  // the note_tags sync hasn't caught up yet.
+  const noteTagNames = (n: NoteRow): string[] => [
+    ...new Set([
+      ...n.note_tags.filter((t) => t.tags).map((t) => t.tags!.name),
+      ...extractMarkTags(n.content),
+    ]),
+  ];
+
   // Derive each post-it's colour from the first tagged (highlighted) passage
   // in its content, so the card reflects the tag's colour in a soft tone.
-  const rows = (notes ?? []) as unknown as NoteRow[];
+  let rows = (notes ?? []) as unknown as NoteRow[];
+  if (tag) rows = rows.filter((n) => noteTagNames(n).includes(tag));
   const tagIdByNote = new Map(
     rows.map((n) => [n.id, firstTagIdInHtml(n.content)]),
   );
@@ -154,9 +149,7 @@ export default async function NotesPage({
         <div className="stagger grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
           {rows.map((n) => {
             const { cls, tilt } = postitStyle(n.id);
-            const tags = n.note_tags
-              .filter((t) => t.tags)
-              .map((t) => ({ name: t.tags!.name }));
+            const tags = noteTagNames(n).map((name) => ({ name }));
             const tagId = tagIdByNote.get(n.id);
             const color = tagId ? pastelize(colorByTagId.get(tagId)) : null;
             return (
