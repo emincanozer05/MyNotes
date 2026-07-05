@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 const MODULES = [
   { title: "Literatür", detail: "RCT makalelerini getir, konu başlığına göre kütüphaneni oluştur", href: "/library", grad: "from-rose-500 to-orange-500", icon: "❧" },
   { title: "Post-it Notlar", detail: "Renkli post-it'ler, [[bağlantılar]] ve #etiketler", href: "/notes", grad: "from-amber-500 to-yellow-500", icon: "✎" },
-  { title: "Bilgi Grafiği", detail: "Not-etiket-kaynak ilişkilerinin etkileşimli haritası", href: "/graph", grad: "from-violet-500 to-fuchsia-500", icon: "⌘" },
   { title: "Ses Notu", detail: "Sahada konuş, transkript otomatik nota dönüşsün", href: "/voice", grad: "from-cyan-500 to-sky-500", icon: "♪" },
   { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane, zengin metin özetleri", href: "/bookshelf", grad: "from-emerald-500 to-teal-500", icon: "▥" },
   { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights", grad: "from-indigo-500 to-blue-500", icon: "◔" },

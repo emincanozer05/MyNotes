@@ -147,6 +147,25 @@ export async function upsertNote(
   return { id: noteId, error: null };
 }
 
+/**
+ * Quick post-it capture: creates a note straight from the board modal. No
+ * auto-save — the note is only written when the user hits "Yapıştır". When no
+ * title is given, the first line of the content becomes the title.
+ */
+export async function createQuickNote(input: {
+  title?: string;
+  content: string;
+}): Promise<{ id?: string; error?: string | null }> {
+  const content = (input.content ?? "").trim();
+  if (!content) return { error: "Boş not yapıştırılamaz." };
+
+  const explicit = (input.title ?? "").trim();
+  const derived = content.split(/\r?\n/)[0].slice(0, 60).trim();
+  const title = explicit || derived || "Not";
+
+  return upsertNote({ title, content });
+}
+
 export async function deleteNote(formData: FormData) {
   const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
