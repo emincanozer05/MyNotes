@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CoverUpload } from "./CoverUpload";
+import { BookDescription } from "./BookDescription";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { refreshCover } from "../actions";
@@ -12,7 +13,7 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  metadata: { summary?: string; notes?: TitledNote[] } | null;
+  metadata: { summary?: string; description?: string; notes?: TitledNote[] } | null;
 }
 
 /** Uses saved titled notes, or seeds one from a legacy single summary. */
@@ -55,24 +56,21 @@ export default async function BookDetailPage({
       </Link>
 
       <div className="glass-card flex gap-5 rounded-2xl p-5">
-        {book.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={book.cover_url}
-            alt={`${book.title} kapağı`}
-            className="h-40 w-28 shrink-0 rounded-md border border-[var(--border)] object-cover shadow-lg"
-          />
-        ) : (
-          <div className="flex h-40 w-28 shrink-0 flex-col items-center justify-center gap-2 rounded-md bg-gradient-to-br from-stone-600 to-stone-800 p-3 text-center shadow-lg">
-            <span className="text-xs font-semibold text-white">{book.title}</span>
-          </div>
-        )}
+        <CoverUpload
+          bookId={book.id}
+          coverUrl={book.cover_url}
+          title={book.title}
+        />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold leading-tight">{book.title}</h1>
           <p className="mt-1 text-sm text-stone-500">
             {book.authors.join(", ")}
             {book.year ? ` · ${book.year}` : ""}
           </p>
+          <BookDescription
+            bookId={book.id}
+            initial={book.metadata?.description ?? ""}
+          />
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             {(noteCount ?? 0) > 0 && (
               <Link
@@ -82,7 +80,6 @@ export default async function BookDetailPage({
                 {noteCount} bağlı not
               </Link>
             )}
-            <CoverUpload bookId={book.id} />
             {!book.cover_url && (
               <form action={refreshCover}>
                 <input type="hidden" name="id" value={book.id} />
