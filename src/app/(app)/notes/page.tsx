@@ -1,76 +1,107 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PostitCard } from "./PostitCard";
-import { firstTagIdInHtml, pastelize } from "@/lib/color";
-import { extractMarkTags } from "@/lib/wiki";
-import { deleteTagAction } from "@/app/(app)/tagsActions";
-import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { pastelize } from "@/lib/color";
+import { extractTaggedPassages, type TaggedPassage } from "@/lib/wiki";
 
-interface NoteRow {
-  id: string;
-  title: string;
-  content: string;
-  source_title: string;
-  source_author: string;
-  source_year: number | null;
-  updated_at: string;
-  note_tags: { tags: { name: string } | null }[];
+// Deterministic post-it tilt from a stable key so cards don't jump on refresh.
+const TILTS = ["-2deg", "1.5deg", "-1deg", "2deg", "0.5deg", "-1.5deg"];
+function tiltFor(key: string) {
+  let h = 0;
+  for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return TILTS[h % TILTS.length];
 }
 
-// Deterministic post-it colour + slight tilt from the note id
-const POSTIT = ["postit-y", "postit-p", "postit-g", "postit-b", "postit-o", "postit-v"];
-const TILTS = ["-2deg", "1.5deg", "-1deg", "2deg", "0.5deg", "-1.5deg"];
-function postitStyle(id: string) {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return { cls: POSTIT[h % POSTIT.length], tilt: TILTS[h % TILTS.length] };
+/** A tagged passage promoted to a post-it, with a link back to its source. */
+interface BoardItem extends TaggedPassage {
+  key: string;
+  sourceLabel: string;
+  href: string;
+}
+
+interface SourceRow {
+  id: string;
+  kind: string;
+  title: string;
+  metadata: {
+    summary?: string;
+    notes?: { id: string; title: string; html: string }[];
+  } | null;
+}
+
+function sourceHref(kind: string, id: string): string {
+  if (kind === "book") return `/bookshelf/${id}`;
+  if (kind === "other") return `/courses/${id}`;
+  return `/library/${id}`; // article
 }
 
 export default async function NotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tag?: string; q?: string; source?: string }>;
+  searchParams: Promise<{ tag?: string; q?: string }>;
 }) {
-  const { tag, q, source } = await searchParams;
+  const { tag, q } = await searchParams;
   const supabase = await createClient();
 
-  let query = supabase
-    .from("notes")
-    .select("id, title, content, source_title, source_author, source_year, updated_at, note_tags(tags(name))")
-    .order("updated_at", { ascending: false });
-
-  if (source) query = query.eq("source_id", source);
-  if (q) query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
-
-  const [{ data: notes }, { data: allTags }] = await Promise.all([
-    query,
-    supabase.from("tags").select("id, name").order("name"),
+  const [{ data: notes }, { data: sources }] = await Promise.all([
+    supabase.from("notes").select("id, title, content"),
+    supabase.from("sources").select("id, kind, title, metadata"),
   ]);
 
-  // A note's tags come from two places that must be unioned: the note_tags
-  // join table (#hashtags + manual tags) and inline <mark data-tag-name="…">
-  // highlights applied in the editor. Deriving marks here at read time means
-  // a passage tagged in the editor shows on the post-it (and filters) even if
-  // the note_tags sync hasn't caught up yet.
-  const noteTagNames = (n: NoteRow): string[] => [
-    ...new Set([
-      ...n.note_tags.filter((t) => t.tags).map((t) => t.tags!.name),
-      ...extractMarkTags(n.content),
-    ]),
-  ];
+  // Collect every tagged passage across notes, article summaries and
+  // book/course notes — each highlight becomes its own post-it card.
+  const items: BoardItem[] = [];
 
-  // Derive each post-it's colour from the first tagged (highlighted) passage
-  // in its content, so the card reflects the tag's colour in a soft tone.
-  let rows = (notes ?? []) as unknown as NoteRow[];
-  if (tag) rows = rows.filter((n) => noteTagNames(n).includes(tag));
-  const tagIdByNote = new Map(
-    rows.map((n) => [n.id, firstTagIdInHtml(n.content)]),
+  for (const n of (notes ?? []) as { id: string; title: string; content: string }[]) {
+    extractTaggedPassages(n.content).forEach((p, i) =>
+      items.push({
+        ...p,
+        key: `note-${n.id}-${i}`,
+        sourceLabel: n.title || "Not",
+        href: `/notes/${n.id}`,
+      }),
+    );
+  }
+
+  for (const s of (sources ?? []) as SourceRow[]) {
+    const href = sourceHref(s.kind, s.id);
+    extractTaggedPassages(s.metadata?.summary).forEach((p, i) =>
+      items.push({
+        ...p,
+        key: `src-${s.id}-sum-${i}`,
+        sourceLabel: s.title,
+        href,
+      }),
+    );
+    for (const tn of s.metadata?.notes ?? []) {
+      extractTaggedPassages(tn.html).forEach((p, i) =>
+        items.push({
+          ...p,
+          key: `src-${s.id}-${tn.id}-${i}`,
+          sourceLabel: tn.title ? `${s.title} › ${tn.title}` : s.title,
+          href,
+        }),
+      );
+    }
+  }
+
+  // Distinct tags (name + colour) present across all passages, for the filter.
+  const tagColorByName = new Map<string, string | null>();
+  for (const it of items) {
+    if (!tagColorByName.has(it.tagName)) tagColorByName.set(it.tagName, it.tagColor);
+  }
+  const allTags = [...tagColorByName.entries()]
+    .map(([name, color]) => ({ name, color }))
+    .sort((a, b) => a.name.localeCompare(b.name, "tr"));
+
+  // Apply the active tag / search filters.
+  const needle = q?.trim().toLocaleLowerCase("tr") ?? "";
+  const shown = items.filter(
+    (it) =>
+      (!tag || it.tagName === tag) &&
+      (!needle ||
+        it.text.toLocaleLowerCase("tr").includes(needle) ||
+        it.sourceLabel.toLocaleLowerCase("tr").includes(needle)),
   );
-  const tagIds = [...new Set([...tagIdByNote.values()].filter((v): v is string => Boolean(v)))];
-  const { data: tagColors } = tagIds.length
-    ? await supabase.from("tags").select("id, color").in("id", tagIds)
-    : { data: [] as { id: string; color: string | null }[] };
-  const colorByTagId = new Map((tagColors ?? []).map((t) => [t.id, t.color]));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -80,8 +111,7 @@ export default async function NotesPage({
             <span className="gradient-text">Post-it Notlar</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            Renkli post-it panonuz. <code>[[bağlantı]]</code> ve{" "}
-            <code>#etiket</code> destekli.
+            Metinlerinde etiketlediğin cümleler burada renkli post-it&apos;ler olur.
           </p>
         </div>
         <Link
@@ -96,7 +126,7 @@ export default async function NotesPage({
         <input
           name="q"
           defaultValue={q}
-          placeholder="Notlarda ara…"
+          placeholder="Post-it'lerde ara…"
           className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500"
         />
         {tag && <input type="hidden" name="tag" value={tag} />}
@@ -105,7 +135,7 @@ export default async function NotesPage({
         </button>
       </form>
 
-      {allTags && allTags.length > 0 && (
+      {allTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           <Link
             href="/notes"
@@ -117,65 +147,58 @@ export default async function NotesPage({
           >
             Tümü
           </Link>
-          {allTags.map((t) => (
-            <span key={t.id} className="group relative inline-flex">
+          {allTags.map((t) => {
+            const active = tag === t.name;
+            return (
               <Link
+                key={t.name}
                 href={`/notes?tag=${encodeURIComponent(t.name)}`}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  tag === t.name
-                    ? "bg-sky-600 text-white"
-                    : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
-                }`}
+                className="rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                style={{
+                  background: t.color ?? "#78716c",
+                  opacity: active ? 1 : 0.55,
+                }}
               >
                 #{t.name}
               </Link>
-              <form action={deleteTagAction} className="absolute -right-1.5 -top-1.5">
-                <input type="hidden" name="id" value={t.id} />
-                <ConfirmSubmit
-                  message={`"${t.name}" etiketi tüm notlardan silinsin mi?`}
-                  title="Etiketi sil"
-                  ariaLabel={`${t.name} etiketini sil`}
-                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100"
-                >
-                  ×
-                </ConfirmSubmit>
-              </form>
-            </span>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {rows.length > 0 ? (
+      {shown.length > 0 ? (
         <div className="stagger grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((n) => {
-            const { cls, tilt } = postitStyle(n.id);
-            const tags = noteTagNames(n).map((name) => ({ name }));
-            const tagId = tagIdByNote.get(n.id);
-            const color = tagId ? pastelize(colorByTagId.get(tagId)) : null;
-            return (
-              <PostitCard
-                key={n.id}
-                note={{
-                  id: n.id,
-                  title: n.title,
-                  content: n.content,
-                  source_title: n.source_title,
-                  source_author: n.source_author,
-                  source_year: n.source_year,
-                  tags,
-                  cls,
-                  tilt,
-                  color,
-                }}
-              />
-            );
-          })}
+          {shown.map((it) => (
+            <Link
+              key={it.key}
+              href={it.href}
+              className="postit group"
+              style={{
+                transform: `rotate(${tiltFor(it.key)})`,
+                background: pastelize(it.tagColor),
+              }}
+            >
+              <span className="postit-pin" aria-hidden />
+              <span
+                className="ml-3.5 self-start rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
+                style={{ background: it.tagColor ?? "#78716c" }}
+              >
+                🏷 {it.tagName}
+              </span>
+              <p className="mt-2 flex-1 whitespace-pre-wrap text-[12px] font-medium leading-snug line-clamp-6">
+                “{it.text}”
+              </p>
+              <p className="mt-2 line-clamp-1 text-[10px] italic opacity-70">
+                {it.sourceLabel}
+              </p>
+            </Link>
+          ))}
         </div>
       ) : (
         <p className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-10 text-center text-sm text-stone-500">
           {tag || q
-            ? "Bu filtreye uyan not bulunamadı."
-            : "Henüz notunuz yok. İlk post-it'inizi oluşturun."}
+            ? "Bu filtreye uyan post-it bulunamadı."
+            : "Henüz etiketli cümlen yok. Bir notu düzenlerken bir cümle seçip 🏷 Etiket ekle ile etiketle; burada post-it olarak belirir."}
         </p>
       )}
     </div>
