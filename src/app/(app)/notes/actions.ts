@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
-import { extractHashtags, extractWikiLinks, parseTagInput } from "@/lib/wiki";
+import {
+  extractHashtags,
+  extractMarkTags,
+  extractWikiLinks,
+  parseTagInput,
+} from "@/lib/wiki";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -129,6 +134,9 @@ export async function upsertNote(
     ...new Set([
       ...parseTagInput(input.tags ?? ""),
       ...extractHashtags(plain),
+      // Passages highlighted with an inline tag in the editor (<mark …>) must
+      // also drive note_tags, so they show on the post-it card and filter.
+      ...extractMarkTags(content),
     ]),
   ];
   await syncTags(supabase, user.id, noteId, tagNames);
