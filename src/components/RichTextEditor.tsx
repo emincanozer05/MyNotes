@@ -11,6 +11,17 @@ import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 
 type Accent = "amber" | "lime";
 
+/** Fixed text-colour choices (no full palette) for the selection toolbar. */
+const TEXT_COLORS = [
+  { name: "Siyah", hex: "#111827" },
+  { name: "Kırmızı", hex: "#dc2626" },
+  { name: "Turuncu", hex: "#ea580c" },
+  { name: "Sarı", hex: "#ca8a04" },
+  { name: "Yeşil", hex: "#16a34a" },
+  { name: "Mavi", hex: "#2563eb" },
+  { name: "Mor", hex: "#7c3aed" },
+];
+
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 type FloatingUI =
@@ -730,17 +741,39 @@ export function RichTextEditor({
 
               <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
 
-              <label
-                title="Yazı rengi"
-                className="flex h-7 cursor-pointer items-center gap-0.5 rounded px-1 hover:bg-stone-500/15"
-              >
-                <span className="text-sm">🎨</span>
-                <input
-                  type="color"
-                  onChange={(e) => execOnSelection("foreColor", e.target.value)}
-                  className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+              {(
+                [
+                  { cmd: "justifyLeft", label: "⇤", title: "Sola yasla" },
+                  { cmd: "justifyRight", label: "⇥", title: "Sağa yasla" },
+                  { cmd: "justifyFull", label: "☰", title: "İki yana yasla" },
+                ] as const
+              ).map((a) => (
+                <button
+                  key={a.cmd}
+                  type="button"
+                  title={a.title}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => execOnSelection(a.cmd)}
+                  className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
+                >
+                  {a.label}
+                </button>
+              ))}
+
+              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  title={`Yazı rengi: ${c.name}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => execOnSelection("foreColor", c.hex)}
+                  className="h-5 w-5 shrink-0 rounded-full border border-black/20"
+                  style={{ background: c.hex }}
                 />
-              </label>
+              ))}
+
               <label
                 title="Vurgu (fon) rengi"
                 className="flex h-7 cursor-pointer items-center gap-0.5 rounded px-1 hover:bg-stone-500/15"
