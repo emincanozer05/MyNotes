@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Panel", icon: "◈" },
   { href: "/library", label: "Literatür", icon: "❧" },
   { href: "/notes", label: "Post-it Notlar", icon: "✎" },
-  { href: "/highlights", label: "Öne Çıkanlar", icon: "❝" },
+  { href: "/highlights", label: "Etiketler", icon: "🏷" },
   { href: "/graph", label: "Bilgi Grafiği", icon: "⌘" },
   { href: "/flashcards", label: "Flashcard", icon: "▤" },
   { href: "/voice", label: "Ses Notu", icon: "♪" },
