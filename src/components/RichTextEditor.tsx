@@ -17,14 +17,17 @@ const FONTS = [
   { label: "Rounded", value: "'Comic Sans MS', 'Segoe UI', sans-serif" },
 ];
 
-const SIZES = [
-  { label: "XS", value: "1" },
-  { label: "S", value: "2" },
-  { label: "Normal", value: "3" },
-  { label: "L", value: "4" },
-  { label: "XL", value: "5" },
-  { label: "2XL", value: "6" },
-  { label: "3XL", value: "7" },
+/** Size scale: plain sizes apply an exact point size; H1/H2 are headings. */
+type SizeOption =
+  | { label: string; pt: number }
+  | { label: string; block: "H1" | "H2" };
+
+const SIZES: SizeOption[] = [
+  { label: "Küçük", pt: 8 },
+  { label: "Orta", pt: 10 },
+  { label: "Büyük", pt: 12 },
+  { label: "H2", block: "H2" },
+  { label: "H1", block: "H1" },
 ];
 
 type Accent = "amber" | "lime";
@@ -88,7 +91,6 @@ export function RichTextEditor({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -255,6 +257,47 @@ export function RichTextEditor({
   function addLinkToSelection() {
     const url = window.prompt("Bağlantı URL'si (https://…):");
     if (url) execOnSelection("createLink", url);
+  }
+
+  // execCommand("fontSize") only supports the 1–7 HTML scale, so we mark the
+  // selection with size 7 then rewrite those <font> tags to an exact pt size.
+  function replaceFontSevenWith(pt: number) {
+    ref.current?.querySelectorAll('font[size="7"]').forEach((f) => {
+      const span = document.createElement("span");
+      span.style.fontSize = `${pt}pt`;
+      while (f.firstChild) span.appendChild(f.firstChild);
+      f.replaceWith(span);
+    });
+  }
+
+  function applyPtSize(pt: number) {
+    ref.current?.focus();
+    try {
+      document.execCommand("styleWithCSS", false, "false");
+    } catch {
+      /* not all browsers support styleWithCSS */
+    }
+    document.execCommand("fontSize", false, "7");
+    replaceFontSevenWith(pt);
+    handleInput();
+  }
+
+  function applyPtSizeOnSelection(pt: number) {
+    const sel = window.getSelection();
+    const range = pendingRangeRef.current;
+    if (sel && range) {
+      ref.current?.focus();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    try {
+      document.execCommand("styleWithCSS", false, "false");
+    } catch {
+      /* not all browsers support styleWithCSS */
+    }
+    document.execCommand("fontSize", false, "7");
+    replaceFontSevenWith(pt);
+    handleInput();
   }
 
   // ---- Images ----------------------------------------------------------
@@ -566,12 +609,17 @@ export function RichTextEditor({
 
         <select
           title="Yazı boyutu"
-          defaultValue="3"
-          onChange={(e) => exec("fontSize", e.target.value)}
+          defaultValue="Orta"
+          onChange={(e) => {
+            const s = SIZES.find((x) => x.label === e.target.value);
+            if (!s) return;
+            if ("block" in s) exec("formatBlock", s.block);
+            else applyPtSize(s.pt);
+          }}
           className="h-8 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-sm"
         >
           {SIZES.map((s) => (
-            <option key={s.value} value={s.value}>
+            <option key={s.label} value={s.label}>
               {s.label}
             </option>
           ))}
@@ -634,27 +682,12 @@ export function RichTextEditor({
 
         <span className="mx-1 h-5 w-px bg-[var(--border)]" />
 
-        <ToolBtn accent={accent} title="Görsel yükle" onClick={() => fileRef.current?.click()}>
-          🖼
-        </ToolBtn>
         <ToolBtn accent={accent} title="Görsel URL" onClick={insertImageFromUrl}>
           🔗
         </ToolBtn>
         <ToolBtn accent={accent} title="Biçimi temizle" onClick={() => exec("removeFormat")}>
           ⌫
         </ToolBtn>
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) insertImageFromFile(f);
-            e.target.value = "";
-          }}
-        />
       </div>
 
       {/* Editable area + resize overlay */}
@@ -832,32 +865,40 @@ export function RichTextEditor({
 
               {(
                 [
-                  { size: "2", label: "A", cls: "text-[11px]", title: "Küçük" },
-                  { size: "3", label: "A", cls: "text-sm", title: "Normal" },
-                  { size: "5", label: "A", cls: "text-lg", title: "Büyük" },
+                  { pt: 8, label: "A", cls: "text-[11px]", title: "Küçük (8pt)" },
+                  { pt: 10, label: "A", cls: "text-sm", title: "Orta (10pt)" },
+                  { pt: 12, label: "A", cls: "text-lg", title: "Büyük (12pt)" },
                 ] as const
               ).map((s) => (
                 <button
-                  key={s.size}
+                  key={s.pt}
                   type="button"
-                  title={`Boyut: ${s.title}`}
+                  title={s.title}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => execOnSelection("fontSize", s.size)}
+                  onClick={() => applyPtSizeOnSelection(s.pt)}
                   className={`flex h-7 min-w-6 items-center justify-center rounded px-1 font-semibold leading-none hover:bg-stone-500/15 ${s.cls}`}
                 >
                   {s.label}
                 </button>
               ))}
 
-              <button
-                type="button"
-                title="Başlık"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => execOnSelection("formatBlock", "H2")}
-                className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm font-bold hover:bg-stone-500/15"
-              >
-                H
-              </button>
+              {(
+                [
+                  { block: "H2", title: "Başlık 2 (14pt)" },
+                  { block: "H1", title: "Başlık 1 (16pt)" },
+                ] as const
+              ).map((h) => (
+                <button
+                  key={h.block}
+                  type="button"
+                  title={h.title}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => execOnSelection("formatBlock", h.block)}
+                  className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm font-bold hover:bg-stone-500/15"
+                >
+                  {h.block}
+                </button>
+              ))}
 
               <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
 
