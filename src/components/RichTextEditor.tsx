@@ -152,6 +152,11 @@ export function RichTextEditor({
     if (ref.current && ref.current.innerHTML !== initialHtml) {
       ref.current.innerHTML = initialHtml;
     }
+    // Mark images already in the saved content so their layout is preserved;
+    // only freshly inserted images get the default text-wrap float.
+    ref.current
+      ?.querySelectorAll<HTMLImageElement>("img")
+      .forEach((img) => (img.dataset.init = "1"));
     latestHtmlRef.current = initialHtml;
     lastSavedRef.current = initialHtml;
     // Only on mount; later prop changes must not wipe user edits.
@@ -276,9 +281,29 @@ export function RichTextEditor({
     else setBox(null);
   }
 
+  /**
+   * New images default to a left float at ~45% width so the user can type
+   * right beside them (text wraps) without hunting for an alignment button.
+   * Already-saved images (marked data-init on mount) are left as they are.
+   */
+  function styleNewImages() {
+    ref.current
+      ?.querySelectorAll<HTMLImageElement>("img:not([data-init])")
+      .forEach((img) => {
+        img.dataset.init = "1";
+        img.style.float = "left";
+        img.style.display = "inline";
+        img.style.marginRight = "1rem";
+        img.style.marginTop = "0.2rem";
+        img.style.marginBottom = "0.4rem";
+        if (!img.style.width) img.style.width = "45%";
+      });
+  }
+
   function insertImageFromDataUrl(dataUrl: string) {
     ref.current?.focus();
     document.execCommand("insertImage", false, dataUrl);
+    styleNewImages();
     handleInput();
   }
 
@@ -291,7 +316,10 @@ export function RichTextEditor({
   function insertImageFromUrl() {
     const url = window.prompt("Görsel URL'si:");
     if (url) {
-      exec("insertImage", url);
+      ref.current?.focus();
+      document.execCommand("insertImage", false, url);
+      styleNewImages();
+      handleInput();
     }
   }
 
