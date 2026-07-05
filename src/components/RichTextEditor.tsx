@@ -313,6 +313,9 @@ export function RichTextEditor({
     setFloating(null);
     setPickerOpen(false);
     handleInput();
+    // Save right away instead of waiting for the debounce, so the tag (and
+    // the post-it colour it drives) is persisted as soon as it's applied.
+    void doSave();
   }
 
   async function handleCreateTag() {
@@ -344,6 +347,7 @@ export function RichTextEditor({
     parent.removeChild(mark);
     setFloating(null);
     handleInput();
+    void doSave();
   }
 
   function scheduleHide() {

@@ -66,3 +66,9 @@ export async function deleteTag(tagId: string): Promise<{ error?: string | null 
   revalidatePath("/notes");
   return { error: error?.message ?? null };
 }
+
+/** Same as `deleteTag`, as a form action for server-rendered delete buttons. */
+export async function deleteTagAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteTag(id);
+}

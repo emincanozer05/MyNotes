@@ -220,4 +220,6 @@ body {
     padding: 0;
   }
   @page { size: A4; margin: 18mm; }
+  /* White highlight text (on-screen) is unreadable on printed white paper. */
+  .tag-mark { color: #000 !important; }
 }

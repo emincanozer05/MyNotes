@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NoteContent } from "@/components/NoteContent";
 import { FeynmanPanel } from "./FeynmanPanel";
 import { deleteNote } from "../actions";
+import { deleteTagAction } from "@/app/(app)/tagsActions";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 export default async function NoteDetailPage({
@@ -17,7 +18,7 @@ export default async function NoteDetailPage({
   const [{ data: note }, { data: allNotes }] = await Promise.all([
     supabase
       .from("notes")
-      .select("*, note_tags(tags(name))")
+      .select("*, note_tags(tags(id, name))")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("notes").select("id, title"),
@@ -35,9 +36,9 @@ export default async function NoteDetailPage({
     supabase.from("note_links").select("from_note").eq("to_note", id),
   ]);
 
-  const tags = (note.note_tags as { tags: { name: string } | null }[])
-    .map((t) => t.tags?.name)
-    .filter((n): n is string => Boolean(n));
+  const tags = (note.note_tags as { tags: { id: string; name: string } | null }[])
+    .map((t) => t.tags)
+    .filter((t): t is { id: string; name: string } => Boolean(t));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -74,15 +75,27 @@ export default async function NoteDetailPage({
       </div>
 
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 pt-1.5 pr-1.5">
           {tags.map((t) => (
-            <Link
-              key={t}
-              href={`/notes?tag=${encodeURIComponent(t)}`}
-              className="rounded-full bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100"
-            >
-              #{t}
-            </Link>
+            <span key={t.id} className="group relative inline-flex">
+              <Link
+                href={`/notes?tag=${encodeURIComponent(t.name)}`}
+                className="rounded-full bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100"
+              >
+                #{t.name}
+              </Link>
+              <form action={deleteTagAction} className="absolute -right-1.5 -top-1.5">
+                <input type="hidden" name="id" value={t.id} />
+                <ConfirmSubmit
+                  message={`"${t.name}" etiketi tüm notlardan silinsin mi?`}
+                  title="Etiketi sil"
+                  ariaLabel={`${t.name} etiketini sil`}
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100"
+                >
+                  ×
+                </ConfirmSubmit>
+              </form>
+            </span>
           ))}
         </div>
       )}
