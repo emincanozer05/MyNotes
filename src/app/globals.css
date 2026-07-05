@@ -225,12 +225,22 @@ body {
 @media print {
   .no-print { display: none !important; }
   body { background: #fff !important; }
+  /* The app's scroll container would otherwise clip the printout to one
+     screen — let the whole note flow across pages. */
+  main {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
   .a4-sheet {
     box-shadow: none;
     width: auto;
     min-height: auto;
     margin: 0;
     padding: 0;
+    /* Keep the accent colours/headings exactly as on screen. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   @page { size: A4; margin: 18mm; }
   /* White highlight text (on-screen) is unreadable on printed white paper. */
