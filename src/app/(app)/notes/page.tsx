@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PostitCard } from "./PostitCard";
 import { firstTagIdInHtml, pastelize } from "@/lib/color";
+import { deleteTagAction } from "@/app/(app)/tagsActions";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 
 interface NoteRow {
   id: string;
@@ -60,7 +62,7 @@ export default async function NotesPage({
 
   const [{ data: notes }, { data: allTags }] = await Promise.all([
     query,
-    supabase.from("tags").select("name").order("name"),
+    supabase.from("tags").select("id, name").order("name"),
   ]);
 
   // Derive each post-it's colour from the first tagged (highlighted) passage
@@ -121,17 +123,29 @@ export default async function NotesPage({
             Tümü
           </Link>
           {allTags.map((t) => (
-            <Link
-              key={t.name}
-              href={`/notes?tag=${encodeURIComponent(t.name)}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                tag === t.name
-                  ? "bg-sky-600 text-white"
-                  : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
-              }`}
-            >
-              #{t.name}
-            </Link>
+            <span key={t.id} className="group relative inline-flex">
+              <Link
+                href={`/notes?tag=${encodeURIComponent(t.name)}`}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  tag === t.name
+                    ? "bg-sky-600 text-white"
+                    : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+                }`}
+              >
+                #{t.name}
+              </Link>
+              <form action={deleteTagAction} className="absolute -right-1.5 -top-1.5">
+                <input type="hidden" name="id" value={t.id} />
+                <ConfirmSubmit
+                  message={`"${t.name}" etiketi tüm notlardan silinsin mi?`}
+                  title="Etiketi sil"
+                  ariaLabel={`${t.name} etiketini sil`}
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100"
+                >
+                  ×
+                </ConfirmSubmit>
+              </form>
+            </span>
           ))}
         </div>
       )}
