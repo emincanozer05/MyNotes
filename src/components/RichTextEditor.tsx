@@ -382,12 +382,26 @@ export function RichTextEditor({
     handleInput();
   }
 
+  // Left/right float so surrounding text wraps beside the image; center is a
+  // plain centred block (no wrapping).
   function setImageAlign(align: "left" | "center" | "right") {
     const img = selectedImg.current;
     if (!img) return;
-    img.style.display = "block";
-    img.style.marginLeft = align === "left" ? "0" : "auto";
-    img.style.marginRight = align === "right" ? "0" : "auto";
+    if (align === "center") {
+      img.style.float = "none";
+      img.style.display = "block";
+      img.style.marginLeft = "auto";
+      img.style.marginRight = "auto";
+      img.style.marginTop = "0.5rem";
+      img.style.marginBottom = "0.5rem";
+    } else {
+      img.style.float = align;
+      img.style.display = "inline";
+      img.style.marginLeft = align === "right" ? "1rem" : "0";
+      img.style.marginRight = align === "left" ? "1rem" : "0";
+      img.style.marginTop = "0.2rem";
+      img.style.marginBottom = "0.4rem";
+    }
     measure();
     handleInput();
   }
@@ -627,9 +641,9 @@ export function RichTextEditor({
             >
               {(
                 [
-                  { a: "left", icon: "⇤", title: "Sola hizala" },
-                  { a: "center", icon: "↔", title: "Ortala" },
-                  { a: "right", icon: "⇥", title: "Sağa hizala" },
+                  { a: "left", icon: "⇤", title: "Sola yasla — metin sağdan sarar" },
+                  { a: "center", icon: "↔", title: "Ortala (metin sarmaz)" },
+                  { a: "right", icon: "⇥", title: "Sağa yasla — metin soldan sarar" },
                 ] as const
               ).map(({ a, icon, title }) => (
                 <button
