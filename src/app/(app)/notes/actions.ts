@@ -155,6 +155,7 @@ export async function upsertNote(
 export async function createQuickNote(input: {
   title?: string;
   content: string;
+  tags?: string;
 }): Promise<{ id?: string; error?: string | null }> {
   const content = (input.content ?? "").trim();
   if (!content) return { error: "Boş not yapıştırılamaz." };
@@ -163,7 +164,7 @@ export async function createQuickNote(input: {
   const derived = content.split(/\r?\n/)[0].slice(0, 60).trim();
   const title = explicit || derived || "Not";
 
-  return upsertNote({ title, content });
+  return upsertNote({ title, content, tags: input.tags ?? "" });
 }
 
 export async function deleteNote(formData: FormData) {
