@@ -211,6 +211,47 @@ export function RichTextEditor({
     handleInput();
   }
 
+  /**
+   * Formatting from the floating selection toolbar. Restores the captured
+   * range first so actions that steal focus (colour pickers, link prompt)
+   * still apply to the passage the user highlighted, then re-stores the
+   * (possibly new) selection so several tweaks can be chained.
+   */
+  function execOnSelection(command: string, value?: string) {
+    const sel = window.getSelection();
+    const range = pendingRangeRef.current;
+    if (sel && range) {
+      ref.current?.focus();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    try {
+      document.execCommand("styleWithCSS", false, "true");
+    } catch {
+      /* not all browsers support styleWithCSS */
+    }
+    document.execCommand(command, false, value);
+    const after = window.getSelection();
+    if (after && after.rangeCount > 0) {
+      pendingRangeRef.current = after.getRangeAt(0).cloneRange();
+      const rect = after.getRangeAt(0).getBoundingClientRect();
+      // Keep the toolbar pinned above the (possibly reflowed) selection.
+      if (rect.top || rect.left) {
+        setFloating((f) =>
+          f && f.kind === "select"
+            ? { ...f, top: rect.top - 42, left: rect.left }
+            : f,
+        );
+      }
+    }
+    handleInput();
+  }
+
+  function addLinkToSelection() {
+    const url = window.prompt("Bağlantı URL'si (https://…):");
+    if (url) execOnSelection("createLink", url);
+  }
+
   // ---- Images ----------------------------------------------------------
   const measure = useCallback(() => {
     const img = selectedImg.current;
@@ -738,13 +779,104 @@ export function RichTextEditor({
               </button>
             </div>
           ) : !pickerOpen ? (
-            <button
-              type="button"
-              onClick={() => setPickerOpen(true)}
-              className="rounded-full bg-stone-900 dark:bg-stone-100 px-3 py-1.5 text-xs font-semibold text-white dark:text-stone-900 shadow-lg"
-            >
-              🏷 Etiket ekle
-            </button>
+            <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-1 shadow-xl">
+              {(
+                [
+                  { cmd: "bold", label: <b>B</b>, title: "Kalın" },
+                  { cmd: "italic", label: <i>I</i>, title: "İtalik" },
+                  { cmd: "underline", label: <u>U</u>, title: "Altı çizili" },
+                  { cmd: "strikeThrough", label: <s>S</s>, title: "Üstü çizili" },
+                ] as const
+              ).map((b) => (
+                <button
+                  key={b.cmd}
+                  type="button"
+                  title={b.title}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => execOnSelection(b.cmd)}
+                  className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
+                >
+                  {b.label}
+                </button>
+              ))}
+
+              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+
+              {(
+                [
+                  { size: "2", label: "A", cls: "text-[11px]", title: "Küçük" },
+                  { size: "3", label: "A", cls: "text-sm", title: "Normal" },
+                  { size: "5", label: "A", cls: "text-lg", title: "Büyük" },
+                ] as const
+              ).map((s) => (
+                <button
+                  key={s.size}
+                  type="button"
+                  title={`Boyut: ${s.title}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => execOnSelection("fontSize", s.size)}
+                  className={`flex h-7 min-w-6 items-center justify-center rounded px-1 font-semibold leading-none hover:bg-stone-500/15 ${s.cls}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                title="Başlık"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => execOnSelection("formatBlock", "H2")}
+                className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm font-bold hover:bg-stone-500/15"
+              >
+                H
+              </button>
+
+              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+
+              <label
+                title="Yazı rengi"
+                className="flex h-7 cursor-pointer items-center gap-0.5 rounded px-1 hover:bg-stone-500/15"
+              >
+                <span className="text-sm">🎨</span>
+                <input
+                  type="color"
+                  onChange={(e) => execOnSelection("foreColor", e.target.value)}
+                  className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                />
+              </label>
+              <label
+                title="Vurgu (fon) rengi"
+                className="flex h-7 cursor-pointer items-center gap-0.5 rounded px-1 hover:bg-stone-500/15"
+              >
+                <span className="text-sm">🖍</span>
+                <input
+                  type="color"
+                  onChange={(e) => execOnSelection("hiliteColor", e.target.value)}
+                  className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                />
+              </label>
+
+              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+
+              <button
+                type="button"
+                title="Bağlantı ekle"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={addLinkToSelection}
+                className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
+              >
+                🔗
+              </button>
+              <button
+                type="button"
+                title="Etiket ekle"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setPickerOpen(true)}
+                className="flex h-7 items-center justify-center gap-1 rounded bg-stone-900 px-2 text-xs font-semibold text-white hover:opacity-90 dark:bg-stone-100 dark:text-stone-900"
+              >
+                🏷
+              </button>
+            </div>
           ) : (
             <div className="w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">
               {tags.length > 0 && (
