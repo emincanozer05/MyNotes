@@ -132,6 +132,13 @@ body {
   content: attr(data-placeholder);
   color: #a8a29e;
 }
+/* Contain floated (text-wrapping) images so they don't overflow the box. */
+.rte::after,
+.note-html::after {
+  content: "";
+  display: block;
+  clear: both;
+}
 .rte img {
   max-width: 100%;
   height: auto;
