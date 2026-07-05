@@ -9,7 +9,7 @@ const TABLE_LABELS: Record<string, string> = {
   tags: "Etiketler",
   note_tags: "Not-etiket bağları",
   note_links: "Not bağlantıları",
-  highlights: "Alıntılar",
+  tag_highlights: "Etiketlenmiş metinler",
   flashcards: "Flashcard'lar",
   voice_notes: "Ses notları",
 };

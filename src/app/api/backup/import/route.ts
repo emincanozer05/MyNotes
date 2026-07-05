@@ -11,7 +11,7 @@ const IMPORT_ORDER: { table: string; conflict: string }[] = [
   { table: "tags", conflict: "id" },
   { table: "note_tags", conflict: "note_id,tag_id" },
   { table: "note_links", conflict: "from_note,to_note" },
-  { table: "highlights", conflict: "id" },
+  { table: "tag_highlights", conflict: "id" },
   { table: "flashcards", conflict: "id" },
   { table: "voice_notes", conflict: "id" },
 ];

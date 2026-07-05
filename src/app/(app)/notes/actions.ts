@@ -146,26 +146,3 @@ export async function deleteNote(formData: FormData) {
   revalidatePath("/notes");
   redirect("/notes");
 }
-
-export async function addHighlight(noteId: string, text: string) {
-  const { supabase, user } = await requireUser();
-  const trimmed = text.trim();
-  if (!trimmed) return { error: "Boş alıntı eklenemez." };
-
-  const { error } = await supabase.from("highlights").insert({
-    user_id: user.id,
-    note_id: noteId,
-    text: trimmed,
-  });
-
-  revalidatePath(`/notes/${noteId}`);
-  revalidatePath("/highlights");
-  return { error: error?.message ?? null };
-}
-
-export async function deleteHighlight(formData: FormData) {
-  const { supabase } = await requireUser();
-  const id = String(formData.get("id") ?? "");
-  if (id) await supabase.from("highlights").delete().eq("id", id);
-  revalidatePath("/highlights");
-}

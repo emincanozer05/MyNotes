@@ -151,6 +151,13 @@ body {
   color: #78716c;
 }
 
+/* Tagged (highlighted) text — colour set inline per tag, style here is shared. */
+.tag-mark {
+  border-radius: 3px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
 /* Rendered (read-only) note body: mirrors the editor's element styles. */
 .note-html {
   line-height: 1.7;

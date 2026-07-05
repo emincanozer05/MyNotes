@@ -1,6 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  addTagHighlight,
+  createOrGetTag,
+  getUserTags,
+  type UserTag,
+} from "@/app/(app)/tagHighlightsActions";
+import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 
 const FONTS = [
   { label: "Varsayılan", value: "" },
@@ -50,6 +57,18 @@ function ToolBtn({
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+/** Where a tagged passage lives — a post-it/article note, or a book/course section. */
+export interface TagContext {
+  noteId?: string | null;
+  sourceId?: string | null;
+  sectionId?: string | null;
+  sectionTitle?: string | null;
+}
+
+type FloatingUI =
+  | { kind: "select"; top: number; left: number; text: string }
+  | { kind: "mark"; top: number; left: number; mark: HTMLElement };
+
 /**
  * Reusable rich-text editor (book / course / article notes).
  *
@@ -66,6 +85,7 @@ export function RichTextEditor({
   placeholder = "Buraya yazın… Biçimlendirin, görsel ekleyin.",
   accent = "amber",
   saveLabel = "Kaydet",
+  tagContext,
 }: {
   initialHtml: string;
   onSave: (html: string) => Promise<{ error?: string | null }>;
@@ -74,6 +94,8 @@ export function RichTextEditor({
   placeholder?: string;
   accent?: Accent;
   saveLabel?: string;
+  /** Identifies where a tagged selection should be recorded (for the Etiketler list). */
+  tagContext?: () => TagContext;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -107,6 +129,35 @@ export function RichTextEditor({
   // between them doesn't flicker. Suspended while a resize drag is in flight.
   const resizingRef = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Text tagging (select a passage -> tag it with a colour) ---------
+  const [tags, setTags] = useState<UserTag[]>([]);
+  const [floating, setFloating] = useState<FloatingUI | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState(TAG_COLOR_SWATCHES[0]);
+  const pendingRangeRef = useRef<Range | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const tagContextRef = useRef(tagContext);
+  useEffect(() => {
+    tagContextRef.current = tagContext;
+  }, [tagContext]);
+
+  useEffect(() => {
+    void getUserTags().then(setTags);
+  }, []);
+
+  // Close the floating tag UI on outside clicks.
+  useEffect(() => {
+    if (!floating) return;
+    function onDocMouseDown(ev: MouseEvent) {
+      if (popoverRef.current?.contains(ev.target as Node)) return;
+      setFloating(null);
+      setPickerOpen(false);
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [floating]);
 
   const ringCls = accent === "lime" ? "ring-lime-500" : "ring-amber-500";
   const handleColor = accent === "lime" ? "#84cc16" : "#f59e0b";
@@ -238,6 +289,82 @@ export function RichTextEditor({
       clearTimeout(hideTimer.current);
       hideTimer.current = null;
     }
+  }
+
+  // ---- Text tagging ------------------------------------------------------
+  function handleSelectionUp() {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? "";
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed || text.length < 2) return;
+    const range = sel.getRangeAt(0);
+    if (!ref.current?.contains(range.commonAncestorContainer)) return;
+    const rect = range.getBoundingClientRect();
+    pendingRangeRef.current = range.cloneRange();
+    setPickerOpen(false);
+    setFloating({ kind: "select", top: rect.top - 42, left: rect.left, text });
+  }
+
+  function applyTagToSelection(tag: UserTag) {
+    const range = pendingRangeRef.current;
+    const text = floating?.kind === "select" ? floating.text : "";
+    if (!range) return;
+
+    const mark = document.createElement("mark");
+    mark.className = "tag-mark";
+    mark.dataset.tagId = tag.id;
+    mark.dataset.tagName = tag.name;
+    mark.dataset.tagColor = tag.color ?? "#78716c";
+    mark.style.backgroundColor = tagHighlightBg(tag.color);
+    try {
+      range.surroundContents(mark);
+    } catch {
+      const frag = range.extractContents();
+      mark.appendChild(frag);
+      range.insertNode(mark);
+    }
+
+    window.getSelection()?.removeAllRanges();
+    pendingRangeRef.current = null;
+    setFloating(null);
+    setPickerOpen(false);
+    handleInput();
+
+    const ctx = tagContextRef.current?.();
+    if (ctx && (ctx.noteId || ctx.sourceId) && text) {
+      void addTagHighlight({
+        tagId: tag.id,
+        text,
+        noteId: ctx.noteId ?? null,
+        sourceId: ctx.sourceId ?? null,
+        sectionId: ctx.sectionId ?? null,
+        sectionTitle: ctx.sectionTitle ?? null,
+      });
+    }
+  }
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+    const res = await createOrGetTag(name, newTagColor);
+    if (res.tag) {
+      const created = res.tag;
+      setTags((prev) =>
+        prev.some((t) => t.id === created.id)
+          ? prev
+          : [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "tr")),
+      );
+      setNewTagName("");
+      applyTagToSelection(created);
+    }
+  }
+
+  function removeMark(mark: HTMLElement) {
+    const parent = mark.parentNode;
+    if (!parent) return;
+    while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+    parent.removeChild(mark);
+    setFloating(null);
+    handleInput();
   }
 
   function scheduleHide() {
@@ -469,6 +596,7 @@ export function RichTextEditor({
         ref={containerRef}
         className="relative"
         onMouseMove={handleEditorHover}
+        onMouseUp={handleSelectionUp}
         onMouseLeave={() => {
           if (!resizingRef.current) scheduleHide();
         }}
@@ -488,6 +616,14 @@ export function RichTextEditor({
               e.preventDefault();
               cancelHide();
               selectImage(t as HTMLImageElement);
+              return;
+            }
+            const mark = t.closest?.(".tag-mark") as HTMLElement | null;
+            if (mark) {
+              e.preventDefault();
+              const rect = mark.getBoundingClientRect();
+              setPickerOpen(false);
+              setFloating({ kind: "mark", top: rect.top - 42, left: rect.left, mark });
             }
           }}
           className={`rte mt-3 rounded-lg text-[15px] focus:outline-none focus:ring-2 ${ringCls}`}
@@ -581,6 +717,98 @@ export function RichTextEditor({
           </div>
         )}
       </div>
+
+      {floating && (
+        <div
+          ref={popoverRef}
+          style={{ position: "fixed", top: floating.top, left: floating.left, zIndex: 50 }}
+        >
+          {floating.kind === "mark" ? (
+            <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1 shadow-lg">
+              <span
+                className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+                style={{ background: floating.mark.dataset.tagColor || "#78716c" }}
+              >
+                🏷 {floating.mark.dataset.tagName}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeMark(floating.mark)}
+                title="Etiketi kaldır"
+                className="rounded-full px-1.5 text-xs text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
+              >
+                🗑 Kaldır
+              </button>
+            </div>
+          ) : !pickerOpen ? (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="rounded-full bg-stone-900 dark:bg-stone-100 px-3 py-1.5 text-xs font-semibold text-white dark:text-stone-900 shadow-lg"
+            >
+              🏷 Etiket ekle
+            </button>
+          ) : (
+            <div className="w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">
+              {tags.length > 0 && (
+                <div className="mb-2 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                  {tags.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyTagToSelection(t)}
+                      className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                      style={{ background: t.color ?? "#78716c" }}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="mb-1.5 flex flex-wrap gap-1 border-t border-[var(--border)] pt-2">
+                {TAG_COLOR_SWATCHES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    onClick={() => setNewTagColor(c)}
+                    className={`h-5 w-5 rounded-full ${newTagColor === c ? "ring-2 ring-offset-1 ring-stone-500" : ""}`}
+                    style={{ background: c }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={(e) => setNewTagColor(e.target.value)}
+                  className="h-7 w-7 shrink-0 cursor-pointer border-0 bg-transparent p-0"
+                  title="Özel renk"
+                />
+                <input
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleCreateTag();
+                    }
+                  }}
+                  placeholder="Yeni etiket adı…"
+                  className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCreateTag()}
+                  className="shrink-0 rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1 text-xs font-semibold text-white dark:text-stone-900"
+                >
+                  Ekle
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex items-center gap-3 border-t border-[var(--border)] pt-3">
         <button

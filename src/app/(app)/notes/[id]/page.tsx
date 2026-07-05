@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { NoteContent } from "@/components/NoteContent";
-import { HighlightCapture } from "./HighlightCapture";
 import { FeynmanPanel } from "./FeynmanPanel";
 import { deleteNote } from "../actions";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
@@ -31,16 +30,22 @@ export default async function NoteDetailPage({
   );
   const titleById = new Map((allNotes ?? []).map((n) => [n.id, n.title]));
 
-  const [{ data: outLinks }, { data: backLinks }, { data: highlights }] =
+  const [{ data: outLinks }, { data: backLinks }, { data: tagHighlights }] =
     await Promise.all([
       supabase.from("note_links").select("to_note").eq("from_note", id),
       supabase.from("note_links").select("from_note").eq("to_note", id),
       supabase
-        .from("highlights")
-        .select("id, text, created_at")
+        .from("tag_highlights")
+        .select("id, text, created_at, tags(name, color)")
         .eq("note_id", id)
         .order("created_at", { ascending: false }),
     ]);
+
+  const highlights = (tagHighlights ?? []) as unknown as {
+    id: string;
+    text: string;
+    tags: { name: string; color: string | null } | null;
+  }[];
 
   const tags = (note.note_tags as { tags: { name: string } | null }[])
     .map((t) => t.tags?.name)
@@ -96,14 +101,13 @@ export default async function NoteDetailPage({
 
       <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-5">
         {note.content ? (
-          <HighlightCapture noteId={id}>
-            <NoteContent content={note.content} linkMap={linkMap} />
-          </HighlightCapture>
+          <NoteContent content={note.content} linkMap={linkMap} />
         ) : (
           <p className="text-sm text-stone-500">Bu not henüz boş.</p>
         )}
         <p className="mt-4 border-t border-stone-100 dark:border-stone-900 pt-2 text-xs text-stone-400">
-          İpucu: metinde bir pasaj seçince ❝ Alıntıya ekle düğmesi çıkar.
+          İpucu: <Link href={`/notes/${id}/edit`} className="underline">Düzenle</Link>&apos;de
+          bir pasaj seçince 🏷 Etiket ekle düğmesi çıkar.
         </p>
       </div>
 
@@ -150,24 +154,28 @@ export default async function NoteDetailPage({
         </div>
       ) : null}
 
-      {highlights && highlights.length > 0 && (
+      {highlights.length > 0 && (
         <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Bu nottaki alıntılar</h2>
+            <h2 className="text-sm font-semibold">Bu nottaki etiketler</h2>
             <Link
               href="/highlights"
               className="text-xs text-amber-700 dark:text-amber-400 hover:underline"
             >
-              Tüm Öne Çıkanlar →
+              Tüm Etiketler →
             </Link>
           </div>
           <ul className="mt-3 space-y-2">
             {highlights.map((h) => (
               <li
                 key={h.id}
-                className="border-l-2 border-amber-400 pl-3 text-sm italic text-stone-600 dark:text-stone-400"
+                className="border-l-2 pl-3 text-sm italic text-stone-600 dark:text-stone-400"
+                style={{ borderColor: h.tags?.color ?? "#f59e0b" }}
               >
-                “{h.text}”
+                “{h.text}”{" "}
+                <span className="not-italic text-xs font-medium text-stone-400">
+                  · {h.tags?.name}
+                </span>
               </li>
             ))}
           </ul>
