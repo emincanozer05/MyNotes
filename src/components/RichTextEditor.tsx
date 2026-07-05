@@ -9,54 +9,7 @@ import {
 } from "@/app/(app)/tagsActions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 
-const FONTS = [
-  { label: "Varsayılan", value: "" },
-  { label: "Serif", value: "Georgia, serif" },
-  { label: "Sans", value: "'Segoe UI', Arial, sans-serif" },
-  { label: "Mono", value: "'Courier New', monospace" },
-  { label: "Rounded", value: "'Comic Sans MS', 'Segoe UI', sans-serif" },
-];
-
-/** Size scale: plain sizes apply an exact point size; H1/H2 are headings. */
-type SizeOption =
-  | { label: string; pt: number }
-  | { label: string; block: "H1" | "H2" };
-
-const SIZES: SizeOption[] = [
-  { label: "Küçük", pt: 8 },
-  { label: "Orta", pt: 10 },
-  { label: "Büyük", pt: 12 },
-  { label: "H2", block: "H2" },
-  { label: "H1", block: "H1" },
-];
-
 type Accent = "amber" | "lime";
-
-function ToolBtn({
-  onClick,
-  title,
-  accent,
-  children,
-}: {
-  onClick: () => void;
-  title: string;
-  accent: Accent;
-  children: React.ReactNode;
-}) {
-  const hover = accent === "lime" ? "hover:bg-lime-500/15" : "hover:bg-amber-500/15";
-  return (
-    <button
-      type="button"
-      title={title}
-      // Prevent the editor from losing its selection on mousedown.
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className={`flex h-8 min-w-8 items-center justify-center rounded-md border border-[var(--border)] px-2 text-sm font-medium transition-colors ${hover}`}
-    >
-      {children}
-    </button>
-  );
-}
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -207,17 +160,6 @@ export function RichTextEditor({
   }, []);
 
   // ---- Formatting ------------------------------------------------------
-  function exec(command: string, value?: string) {
-    ref.current?.focus();
-    try {
-      document.execCommand("styleWithCSS", false, "true");
-    } catch {
-      /* not all browsers support styleWithCSS */
-    }
-    document.execCommand(command, false, value);
-    handleInput();
-  }
-
   /**
    * Formatting from the floating selection toolbar. Restores the captured
    * range first so actions that steal focus (colour pickers, link prompt)
@@ -268,18 +210,6 @@ export function RichTextEditor({
       while (f.firstChild) span.appendChild(f.firstChild);
       f.replaceWith(span);
     });
-  }
-
-  function applyPtSize(pt: number) {
-    ref.current?.focus();
-    try {
-      document.execCommand("styleWithCSS", false, "false");
-    } catch {
-      /* not all browsers support styleWithCSS */
-    }
-    document.execCommand("fontSize", false, "7");
-    replaceFontSevenWith(pt);
-    handleInput();
   }
 
   function applyPtSizeOnSelection(pt: number) {
@@ -356,15 +286,6 @@ export function RichTextEditor({
     reader.readAsDataURL(file);
   }
 
-  function insertImageFromUrl() {
-    const url = window.prompt("Görsel URL'si:");
-    if (url) {
-      ref.current?.focus();
-      document.execCommand("insertImage", false, url);
-      styleNewImages();
-      handleInput();
-    }
-  }
 
   function handlePaste(e: React.ClipboardEvent) {
     const items = e.clipboardData?.items;
@@ -592,104 +513,6 @@ export function RichTextEditor({
 
   return (
     <div className="glass-card rounded-2xl p-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--border)] pb-3">
-        <select
-          title="Yazı tipi"
-          onMouseDown={(e) => e.stopPropagation()}
-          onChange={(e) => e.target.value && exec("fontName", e.target.value)}
-          className="h-8 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-sm"
-        >
-          {FONTS.map((f) => (
-            <option key={f.label} value={f.value}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          title="Yazı boyutu"
-          defaultValue="Orta"
-          onChange={(e) => {
-            const s = SIZES.find((x) => x.label === e.target.value);
-            if (!s) return;
-            if ("block" in s) exec("formatBlock", s.block);
-            else applyPtSize(s.pt);
-          }}
-          className="h-8 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-sm"
-        >
-          {SIZES.map((s) => (
-            <option key={s.label} value={s.label}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-
-        <span className="mx-1 h-5 w-px bg-[var(--border)]" />
-
-        <ToolBtn accent={accent} title="Kalın" onClick={() => exec("bold")}>
-          <b>B</b>
-        </ToolBtn>
-        <ToolBtn accent={accent} title="İtalik" onClick={() => exec("italic")}>
-          <i>I</i>
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Altı çizili" onClick={() => exec("underline")}>
-          <u>U</u>
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Üstü çizili" onClick={() => exec("strikeThrough")}>
-          <s>S</s>
-        </ToolBtn>
-
-        <span className="mx-1 h-5 w-px bg-[var(--border)]" />
-
-        <ToolBtn accent={accent} title="Başlık" onClick={() => exec("formatBlock", "H2")}>
-          H
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Alıntı" onClick={() => exec("formatBlock", "BLOCKQUOTE")}>
-          ❝
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Madde listesi" onClick={() => exec("insertUnorderedList")}>
-          •
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Numaralı liste" onClick={() => exec("insertOrderedList")}>
-          1.
-        </ToolBtn>
-
-        <span className="mx-1 h-5 w-px bg-[var(--border)]" />
-
-        <label
-          title="Metin rengi"
-          className="flex h-8 cursor-pointer items-center rounded-md border border-[var(--border)] px-1.5"
-        >
-          <span className="text-sm">🎨</span>
-          <input
-            type="color"
-            onChange={(e) => exec("foreColor", e.target.value)}
-            className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-          />
-        </label>
-        <label
-          title="Vurgu rengi"
-          className="flex h-8 cursor-pointer items-center rounded-md border border-[var(--border)] px-1.5"
-        >
-          <span className="text-sm">🖍</span>
-          <input
-            type="color"
-            onChange={(e) => exec("hiliteColor", e.target.value)}
-            className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-          />
-        </label>
-
-        <span className="mx-1 h-5 w-px bg-[var(--border)]" />
-
-        <ToolBtn accent={accent} title="Görsel URL" onClick={insertImageFromUrl}>
-          🔗
-        </ToolBtn>
-        <ToolBtn accent={accent} title="Biçimi temizle" onClick={() => exec("removeFormat")}>
-          ⌫
-        </ToolBtn>
-      </div>
-
       {/* Editable area + resize overlay */}
       <div
         ref={containerRef}
@@ -840,7 +663,7 @@ export function RichTextEditor({
               </button>
             </div>
           ) : !pickerOpen ? (
-            <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-1 shadow-xl">
+            <div className="flex max-w-[92vw] flex-wrap items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1 py-1 shadow-xl">
               {(
                 [
                   { cmd: "bold", label: <b>B</b>, title: "Kalın" },
@@ -865,38 +688,43 @@ export function RichTextEditor({
 
               {(
                 [
-                  { pt: 8, label: "A", cls: "text-[11px]", title: "Küçük (8pt)" },
-                  { pt: 10, label: "A", cls: "text-sm", title: "Orta (10pt)" },
-                  { pt: 12, label: "A", cls: "text-lg", title: "Büyük (12pt)" },
+                  { pt: 8, cls: "text-[10px]" },
+                  { pt: 11, cls: "text-xs" },
+                  { pt: 14, cls: "text-sm" },
+                  { pt: 16, cls: "text-base" },
+                  { pt: 18, cls: "text-lg" },
                 ] as const
               ).map((s) => (
                 <button
                   key={s.pt}
                   type="button"
-                  title={s.title}
+                  title={`Boyut: ${s.pt}`}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applyPtSizeOnSelection(s.pt)}
                   className={`flex h-7 min-w-6 items-center justify-center rounded px-1 font-semibold leading-none hover:bg-stone-500/15 ${s.cls}`}
                 >
-                  {s.label}
+                  {s.pt}
                 </button>
               ))}
 
+              <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />
+
               {(
                 [
-                  { block: "H2", title: "Başlık 2 (14pt)" },
-                  { block: "H1", title: "Başlık 1 (16pt)" },
+                  { cmd: "formatBlock", arg: "BLOCKQUOTE", label: "❝", title: "Alıntı" },
+                  { cmd: "insertUnorderedList", label: "•", title: "Madde listesi" },
+                  { cmd: "insertOrderedList", label: "1.", title: "Numaralı liste" },
                 ] as const
-              ).map((h) => (
+              ).map((b) => (
                 <button
-                  key={h.block}
+                  key={b.label}
                   type="button"
-                  title={h.title}
+                  title={b.title}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => execOnSelection("formatBlock", h.block)}
-                  className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm font-bold hover:bg-stone-500/15"
+                  onClick={() => execOnSelection(b.cmd, "arg" in b ? b.arg : undefined)}
+                  className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
                 >
-                  {h.block}
+                  {b.label}
                 </button>
               ))}
 
