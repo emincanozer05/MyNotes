@@ -206,6 +206,34 @@ export function RichTextEditor({
     if (url) execOnSelection("createLink", url);
   }
 
+  // Reset text colour to the default: colour the selection with a sentinel then
+  // strip it, so the text inherits the theme's foreground again (instead of a
+  // hard-coded colour that wouldn't adapt to light/dark).
+  function clearForeColor() {
+    const sel = window.getSelection();
+    const range = pendingRangeRef.current;
+    if (!sel || !range) return;
+    ref.current?.focus();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try {
+      document.execCommand("styleWithCSS", false, "true");
+    } catch {
+      /* not all browsers support styleWithCSS */
+    }
+    document.execCommand("foreColor", false, "rgb(1, 1, 1)");
+    ref.current?.querySelectorAll('[style*="rgb(1, 1, 1)"]').forEach((el) => {
+      const e = el as HTMLElement;
+      e.style.color = "";
+      if (!e.getAttribute("style")) e.replaceWith(...e.childNodes);
+    });
+    const after = window.getSelection();
+    if (after && after.rangeCount > 0) {
+      pendingRangeRef.current = after.getRangeAt(0).cloneRange();
+    }
+    handleInput();
+  }
+
   // execCommand("fontSize") only supports the 1–7 HTML scale, so we mark the
   // selection with size 7 then rewrite those <font> tags to an exact pt size.
   function replaceFontSevenWith(pt: number) {
@@ -787,6 +815,15 @@ export function RichTextEditor({
                   style={{ background: c.hex }}
                 />
               ))}
+              <button
+                type="button"
+                title="Rengi kaldır (varsayılan)"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={clearForeColor}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-black/20 text-[11px] leading-none text-stone-500 hover:bg-stone-500/15"
+              >
+                ⦸
+              </button>
 
               <label
                 title="Vurgu (fon) rengi"
