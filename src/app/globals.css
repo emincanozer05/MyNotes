@@ -166,6 +166,12 @@ body {
   color: #fff;
 }
 
+/* On the printable A4 output the white highlight text is unreadable on the
+   white sheet, so force it black there (screen preview + actual print). */
+.a4-sheet .tag-mark {
+  color: #000 !important;
+}
+
 /* Rendered (read-only) note body: mirrors the editor's element styles. */
 .note-html {
   line-height: 1.7;
