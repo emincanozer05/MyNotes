@@ -106,14 +106,15 @@ export default async function NotesPage({
   const passages: BoardItem[] = [];
   for (const s of (sources ?? []) as SourceRow[]) {
     const base = sourceHref(s.kind, s.id);
-    // Anchor each passage to its titled note (or the seeded legacy summary) so
-    // "Kaynağa git" jumps straight to where the text was highlighted.
+    // Anchor each passage to its titled note (or the seeded legacy summary)
+    // plus its index inside that note, so "Kaynağa git" scrolls straight to
+    // the exact highlighted text.
     extractTaggedPassages(s.metadata?.summary).forEach((p, i) =>
       passages.push({
         ...p,
         key: `src-${s.id}-sum-${i}`,
         sourceLabel: s.title,
-        href: `${base}#note-legacy`,
+        href: `${base}#note-legacy~${i}`,
       }),
     );
     for (const tn of s.metadata?.notes ?? []) {
@@ -122,7 +123,7 @@ export default async function NotesPage({
           ...p,
           key: `src-${s.id}-${tn.id}-${i}`,
           sourceLabel: tn.title ? `${s.title} › ${tn.title}` : s.title,
-          href: `${base}#note-${tn.id}`,
+          href: `${base}#note-${tn.id}~${i}`,
         }),
       );
     }
