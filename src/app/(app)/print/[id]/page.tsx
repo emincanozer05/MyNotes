@@ -51,13 +51,13 @@ export default async function PrintSourcePage({
       </div>
 
       <div className="a4-sheet">
-        <header className="flex min-h-[8rem] items-center gap-6 border-b-2 border-stone-800 pb-6">
+        <header className="flex min-h-[11rem] items-center gap-6 border-b-2 border-stone-800 pb-6">
           {source.cover_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={source.cover_url}
               alt=""
-              className="h-32 w-auto flex-shrink-0 rounded border border-stone-300 object-cover"
+              className="h-44 w-auto flex-shrink-0 rounded border border-stone-300 object-cover"
             />
           )}
           <div className="flex-1">
