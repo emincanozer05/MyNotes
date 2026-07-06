@@ -24,17 +24,28 @@ export function parseNoteHash(hash: string): NoteHashTarget | null {
 }
 
 /**
- * Tagged `<mark>`s in DOM order, mirroring the filters `extractTaggedPassages`
- * applies to the stored HTML so the indexes line up with the post-it board.
+ * Tagged `<mark>`s in DOM order, bundled the same way `extractTaggedPassages`
+ * bundles the stored HTML — consecutive marks born from one selection share a
+ * `data-tag-group` and count as ONE passage — so indexes line up with the
+ * post-it board.
  */
-export function taggedMarksIn(container: HTMLElement): HTMLElement[] {
-  return [
+export function taggedMarkGroupsIn(container: HTMLElement): HTMLElement[][] {
+  const marks = [
     ...container.querySelectorAll<HTMLElement>("mark[data-tag-name]"),
   ].filter(
     (m) =>
       (m.dataset.tagName ?? "").trim().replace(/^#/, "") !== "" &&
       (m.textContent ?? "").trim() !== "",
   );
+  const groups: HTMLElement[][] = [];
+  let lastGroup: string | null = null;
+  for (const m of marks) {
+    const g = m.dataset.tagGroup || null;
+    if (g && g === lastGroup) groups[groups.length - 1].push(m);
+    else groups.push([m]);
+    lastGroup = g;
+  }
+  return groups;
 }
 
 /**
@@ -59,12 +70,14 @@ export function scrollToPassage(
         container.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
-      const mark = taggedMarksIn(container)[passageIndex];
-      if (mark) {
+      const group = taggedMarkGroupsIn(container)[passageIndex];
+      if (group) {
         clearInterval(timer);
-        mark.scrollIntoView({ behavior: "smooth", block: "center" });
-        mark.classList.add("tag-mark-flash");
-        setTimeout(() => mark.classList.remove("tag-mark-flash"), 2400);
+        group[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        for (const mark of group) mark.classList.add("tag-mark-flash");
+        setTimeout(() => {
+          for (const mark of group) mark.classList.remove("tag-mark-flash");
+        }, 2400);
         return;
       }
     }
