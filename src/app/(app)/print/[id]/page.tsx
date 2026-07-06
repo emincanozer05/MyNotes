@@ -51,22 +51,22 @@ export default async function PrintSourcePage({
       </div>
 
       <div className="a4-sheet">
-        <header className="flex items-start gap-4 border-b-2 border-stone-800 pb-4">
+        <header className="flex min-h-[8rem] items-center gap-6 border-b-2 border-stone-800 pb-6">
           {source.cover_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={source.cover_url}
               alt=""
-              className="h-20 w-auto flex-shrink-0 rounded border border-stone-300 object-cover"
+              className="h-32 w-auto flex-shrink-0 rounded border border-stone-300 object-cover"
             />
           )}
-          <div>
+          <div className="flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
               S&amp;C Hub — Not Föyü
             </p>
-            <h1 className="mt-2 text-xl font-bold leading-snug">{source.title}</h1>
+            <h1 className="mt-2 text-2xl font-bold leading-snug">{source.title}</h1>
             {(source.authors.length > 0 || source.year) && (
-              <p className="mt-1 text-sm text-stone-600">
+              <p className="mt-1 text-base text-stone-600">
                 {source.authors.join(", ")}
                 {source.authors.length > 0 && source.year ? " · " : ""}
                 {source.year ?? ""}
