@@ -32,6 +32,7 @@ interface NoteRow {
   id: string;
   title: string;
   content: string;
+  source_id: string | null;
   source_title: string | null;
   source_author: string | null;
   source_year: number | null;
@@ -66,11 +67,16 @@ export default async function NotesPage({
     supabase
       .from("notes")
       .select(
-        "id, title, content, source_title, source_author, source_year, note_tags(tags(name, color))",
+        "id, title, content, source_id, source_title, source_author, source_year, note_tags(tags(name, color))",
       )
       .order("created_at", { ascending: false }),
     supabase.from("sources").select("id, kind, title, metadata"),
   ]);
+
+  // Map each source id to its kind so a note can link back to its source.
+  const sourceKindById = new Map<string, string>(
+    ((sources ?? []) as SourceRow[]).map((s) => [s.id, s.kind]),
+  );
 
   // Each note is its own post-it card.
   const noteCards: PostitData[] = ((notes ?? []) as unknown as NoteRow[]).map((n) => {
@@ -78,6 +84,7 @@ export default async function NotesPage({
       .map((t) => t.tags)
       .filter((t): t is { name: string; color: string | null } => Boolean(t));
     const firstColor = tags.find((t) => t.color)?.color ?? null;
+    const kind = n.source_id ? sourceKindById.get(n.source_id) : undefined;
     return {
       id: n.id,
       title: n.title,
@@ -85,6 +92,7 @@ export default async function NotesPage({
       source_title: n.source_title ?? "",
       source_author: n.source_author ?? "",
       source_year: n.source_year,
+      sourceHref: n.source_id && kind ? sourceHref(kind, n.source_id) : null,
       tags: tags.map((t) => ({ name: t.name })),
       cls: clsFor(n.id),
       tilt: tiltFor(n.id),
