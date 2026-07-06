@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { saveSourceNotes, type TitledNote } from "@/app/(app)/sourceNotesActions";
@@ -45,8 +45,26 @@ export function TitledNotes({
     initialNotes[0]?.id ?? null,
   );
   const [dragId, setDragId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const active = notes.find((n) => n.id === activeId) ?? null;
+
+  // When arriving with a `#note-<id>` fragment (e.g. from a post-it's "Kaynağa
+  // git"), open that title and scroll straight to the note text.
+  useEffect(() => {
+    const match = /^#note-(.+)$/.exec(window.location.hash);
+    if (!match) return;
+    const targetId = decodeURIComponent(match[1]);
+    if (!initialNotes.some((n) => n.id === targetId)) return;
+    setActiveId(targetId);
+    // Wait for the editor to render its content before scrolling to it.
+    const t = setTimeout(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => clearTimeout(t);
+    // Only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleDragEnter(id: string) {
     if (dragId && dragId !== id) {
@@ -175,7 +193,7 @@ export function TitledNotes({
 
       {/* Active editor */}
       {active ? (
-        <div>
+        <div ref={editorRef} className="scroll-mt-20">
           <h3 className="mb-2 text-sm font-bold">{active.title}</h3>
           <RichTextEditor
             key={active.id}

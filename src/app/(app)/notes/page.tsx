@@ -105,13 +105,15 @@ export default async function NotesPage({
   // also surface as post-its, linking back to their source.
   const passages: BoardItem[] = [];
   for (const s of (sources ?? []) as SourceRow[]) {
-    const href = sourceHref(s.kind, s.id);
+    const base = sourceHref(s.kind, s.id);
+    // Anchor each passage to its titled note (or the seeded legacy summary) so
+    // "Kaynağa git" jumps straight to where the text was highlighted.
     extractTaggedPassages(s.metadata?.summary).forEach((p, i) =>
       passages.push({
         ...p,
         key: `src-${s.id}-sum-${i}`,
         sourceLabel: s.title,
-        href,
+        href: `${base}#note-legacy`,
       }),
     );
     for (const tn of s.metadata?.notes ?? []) {
@@ -120,7 +122,7 @@ export default async function NotesPage({
           ...p,
           key: `src-${s.id}-${tn.id}-${i}`,
           sourceLabel: tn.title ? `${s.title} › ${tn.title}` : s.title,
-          href,
+          href: `${base}#note-${tn.id}`,
         }),
       );
     }
