@@ -375,10 +375,7 @@ export function RichTextEditor({
     setFloating({ kind: "select", ...panelPosition(rect), text });
   }
 
-  function applyTagToSelection(tag: UserTag) {
-    const range = pendingRangeRef.current;
-    if (!range) return;
-
+  function createMarkEl(tag: UserTag): HTMLElement {
     const mark = document.createElement("mark");
     mark.className = "tag-mark";
     mark.dataset.tagId = tag.id;
@@ -386,12 +383,90 @@ export function RichTextEditor({
     mark.dataset.tagColor = tag.color ?? "#78716c";
     mark.style.backgroundColor = tagHighlightBg(tag.color);
     mark.style.color = "#fff";
-    try {
-      range.surroundContents(mark);
-    } catch {
-      const frag = range.extractContents();
-      mark.appendChild(frag);
-      range.insertNode(mark);
+    return mark;
+  }
+
+  /** Closest block-level ancestor of `node` inside the editor (or the root). */
+  function blockAncestor(node: Node, root: HTMLElement): Node {
+    const BLOCKS = new Set([
+      "P", "DIV", "LI", "UL", "OL",
+      "H1", "H2", "H3", "H4",
+      "BLOCKQUOTE", "TABLE", "TR", "TD", "TH", "PRE",
+    ]);
+    let cur: Node | null = node.parentNode;
+    while (cur && cur !== root) {
+      if (cur.nodeType === Node.ELEMENT_NODE && BLOCKS.has((cur as HTMLElement).tagName)) {
+        return cur;
+      }
+      cur = cur.parentNode;
+    }
+    return root;
+  }
+
+  /**
+   * Wraps the selection in tag `<mark>`s without disturbing the document
+   * structure. A selection can span several paragraphs / list items (double- or
+   * triple-click), and `extractContents` on such a range rips the `<li>`/`<p>`
+   * blocks out of place — leaving empty bullets and shifted lines. Instead the
+   * covered text is wrapped per block: each paragraph or list item gets its own
+   * inline `<mark>`, empty lines are skipped, and text already tagged is left
+   * with its existing tag.
+   */
+  function applyTagToSelection(tag: UserTag) {
+    const range = pendingRangeRef.current;
+    const root = ref.current;
+    if (!range || !root) return;
+
+    // Trim the boundary text nodes so only the selected slice is wrapped.
+    if (
+      range.endContainer.nodeType === Node.TEXT_NODE &&
+      range.endOffset < (range.endContainer as Text).length
+    ) {
+      (range.endContainer as Text).splitText(range.endOffset);
+    }
+    if (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset > 0) {
+      const rest = (range.startContainer as Text).splitText(range.startOffset);
+      range.setStart(rest, 0);
+    }
+
+    // Walk the covered, non-empty text nodes and group the consecutive ones
+    // that share a block: one <mark> per paragraph / list item. Text already
+    // inside a tag mark keeps its existing tag — and also splits the group, so
+    // the new mark is laid around the old one instead of swallowing it.
+    const scopeNode = range.commonAncestorContainer;
+    const scope =
+      scopeNode.nodeType === Node.TEXT_NODE ? scopeNode.parentNode ?? root : scopeNode;
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    const groups: Text[][] = [];
+    let lastBlock: Node | null = null;
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const t = n as Text;
+      if (!t.data.trim()) continue;
+      const r = document.createRange();
+      r.selectNodeContents(t);
+      const covered =
+        range.compareBoundaryPoints(Range.START_TO_START, r) <= 0 &&
+        range.compareBoundaryPoints(Range.END_TO_END, r) >= 0;
+      if (!covered) continue;
+      if ((t.parentElement as HTMLElement | null)?.closest("mark.tag-mark")) {
+        lastBlock = null;
+        continue;
+      }
+      const block = blockAncestor(t, root);
+      if (block !== lastBlock) {
+        groups.push([]);
+        lastBlock = block;
+      }
+      groups[groups.length - 1].push(t);
+    }
+
+    for (const group of groups) {
+      const r = document.createRange();
+      r.setStartBefore(group[0]);
+      r.setEndAfter(group[group.length - 1]);
+      const mark = createMarkEl(tag);
+      mark.appendChild(r.extractContents());
+      r.insertNode(mark);
     }
 
     window.getSelection()?.removeAllRanges();
