@@ -51,18 +51,28 @@ export default async function PrintSourcePage({
       </div>
 
       <div className="a4-sheet">
-        <header className="border-b-2 border-stone-800 pb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-            S&amp;C Hub — Not Föyü
-          </p>
-          <h1 className="mt-2 text-xl font-bold leading-snug">{source.title}</h1>
-          {(source.authors.length > 0 || source.year) && (
-            <p className="mt-1 text-sm text-stone-600">
-              {source.authors.join(", ")}
-              {source.authors.length > 0 && source.year ? " · " : ""}
-              {source.year ?? ""}
-            </p>
+        <header className="flex items-start gap-4 border-b-2 border-stone-800 pb-4">
+          {source.cover_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={source.cover_url}
+              alt=""
+              className="h-20 w-auto flex-shrink-0 rounded border border-stone-300 object-cover"
+            />
           )}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              S&amp;C Hub — Not Föyü
+            </p>
+            <h1 className="mt-2 text-xl font-bold leading-snug">{source.title}</h1>
+            {(source.authors.length > 0 || source.year) && (
+              <p className="mt-1 text-sm text-stone-600">
+                {source.authors.join(", ")}
+                {source.authors.length > 0 && source.year ? " · " : ""}
+                {source.year ?? ""}
+              </p>
+            )}
+          </div>
         </header>
 
         <div className="mt-6 space-y-6 [&_a]:text-amber-700 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-bold [&_img]:my-2 [&_img]:h-auto [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
@@ -73,7 +83,7 @@ export default async function PrintSourcePage({
                   {n.title}
                 </h2>
                 <div
-                  className="mt-2 text-sm leading-relaxed text-stone-800"
+                  className="mt-2 text-[11pt] leading-relaxed text-stone-800"
                   dangerouslySetInnerHTML={{
                     __html: n.html || "<p>—</p>",
                   }}
@@ -82,7 +92,7 @@ export default async function PrintSourcePage({
             ))
           ) : summary.replace(/<[^>]*>/g, "").trim() ? (
             <div
-              className="text-sm leading-relaxed text-stone-800"
+              className="text-[11pt] leading-relaxed text-stone-800"
               dangerouslySetInnerHTML={{ __html: summary }}
             />
           ) : (
