@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { saveSourceNotes, type TitledNote } from "@/app/(app)/sourceNotesActions";
+import { parseNoteHash, scrollToPassage } from "@/lib/passageScroll";
 
 function newId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -49,19 +50,17 @@ export function TitledNotes({
 
   const active = notes.find((n) => n.id === activeId) ?? null;
 
-  // When arriving with a `#note-<id>` fragment (e.g. from a post-it's "Kaynağa
-  // git"), open that title and scroll straight to the note text.
+  // When arriving with a `#note-<id>~<passage>` fragment (a post-it's "Kaynağa
+  // git"), open that title and scroll straight to the highlighted passage.
   useEffect(() => {
-    const match = /^#note-(.+)$/.exec(window.location.hash);
-    if (!match) return;
-    const targetId = decodeURIComponent(match[1]);
-    if (!initialNotes.some((n) => n.id === targetId)) return;
-    setActiveId(targetId);
-    // Wait for the editor to render its content before scrolling to it.
-    const t = setTimeout(() => {
-      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
-    return () => clearTimeout(t);
+    const target = parseNoteHash(window.location.hash);
+    if (!target || !initialNotes.some((n) => n.id === target.noteId)) return;
+    const t = setTimeout(() => setActiveId(target.noteId), 0);
+    const stopScroll = scrollToPassage(() => editorRef.current, target.passageIndex);
+    return () => {
+      clearTimeout(t);
+      stopScroll();
+    };
     // Only on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

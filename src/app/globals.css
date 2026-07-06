@@ -188,6 +188,22 @@ body {
   color: #fff;
 }
 
+/* Flash pulse when "Kaynağa git" lands on the passage, so the eye finds it. */
+.tag-mark-flash {
+  animation: tag-mark-flash 0.8s ease-in-out 3;
+}
+@keyframes tag-mark-flash {
+  0%,
+  100% {
+    outline: 3px solid transparent;
+    outline-offset: 2px;
+  }
+  50% {
+    outline: 3px solid #f59e0b;
+    outline-offset: 2px;
+  }
+}
+
 /* On the printable A4 output the white highlight text is unreadable on the
    white sheet, so force it black there (screen preview + actual print). */
 .a4-sheet .tag-mark {
