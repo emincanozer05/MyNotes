@@ -45,12 +45,16 @@ const MARK_RE = /<mark\b([^>]*)>([\s\S]*?)<\/mark>/gi;
  * tag it carries (name + colour, read straight from the `<mark>` data-*). Used
  * to turn each highlight into its own post-it card, wherever it was tagged
  * (notes, article summaries, book/course notes).
+ *
+ * A single selection spanning several paragraphs / list items is stored as one
+ * `<mark>` per block, all sharing a `data-tag-group` id — those are merged back
+ * into ONE passage here (line per block), so one selection = one post-it.
  */
 export function extractTaggedPassages(
   html: string | null | undefined,
 ): TaggedPassage[] {
   if (!html) return [];
-  const out: TaggedPassage[] = [];
+  const out: (TaggedPassage & { group: string | null })[] = [];
   for (const m of html.matchAll(MARK_RE)) {
     const attrs = m[1];
     const nameRaw = /data-tag-name="([^"]*)"/.exec(attrs)?.[1];
@@ -60,6 +64,7 @@ export function extractTaggedPassages(
 
     const colorRaw = /data-tag-color="([^"]*)"/.exec(attrs)?.[1] ?? "";
     const tagColor = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : null;
+    const group = /data-tag-group="([^"]*)"/.exec(attrs)?.[1] || null;
 
     const text = decodeHtmlEntities(
       m[2].replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " "),
@@ -68,9 +73,14 @@ export function extractTaggedPassages(
       .trim();
     if (!text) continue;
 
-    out.push({ tagName, tagColor, text });
+    const prev = out[out.length - 1];
+    if (group && prev && prev.group === group && prev.tagName === tagName) {
+      prev.text += `\n${text}`;
+    } else {
+      out.push({ tagName, tagColor, text, group });
+    }
   }
-  return out;
+  return out.map(({ tagName, tagColor, text }) => ({ tagName, tagColor, text }));
 }
 
 /** Decodes the entities the browser escapes into HTML attribute values. */

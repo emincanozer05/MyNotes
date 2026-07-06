@@ -25,6 +25,13 @@ const TEXT_COLORS = [
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+/** Shared id for the marks born from one selection (see `data-tag-group`). */
+function newTagGroupId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 type FloatingUI =
   | { kind: "select"; top: number; left: number; text: string }
   | { kind: "mark"; top: number; left: number; mark: HTMLElement };
@@ -375,12 +382,15 @@ export function RichTextEditor({
     setFloating({ kind: "select", ...panelPosition(rect), text });
   }
 
-  function createMarkEl(tag: UserTag): HTMLElement {
+  function createMarkEl(tag: UserTag, groupId: string): HTMLElement {
     const mark = document.createElement("mark");
     mark.className = "tag-mark";
     mark.dataset.tagId = tag.id;
     mark.dataset.tagName = tag.name;
     mark.dataset.tagColor = tag.color ?? "#78716c";
+    // Marks born from the same selection share a group id, so the post-it
+    // board can show the whole selection as a single passage.
+    mark.dataset.tagGroup = groupId;
     mark.style.backgroundColor = tagHighlightBg(tag.color);
     mark.style.color = "#fff";
     return mark;
@@ -460,11 +470,12 @@ export function RichTextEditor({
       groups[groups.length - 1].push(t);
     }
 
+    const groupId = newTagGroupId();
     for (const group of groups) {
       const r = document.createRange();
       r.setStartBefore(group[0]);
       r.setEndAfter(group[group.length - 1]);
-      const mark = createMarkEl(tag);
+      const mark = createMarkEl(tag, groupId);
       mark.appendChild(r.extractContents());
       r.insertNode(mark);
     }
