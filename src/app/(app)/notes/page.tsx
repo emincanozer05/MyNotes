@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { pastelize } from "@/lib/color";
 import { extractTaggedPassages, type TaggedPassage } from "@/lib/wiki";
 import { PostitCard, type PostitData } from "./PostitCard";
+import { PassagePostitCard } from "./PassagePostitCard";
 import { NewPostitButton } from "./NewPostitButton";
 
 // Deterministic post-it tilt from a stable key so cards don't jump on refresh.
@@ -221,29 +222,18 @@ export default async function NotesPage({
             <PostitCard key={`note-${n.id}`} note={n} />
           ))}
           {shownPassages.map((it) => (
-            <Link
+            <PassagePostitCard
               key={it.key}
-              href={it.href}
-              className="postit group"
-              style={{
-                transform: `rotate(${tiltFor(it.key)})`,
-                background: pastelize(it.tagColor),
+              passage={{
+                key: it.key,
+                text: it.text,
+                tagName: it.tagName,
+                tagColor: it.tagColor,
+                sourceLabel: it.sourceLabel,
+                href: it.href,
+                tilt: tiltFor(it.key),
               }}
-            >
-              <span className="postit-pin" aria-hidden />
-              <span
-                className="ml-3.5 self-start rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
-                style={{ background: it.tagColor ?? "#78716c" }}
-              >
-                🏷 {it.tagName}
-              </span>
-              <p className="mt-2 flex-1 whitespace-pre-wrap text-[12px] font-medium leading-snug line-clamp-6">
-                “{it.text}”
-              </p>
-              <p className="mt-2 line-clamp-1 text-[10px] italic opacity-70">
-                {it.sourceLabel}
-              </p>
-            </Link>
+            />
           ))}
         </div>
       ) : (
