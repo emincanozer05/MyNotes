@@ -45,7 +45,7 @@ export default async function CoursesPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">
-            <span className="gradient-text">Kurslar & Eğitimler</span>
+            <span className="gradient-text">Kurslar ve Eğitimler (S&C)</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
             Kurs, sertifika ve eğitimlerini kapak görselleriyle topla; her biri

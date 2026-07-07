@@ -33,6 +33,9 @@ export async function addCourse(formData: FormData) {
     year: Number(formData.get("year")) || null,
     cover_url: cover,
     url,
+    // Courses are S&C content: pin them to the "spor" category so their note
+    // tags and highlighted passages surface on the Spor post-it board.
+    category: "spor",
     metadata: { category: CATEGORY, status },
   });
 

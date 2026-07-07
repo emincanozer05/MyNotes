@@ -13,7 +13,7 @@ interface TitledNote {
 function backInfo(kind: string): { href: string; label: string } {
   if (kind === "book") return { href: "/bookshelf", label: "← Kitap Rafı" };
   if (kind === "article") return { href: "/library", label: "← Literatür" };
-  return { href: "/courses", label: "← Kurslar & Eğitimler" };
+  return { href: "/courses", label: "← Kurslar ve Eğitimler (S&C)" };
 }
 
 export default async function PrintSourcePage({
