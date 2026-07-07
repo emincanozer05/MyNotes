@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
 import { CATEGORIES, normalizeCategory } from "@/lib/categories";
+import { COURSE_STATUSES, STATUS_META, normalizeStatus } from "@/lib/status";
 import { updateBookInfo } from "../actions";
 
 const inputCls =
@@ -23,6 +24,7 @@ export function EditBookModal({
     authors: string[];
     year: number | null;
     category: string;
+    status: string;
   };
 }) {
   const router = useRouter();
@@ -121,6 +123,23 @@ export function EditBookModal({
               {CATEGORIES.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <label htmlFor="eb-status" className="text-sm font-medium">
+              Durum
+            </label>
+            <select
+              id="eb-status"
+              name="status"
+              defaultValue={normalizeStatus(book.status)}
+              className={inputCls}
+            >
+              {COURSE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_META[s].label}
                 </option>
               ))}
             </select>
