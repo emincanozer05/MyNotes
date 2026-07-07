@@ -13,9 +13,12 @@ interface CourseRow {
   year: number | null;
   cover_url: string | null;
   url: string | null;
-  category: string;
   metadata: { status?: string; summary?: string; notes?: TitledNote[] } | null;
 }
+
+// Courses/trainings always belong to the "spor" domain (there is no category
+// picker in this tab), so their inline highlight tags are pinned to it.
+const COURSE_TAG_CATEGORY = "spor";
 
 /** Uses saved titled notes, or seeds one from a legacy single summary. */
 function seedNotes(meta: CourseRow["metadata"]): TitledNote[] {
@@ -36,7 +39,7 @@ export default async function CourseDetailPage({
 
   const { data } = await supabase
     .from("sources")
-    .select("id, title, authors, year, cover_url, url, category, metadata")
+    .select("id, title, authors, year, cover_url, url, metadata")
     .eq("id", id)
     .eq("kind", "other")
     .maybeSingle();
@@ -96,7 +99,7 @@ export default async function CourseDetailPage({
           sourceId={course.id}
           initialNotes={seededNotes}
           printHref={`/print/${course.id}`}
-          tagCategory={course.category}
+          tagCategory={COURSE_TAG_CATEGORY}
         />
       </div>
     </div>

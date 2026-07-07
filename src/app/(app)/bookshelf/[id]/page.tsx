@@ -5,6 +5,7 @@ import { CoverUpload } from "./CoverUpload";
 import { BookDescription } from "./BookDescription";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
+import { normalizeCategory } from "@/lib/categories";
 import { refreshCover } from "../actions";
 
 interface BookRow {
@@ -13,8 +14,12 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  category: string;
-  metadata: { summary?: string; description?: string; notes?: TitledNote[] } | null;
+  metadata: {
+    category?: string;
+    summary?: string;
+    description?: string;
+    notes?: TitledNote[];
+  } | null;
 }
 
 /** Uses saved titled notes, or seeds one from a legacy single summary. */
@@ -37,7 +42,7 @@ export default async function BookDetailPage({
   const [{ data: bookData }, { count: noteCount }] = await Promise.all([
     supabase
       .from("sources")
-      .select("id, title, authors, year, cover_url, category, metadata")
+      .select("id, title, authors, year, cover_url, metadata")
       .eq("id", id)
       .eq("kind", "book")
       .maybeSingle(),
@@ -49,11 +54,12 @@ export default async function BookDetailPage({
 
   if (!bookData) notFound();
   const book = bookData as BookRow;
+  const category = normalizeCategory(book.metadata?.category);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
-        href={`/bookshelf?category=${book.category}`}
+        href={`/bookshelf?category=${category}`}
         className="text-sm text-stone-500 hover:text-amber-600"
       >
         ← Kitap Rafı
@@ -106,7 +112,7 @@ export default async function BookDetailPage({
           sourceId={book.id}
           initialNotes={seedNotes(book.metadata)}
           printHref={`/print/${book.id}`}
-          tagCategory={book.category}
+          tagCategory={category}
         />
       </div>
     </div>

@@ -15,7 +15,11 @@ async function findCoverByTitle(
     if (author) params.set("author", author);
     const res = await fetch(
       `https://openlibrary.org/search.json?${params.toString()}`,
-      { headers: { "User-Agent": "sc-hub (library@sc-hub.app)" } },
+      {
+        headers: { "User-Agent": "sc-hub (library@sc-hub.app)" },
+        // Never let a slow/blocked cover lookup hold up adding the book.
+        signal: AbortSignal.timeout(5000),
+      },
     );
     if (!res.ok) return null;
     const data = (await res.json()) as {
@@ -53,6 +57,8 @@ export async function addBook(formData: FormData) {
   const coverUrl =
     manualCover || (await findCoverByTitle(title, authorList[0] ?? ""));
 
+  // Category is kept in `metadata` (like Kurslar/Eğitimler) so the bookshelf
+  // does not depend on the optional `sources.category` schema column.
   await supabase.from("sources").insert({
     user_id: user.id,
     kind: "book",
@@ -60,7 +66,7 @@ export async function addBook(formData: FormData) {
     authors: authorList,
     year: Number(formData.get("year")) || null,
     cover_url: coverUrl,
-    category: normalizeCategory(formData.get("category")),
+    metadata: { category: normalizeCategory(formData.get("category")) },
   });
 
   revalidatePath("/bookshelf");
