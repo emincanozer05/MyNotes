@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { CoverUpload } from "./CoverUpload";
 import { BookDescription } from "./BookDescription";
 import { EditBookModal } from "./EditBookModal";
+import { BookStatusControls } from "./BookStatusControls";
+import { normalizeStatus } from "@/lib/status";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { normalizeCategory } from "@/lib/categories";
@@ -91,6 +93,12 @@ export default async function BookDetailPage({
             {book.authors.join(", ")}
             {book.year ? ` · ${book.year}` : ""}
           </p>
+          <div className="mt-3">
+            <BookStatusControls
+              bookId={book.id}
+              status={normalizeStatus(book.metadata?.status)}
+            />
+          </div>
           <BookDescription
             bookId={book.id}
             initial={book.metadata?.description ?? ""}

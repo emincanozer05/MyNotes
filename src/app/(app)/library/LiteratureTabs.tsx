@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Source } from "@/lib/types";
@@ -181,12 +181,10 @@ export function LiteratureTabs({
   saved,
   noteCounts,
   curated,
-  todayLabel,
 }: {
   saved: Source[];
   noteCounts: Record<string, number>;
   curated: CuratedArticle[];
-  todayLabel: string;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<TabId>("feed");
@@ -290,7 +288,8 @@ export function LiteratureTabs({
     });
   }
 
-  // Fetch 6 fresh RCTs from PubMed for the "Makaleleri Getir" button.
+  // Fetch 6 fresh RCTs from PubMed; runs automatically on every page load so
+  // each refresh shows different articles, and again via the "Yenile" button.
   async function handleFetchArticles() {
     setFetching(true);
     setFetchErr(null);
@@ -310,6 +309,13 @@ export function LiteratureTabs({
       setFetching(false);
     }
   }
+
+  useEffect(() => {
+    // Kick off the initial PubMed fetch (an external system); only on mount —
+    // refreshing the page is what brings a new batch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void handleFetchArticles();
+  }, []);
 
   const tabs: { id: TabId; label: string; icon: string; count?: number }[] = [
     { id: "feed", label: "Günlük Akış", icon: "📰" },
@@ -368,14 +374,14 @@ export function LiteratureTabs({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-stone-500">
-              📅 {todayLabel} · günün seçimleri
+              Her yenilemede PubMed&apos;den taze makaleler gelir.
             </p>
             <button
               onClick={handleFetchArticles}
               disabled={fetching}
               className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold disabled:opacity-60"
             >
-              {fetching ? "Getiriliyor…" : "🔄 Makaleleri Getir"}
+              {fetching ? "Getiriliyor…" : "🔄 Yenile"}
             </button>
           </div>
 
@@ -385,39 +391,27 @@ export function LiteratureTabs({
             </p>
           )}
 
-          {/* Fetched articles replace the curated set in place. */}
-          {fetched && (
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-bold">
-                🔄 Yeni getirilen makaleler{" "}
-                <span className="font-normal text-stone-500">
-                  ({fetched.length})
-                </span>
-              </p>
-              <button
-                onClick={() => setFetched(null)}
-                className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-              >
-                ↩ Günün seçimlerine dön
-              </button>
+          {fetching && !fetched ? (
+            <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
+              Makaleler getiriliyor…
+            </p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {(fetched ?? curated).map((a) => (
+                <FeedCard
+                  key={a.pmid}
+                  article={a}
+                  isSaved={savedPmids.has(a.pmid)}
+                  busy={pending && busyPmid === a.pmid}
+                  error={saveErrors[a.pmid] || null}
+                  onSave={() =>
+                    fetched ? handleSaveFetched(a) : handleSave(a.pmid)
+                  }
+                  onUnsave={() => handleUnsave(a.pmid)}
+                />
+              ))}
             </div>
           )}
-
-          <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {(fetched ?? curated).map((a) => (
-              <FeedCard
-                key={a.pmid}
-                article={a}
-                isSaved={savedPmids.has(a.pmid)}
-                busy={pending && busyPmid === a.pmid}
-                error={saveErrors[a.pmid] || null}
-                onSave={() =>
-                  fetched ? handleSaveFetched(a) : handleSave(a.pmid)
-                }
-                onUnsave={() => handleUnsave(a.pmid)}
-              />
-            ))}
-          </div>
         </div>
       )}
 

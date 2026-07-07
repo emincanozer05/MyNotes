@@ -29,7 +29,6 @@ export function ArticleEditor({
       <RichTextEditor
         initialHtml={initialHtml}
         accent="amber"
-        saveLabel="Özeti Kaydet"
         placeholder="Makaleden çıkardığın bilgileri buraya özetle… Biçimlendir, görsel ekle."
         onSave={(html) => saveArticleSummary(articleId, html)}
         tagCategory={tagCategory}

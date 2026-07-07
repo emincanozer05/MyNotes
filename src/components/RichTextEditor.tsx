@@ -52,7 +52,6 @@ export function RichTextEditor({
   onChange,
   placeholder = "Buraya yazın… Biçimlendirin, görsel ekleyin.",
   accent = "amber",
-  saveLabel = "Kaydet",
   tagCategory,
 }: {
   initialHtml: string;
@@ -61,7 +60,6 @@ export function RichTextEditor({
   onChange?: (html: string) => void;
   placeholder?: string;
   accent?: Accent;
-  saveLabel?: string;
   /** Inline highlight tags are created within (and picked from) this category. */
   tagCategory?: string;
 }) {
@@ -1231,17 +1229,7 @@ export function RichTextEditor({
       )}
 
       <div className="mt-3 flex items-center gap-3 border-t border-[var(--border)] pt-3">
-        <button
-          type="button"
-          onClick={() => void doSave()}
-          className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm font-semibold transition-colors hover:bg-stone-500/10"
-        >
-          {saveLabel}
-        </button>
         {statusEl}
-        <span className="ml-auto hidden text-[11px] text-stone-400 sm:block">
-          Görselin üzerine gel → hizala (⇤ ↔ ⇥) · kenardan sürükle veya %25–100 · 🗑 sil
-        </span>
       </div>
     </div>
   );
