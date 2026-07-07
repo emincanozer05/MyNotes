@@ -1096,32 +1096,36 @@ export function RichTextEditor({
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="color"
-                  value={newTagColor}
-                  onChange={(e) => setNewTagColor(e.target.value)}
-                  className="h-7 w-7 shrink-0 cursor-pointer border-0 bg-transparent p-0"
-                  title="Özel renk"
-                />
-                <input
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleCreateTag();
-                    }
-                  }}
-                  placeholder="Yeni etiket adı…"
-                  className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-500"
-                />
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="color"
+                    value={newTagColor}
+                    onChange={(e) => setNewTagColor(e.target.value)}
+                    className="h-7 w-7 shrink-0 cursor-pointer border-0 bg-transparent p-0"
+                    title="Özel renk"
+                  />
+                  <input
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void handleCreateTag();
+                      }
+                    }}
+                    placeholder="Yeni etiket adı…"
+                    className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                {/* Full-width row so the button is never clipped off the
+                    popover's right edge near the screen border. */}
                 <button
                   type="button"
                   onClick={() => void handleCreateTag()}
-                  className="shrink-0 rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1 text-xs font-semibold text-white dark:text-stone-900"
+                  className="w-full rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1.5 text-xs font-semibold text-white dark:text-stone-900"
                 >
-                  Ekle
+                  Etiket oluştur
                 </button>
               </div>
             </div>
