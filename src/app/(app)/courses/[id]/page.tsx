@@ -52,7 +52,7 @@ export default async function CourseDetailPage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link href="/courses" className="text-sm text-stone-500 hover:text-amber-600">
-        ← Kurslar & Eğitimler
+        ← Kurslar ve Eğitimler (S&C)
       </Link>
 
       <div className="glass-card overflow-hidden rounded-2xl">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   createOrGetTag,
   deleteTag,
@@ -8,6 +8,7 @@ import {
   type UserTag,
 } from "@/app/(app)/tagsActions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
+import { categoryLabel, normalizeCategory } from "@/lib/categories";
 
 type Accent = "amber" | "lime";
 
@@ -102,8 +103,24 @@ export function RichTextEditor({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState(TAG_COLOR_SWATCHES[0]);
+  const [tagBusy, setTagBusy] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
   const pendingRangeRef = useRef<Range | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Keep the floating popover fully on screen. `panelPosition` places it for
+  // the slim toolbar, but the tag picker is wider — re-clamp against the
+  // popover's real rendered size so it never spills past the viewport edge.
+  useLayoutEffect(() => {
+    const el = popoverRef.current;
+    if (!el || !floating) return;
+    const r = el.getBoundingClientRect();
+    const left = Math.max(8, Math.min(floating.left, window.innerWidth - r.width - 8));
+    const top = Math.max(8, Math.min(floating.top, window.innerHeight - r.height - 8));
+    if (left !== floating.left || top !== floating.top) {
+      setFloating({ ...floating, left, top });
+    }
+  }, [floating, pickerOpen]);
 
   useEffect(() => {
     void getUserTags(tagCategory).then(setTags);
@@ -501,7 +518,10 @@ export function RichTextEditor({
   function applyTagToSelection(tag: UserTag) {
     const range = pendingRangeRef.current;
     const root = ref.current;
-    if (!range || !root) return;
+    if (!range || !root) {
+      setTagError("Seçim kayboldu — etiketlemek için metni yeniden seçin.");
+      return;
+    }
 
     // Trim the boundary text nodes so only the selected slice is wrapped.
     if (
@@ -568,9 +588,15 @@ export function RichTextEditor({
 
   async function handleCreateTag() {
     const name = newTagName.trim();
-    if (!name) return;
-    const res = await createOrGetTag(name, newTagColor, tagCategory);
-    if (res.tag) {
+    if (!name || tagBusy) return;
+    setTagBusy(true);
+    setTagError(null);
+    try {
+      const res = await createOrGetTag(name, newTagColor, tagCategory);
+      if (!res.tag) {
+        setTagError(res.error ?? "Etiket oluşturulamadı.");
+        return;
+      }
       const created = res.tag;
       setTags((prev) =>
         prev.some((t) => t.id === created.id)
@@ -579,6 +605,10 @@ export function RichTextEditor({
       );
       setNewTagName("");
       applyTagToSelection(created);
+    } catch {
+      setTagError("Etiket kaydedilemedi — bağlantıyı kontrol edin.");
+    } finally {
+      setTagBusy(false);
     }
   }
 
@@ -1051,14 +1081,20 @@ export function RichTextEditor({
                 type="button"
                 title="Etiket ekle"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setPickerOpen(true)}
+                onClick={() => {
+                  setTagError(null);
+                  setPickerOpen(true);
+                }}
                 className="flex h-7 items-center justify-center gap-1 rounded bg-stone-900 px-2 text-xs font-semibold text-white hover:opacity-90 dark:bg-stone-100 dark:text-stone-900"
               >
                 🏷
               </button>
             </div>
           ) : (
-            <div className="w-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">
+            <div className="w-64 max-w-[calc(100vw-16px)] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                {categoryLabel(normalizeCategory(tagCategory))} etiketleri
+              </p>
               {tags.length > 0 && (
                 <div className="mb-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto pt-1.5 pr-1.5">
                   {tags.map((t) => (
@@ -1122,11 +1158,17 @@ export function RichTextEditor({
                     popover's right edge near the screen border. */}
                 <button
                   type="button"
+                  disabled={tagBusy}
                   onClick={() => void handleCreateTag()}
-                  className="w-full rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1.5 text-xs font-semibold text-white dark:text-stone-900"
+                  className="w-full rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-60 dark:text-stone-900"
                 >
-                  Etiket oluştur
+                  {tagBusy ? "Oluşturuluyor…" : "Etiket oluştur"}
                 </button>
+                {tagError && (
+                  <p className="text-[11px] leading-snug text-rose-600 dark:text-rose-400">
+                    {tagError}
+                  </p>
+                )}
               </div>
             </div>
           )}

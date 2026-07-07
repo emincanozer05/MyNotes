@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/library", label: "Literatür", icon: "❧" },
   { href: "/notes", label: "Post-it Notlar", icon: "✎" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
-  { href: "/courses", label: "Kurslar / Eğitimler", icon: "❖" },
+  { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "❖" },
   { href: "/insights", label: "Bilgi Derinliği", icon: "◔" },
   { href: "/backup", label: "Yedekleme", icon: "⤓" },
 ];
