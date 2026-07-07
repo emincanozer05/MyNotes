@@ -36,10 +36,13 @@ export function TitledNotes({
   sourceId,
   initialNotes,
   printHref,
+  tagCategory,
 }: {
   sourceId: string;
   initialNotes: TitledNote[];
   printHref: string;
+  /** Inline highlight tags inherit this category (the source's category). */
+  tagCategory?: string;
 }) {
   const [notes, setNotes] = useState<TitledNote[]>(initialNotes);
   const [activeId, setActiveId] = useState<string | null>(
@@ -201,6 +204,7 @@ export function TitledNotes({
             saveLabel="Notu Kaydet"
             placeholder="Bu başlık altındaki notunu buraya yaz…"
             onSave={saveActiveHtml}
+            tagCategory={tagCategory}
           />
         </div>
       ) : (

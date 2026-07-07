@@ -62,7 +62,7 @@ export default async function PrintSourcePage({
           )}
           <div className="flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-              S&amp;C Hub — Not Föyü
+              NoteFlow — Not Föyü
             </p>
             <h1 className="mt-2 text-2xl font-bold leading-snug">{source.title}</h1>
             {(source.authors.length > 0 || source.year) && (
@@ -101,7 +101,7 @@ export default async function PrintSourcePage({
         </div>
 
         <footer className="mt-8 border-t border-stone-300 pt-2 text-xs text-stone-400">
-          {new Date().toLocaleDateString("tr-TR")} · S&amp;C Hub
+          {new Date().toLocaleDateString("tr-TR")} · NoteFlow
         </footer>
       </div>
     </div>

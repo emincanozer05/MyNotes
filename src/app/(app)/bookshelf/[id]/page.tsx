@@ -13,6 +13,7 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
+  category: string;
   metadata: { summary?: string; description?: string; notes?: TitledNote[] } | null;
 }
 
@@ -36,7 +37,7 @@ export default async function BookDetailPage({
   const [{ data: bookData }, { count: noteCount }] = await Promise.all([
     supabase
       .from("sources")
-      .select("id, title, authors, year, cover_url, metadata")
+      .select("id, title, authors, year, cover_url, category, metadata")
       .eq("id", id)
       .eq("kind", "book")
       .maybeSingle(),
@@ -51,7 +52,10 @@ export default async function BookDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href="/bookshelf" className="text-sm text-stone-500 hover:text-amber-600">
+      <Link
+        href={`/bookshelf?category=${book.category}`}
+        className="text-sm text-stone-500 hover:text-amber-600"
+      >
         ← Kitap Rafı
       </Link>
 
@@ -102,6 +106,7 @@ export default async function BookDetailPage({
           sourceId={book.id}
           initialNotes={seedNotes(book.metadata)}
           printHref={`/print/${book.id}`}
+          tagCategory={book.category}
         />
       </div>
     </div>

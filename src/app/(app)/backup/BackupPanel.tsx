@@ -33,8 +33,9 @@ export function BackupPanel() {
       return;
     }
     const data = parsed as { app?: string; tables?: unknown };
-    if (data?.app !== "sc-hub" || !data?.tables) {
-      setError("Bu dosya bir S&C Hub yedeği değil.");
+    // Accept both the current ("noteflow") and legacy ("sc-hub") backup ids.
+    if ((data?.app !== "noteflow" && data?.app !== "sc-hub") || !data?.tables) {
+      setError("Bu dosya bir NoteFlow yedeği değil.");
       return;
     }
     if (
@@ -72,10 +73,9 @@ export function BackupPanel() {
       <section className="glass-card rounded-2xl p-5">
         <h2 className="text-lg font-bold">Yedeği indir</h2>
         <p className="mt-1 text-sm text-stone-500">
-          Tüm verilerini (makaleler, notlar, etiketler, alıntılar,
-          flashcard&apos;lar, ses notu bilgileri) tek bir <code>.json</code>{" "}
-          dosyası olarak indir.
-          Dosyayı güvenli bir yerde sakla.
+          Tüm verilerini (makaleler, kitaplar, notlar, etiketler, alıntılar) tek
+          bir <code>.json</code> dosyası olarak indir. Dosyayı güvenli bir yerde
+          sakla.
         </p>
         <a
           href="/api/backup/export"

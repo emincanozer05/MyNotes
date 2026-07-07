@@ -33,7 +33,7 @@ export async function GET() {
   }
 
   const payload = {
-    app: "sc-hub",
+    app: "noteflow",
     version: 1,
     exportedAt: new Date().toISOString(),
     userEmail: user.email ?? null,
@@ -45,7 +45,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="sc-hub-yedek-${date}.json"`,
+      "Content-Disposition": `attachment; filename="noteflow-yedek-${date}.json"`,
       "Cache-Control": "no-store",
     },
   });

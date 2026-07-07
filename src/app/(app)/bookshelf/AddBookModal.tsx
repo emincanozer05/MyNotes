@@ -3,13 +3,15 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
+import { CATEGORIES, normalizeCategory } from "@/lib/categories";
 import { addBook } from "./actions";
 
 const inputCls =
   "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
 
 /** Compact top-right "add book" trigger that opens a centered modal form. */
-export function AddBookModal() {
+export function AddBookModal({ category }: { category?: string }) {
+  const defaultCategory = normalizeCategory(category);
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -70,6 +72,23 @@ export function AddBookModal() {
         </div>
 
         <form ref={formRef} action={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1 sm:col-span-2">
+            <label htmlFor="bk-category" className="text-sm font-medium">
+              Kategori *
+            </label>
+            <select
+              id="bk-category"
+              name="category"
+              defaultValue={defaultCategory}
+              className={inputCls}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-1 sm:col-span-2">
             <label htmlFor="bk-title" className="text-sm font-medium">
               Kitap adı *

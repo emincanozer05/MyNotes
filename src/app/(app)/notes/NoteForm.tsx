@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { CATEGORIES, normalizeCategory } from "@/lib/categories";
 import { upsertNote } from "./actions";
 
 interface SourceOption {
@@ -15,6 +16,7 @@ interface NoteValues {
   id?: string;
   title?: string;
   content?: string;
+  category?: string;
   source_id?: string | null;
   source_title?: string;
   source_author?: string;
@@ -56,12 +58,14 @@ export function NoteForm({
   const [sourceYear, setSourceYear] = useState(
     note?.source_year ? String(note.source_year) : "",
   );
+  const [category, setCategory] = useState(normalizeCategory(note?.category));
 
   // Live values are mirrored into a ref so debounced/serialized saves never
   // read a stale closure.
   const meta = useRef({
     id: note?.id ?? "",
     title: note?.title ?? "",
+    category: normalizeCategory(note?.category),
     source_id: note?.source_id ?? "",
     source_title: note?.source_title ?? "",
     source_author: note?.source_author ?? "",
@@ -85,6 +89,7 @@ export function NoteForm({
     return [
       m.title,
       contentRef.current,
+      m.category,
       m.source_id,
       m.source_title,
       m.source_author,
@@ -109,6 +114,7 @@ export function NoteForm({
       id: m.id || null,
       title: m.title,
       content: contentRef.current,
+      category: m.category,
       source_id: m.source_id || null,
       source_title: m.source_title,
       source_author: m.source_author,
@@ -164,6 +170,33 @@ export function NoteForm({
       )}
 
       <div className="space-y-1">
+        <label htmlFor="category" className="text-sm font-medium">
+          Kategori *
+        </label>
+        <select
+          id="category"
+          value={category}
+          onChange={(e) => {
+            const value = normalizeCategory(e.target.value);
+            setCategory(value);
+            meta.current.category = value;
+            scheduleMetaSave();
+          }}
+          className={inputCls}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-stone-500">
+          Her kategorinin kendi post-it&apos;leri ve etiketleri vardır; birbirine
+          karışmaz.
+        </p>
+      </div>
+
+      <div className="space-y-1">
         <label htmlFor="title" className="text-sm font-medium">
           Not başlığı *
         </label>
@@ -200,6 +233,7 @@ export function NoteForm({
             contentRef.current = html;
           }}
           onSave={(html) => persist(html)}
+          tagCategory={category}
         />
         <p className="text-xs text-stone-500">
           <code>[[Not Başlığı]]</code> → notlar arası bağlantı (Zettelkasten) ·{" "}

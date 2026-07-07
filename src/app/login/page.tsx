@@ -11,10 +11,9 @@ export default async function LoginPage({
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">S&amp;C Hub</h1>
+          <h1 className="text-3xl font-bold tracking-tight">NoteFlow</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            Kuvvet &amp; Kondisyon bilgi platformu — literatür, notlar ve
-            koçluk araçları tek yerde.
+            Literatür, notlar ve kategorili bilgi yönetimi tek yerde.
           </p>
         </div>
 

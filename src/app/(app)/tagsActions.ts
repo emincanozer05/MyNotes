@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { normalizeTag } from "@/lib/wiki";
+import { normalizeCategory, type CategorySlug } from "@/lib/categories";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -18,13 +19,15 @@ export interface UserTag {
   color: string | null;
 }
 
-/** All of the current user's tags, for the "add tag" picker. */
-export async function getUserTags(): Promise<UserTag[]> {
+/**
+ * The current user's tags for the "add tag" picker. When a category is given,
+ * only that category's tags are returned so categories never share tags.
+ */
+export async function getUserTags(category?: string): Promise<UserTag[]> {
   const { supabase } = await requireUser();
-  const { data } = await supabase
-    .from("tags")
-    .select("id, name, color")
-    .order("name");
+  let query = supabase.from("tags").select("id, name, color").order("name");
+  if (category) query = query.eq("category", normalizeCategory(category));
+  const { data } = await query;
   return data ?? [];
 }
 
@@ -36,21 +39,24 @@ export async function getUserTags(): Promise<UserTag[]> {
 export async function createOrGetTag(
   name: string,
   color: string,
+  category?: string,
 ): Promise<{ tag?: UserTag; error?: string }> {
   const { supabase, user } = await requireUser();
   const normalized = normalizeTag(name);
   if (!normalized) return { error: "Etiket adı boş olamaz." };
+  const cat: CategorySlug = normalizeCategory(category);
 
   const { data: existing } = await supabase
     .from("tags")
     .select("id, name, color")
     .eq("name", normalized)
+    .eq("category", cat)
     .maybeSingle();
   if (existing) return { tag: existing };
 
   const { data, error } = await supabase
     .from("tags")
-    .insert({ user_id: user.id, name: normalized, color })
+    .insert({ user_id: user.id, name: normalized, color, category: cat })
     .select("id, name, color")
     .single();
   if (error || !data) return { error: error?.message ?? "Etiket oluşturulamadı." };

@@ -13,6 +13,7 @@ interface CourseRow {
   year: number | null;
   cover_url: string | null;
   url: string | null;
+  category: string;
   metadata: { status?: string; summary?: string; notes?: TitledNote[] } | null;
 }
 
@@ -35,7 +36,7 @@ export default async function CourseDetailPage({
 
   const { data } = await supabase
     .from("sources")
-    .select("id, title, authors, year, cover_url, url, metadata")
+    .select("id, title, authors, year, cover_url, url, category, metadata")
     .eq("id", id)
     .eq("kind", "other")
     .maybeSingle();
@@ -95,6 +96,7 @@ export default async function CourseDetailPage({
           sourceId={course.id}
           initialNotes={seededNotes}
           printHref={`/print/${course.id}`}
+          tagCategory={course.category}
         />
       </div>
     </div>

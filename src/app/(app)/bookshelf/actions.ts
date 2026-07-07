@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
+import { normalizeCategory } from "@/lib/categories";
 
 /** Looks up a cover image for a book by title via Open Library (no API key). */
 async function findCoverByTitle(
@@ -59,6 +60,7 @@ export async function addBook(formData: FormData) {
     authors: authorList,
     year: Number(formData.get("year")) || null,
     cover_url: coverUrl,
+    category: normalizeCategory(formData.get("category")),
   });
 
   revalidatePath("/bookshelf");

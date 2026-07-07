@@ -12,6 +12,7 @@ export interface PostitData {
   id: string;
   title: string;
   content: string;
+  category: string;
   source_title: string;
   source_author: string;
   source_year: number | null;

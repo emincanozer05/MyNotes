@@ -49,7 +49,7 @@ export default async function PrintArticlePage({
       <div className="a4-sheet">
         <header className="border-b-2 border-stone-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-            S&amp;C Hub — Makale Not Föyü
+            NoteFlow — Makale Not Föyü
           </p>
           <h1 className="mt-2 text-xl font-bold leading-snug">{article.title}</h1>
           <p className="mt-1 text-sm text-stone-600">
@@ -111,7 +111,7 @@ export default async function PrintArticlePage({
         </section>
 
         <footer className="mt-8 border-t border-stone-300 pt-2 text-xs text-stone-400">
-          {new Date().toLocaleDateString("tr-TR")} · S&amp;C Hub
+          {new Date().toLocaleDateString("tr-TR")} · NoteFlow
         </footer>
       </div>
     </div>

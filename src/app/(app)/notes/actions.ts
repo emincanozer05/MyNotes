@@ -9,6 +9,7 @@ import {
   extractWikiLinks,
   parseTagInput,
 } from "@/lib/wiki";
+import { normalizeCategory, type CategorySlug } from "@/lib/categories";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -17,12 +18,16 @@ async function requireUser() {
   return { supabase, user };
 }
 
-/** Replaces the note's tag set with the given names (upserting new tags). */
+/**
+ * Replaces the note's tag set with the given names (upserting new tags),
+ * scoped to the note's category so tags never leak across categories.
+ */
 async function syncTags(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   noteId: string,
   names: string[],
+  category: CategorySlug,
 ) {
   await supabase.from("note_tags").delete().eq("note_id", noteId);
   if (names.length === 0) return;
@@ -30,13 +35,14 @@ async function syncTags(
   await supabase
     .from("tags")
     .upsert(
-      names.map((name) => ({ user_id: userId, name })),
-      { onConflict: "user_id,name", ignoreDuplicates: true },
+      names.map((name) => ({ user_id: userId, name, category })),
+      { onConflict: "user_id,name,category", ignoreDuplicates: true },
     );
 
   const { data: tags } = await supabase
     .from("tags")
     .select("id")
+    .eq("category", category)
     .in("name", names);
 
   if (tags?.length) {
@@ -87,6 +93,7 @@ export interface NoteInput {
   source_year?: number | null;
   source_page?: string | null;
   tags?: string;
+  category?: string;
 }
 
 /**
@@ -104,9 +111,11 @@ export async function upsertNote(
   if (!title) return { error: "Not başlığı zorunludur." };
 
   const content = input.content ?? "";
+  const category = normalizeCategory(input.category);
   const payload = {
     title,
     content,
+    category,
     source_id: input.source_id || null,
     source_title: (input.source_title ?? "").trim(),
     source_author: (input.source_author ?? "").trim(),
@@ -139,7 +148,7 @@ export async function upsertNote(
       ...extractMarkTags(content),
     ]),
   ];
-  await syncTags(supabase, user.id, noteId, tagNames);
+  await syncTags(supabase, user.id, noteId, tagNames, category);
   await syncLinks(supabase, user.id, noteId, extractWikiLinks(plain));
 
   revalidatePath("/notes");
@@ -156,6 +165,7 @@ export async function createQuickNote(input: {
   title?: string;
   content: string;
   tags?: string;
+  category?: string;
 }): Promise<{ id?: string; error?: string | null }> {
   const content = (input.content ?? "").trim();
   if (!content) return { error: "Boş not yapıştırılamaz." };
@@ -164,7 +174,12 @@ export async function createQuickNote(input: {
   const derived = content.split(/\r?\n/)[0].slice(0, 60).trim();
   const title = explicit || derived || "Not";
 
-  return upsertNote({ title, content, tags: input.tags ?? "" });
+  return upsertNote({
+    title,
+    content,
+    tags: input.tags ?? "",
+    category: input.category,
+  });
 }
 
 export async function deleteNote(formData: FormData) {

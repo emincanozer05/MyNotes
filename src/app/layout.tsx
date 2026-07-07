@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "S&C Hub",
+  title: "NoteFlow",
   description:
-    "Kuvvet & Kondisyon antrenörleri için literatür takibi, bilimsel not alma ve koçluk araçları platformu",
+    "Literatür takibi, bilimsel not alma ve kategorili bilgi yönetimi platformu",
 };
 
 export default function RootLayout({

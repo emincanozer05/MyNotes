@@ -16,7 +16,7 @@ import { TAG_COLOR_SWATCHES } from "@/lib/color";
  * when the user clicks "Yapıştır", after which it appears on the board.
  * Below the note body, existing tags can be toggled and new ones created.
  */
-export function NewPostitButton() {
+export function NewPostitButton({ category }: { category?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -34,9 +34,9 @@ export function NewPostitButton() {
   useEffect(() => {
     if (open) {
       setTimeout(() => textareaRef.current?.focus(), 40);
-      void getUserTags().then(setTags);
+      void getUserTags(category).then(setTags);
     }
-  }, [open]);
+  }, [open, category]);
 
   // Close on Escape.
   useEffect(() => {
@@ -66,7 +66,7 @@ export function NewPostitButton() {
   async function addNewTag() {
     const name = newTagName.trim();
     if (!name) return;
-    const res = await createOrGetTag(name, newTagColor);
+    const res = await createOrGetTag(name, newTagColor, category);
     if (res.tag) {
       const created = res.tag;
       setTags((prev) =>
@@ -92,7 +92,7 @@ export function NewPostitButton() {
       .filter((t) => selectedIds.includes(t.id))
       .map((t) => t.name)
       .join(", ");
-    const res = await createQuickNote({ title, content, tags: tagNames });
+    const res = await createQuickNote({ title, content, tags: tagNames, category });
     setSaving(false);
     if (res.error) {
       setError(res.error);

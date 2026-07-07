@@ -8,9 +8,11 @@ import { saveArticleSummary } from "../actions";
 export function ArticleEditor({
   articleId,
   initialHtml,
+  tagCategory,
 }: {
   articleId: string;
   initialHtml: string;
+  tagCategory?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +32,7 @@ export function ArticleEditor({
         saveLabel="Özeti Kaydet"
         placeholder="Makaleden çıkardığın bilgileri buraya özetle… Biçimlendir, görsel ekle."
         onSave={(html) => saveArticleSummary(articleId, html)}
+        tagCategory={tagCategory}
       />
     </div>
   );
