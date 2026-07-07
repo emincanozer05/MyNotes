@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { upsertNote } from "./actions";
 
@@ -28,14 +28,6 @@ const inputCls =
 
 function looksLikeHtml(s: string) {
   return /<[a-z][\s\S]*>/i.test(s);
-}
-
-/** HTML → plain text with line breaks kept, for the live translation call. */
-function htmlToPlainText(html: string): string {
-  const withBreaks = html.replace(/<(br|\/p|\/div|\/li|\/h[1-4])[^>]*>/gi, "$&\n");
-  const div = document.createElement("div");
-  div.innerHTML = withBreaks;
-  return (div.textContent ?? "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** Legacy notes are stored as plain text; wrap them so the editor renders them. */
@@ -87,66 +79,6 @@ export function NoteForm({
   );
 
   const [needTitle, setNeedTitle] = useState(false);
-
-  // ---- "Eng" live translation (language practice) ----------------------
-  const [engOpen, setEngOpen] = useState(false);
-  const [engText, setEngText] = useState("");
-  const [engBusy, setEngBusy] = useState(false);
-  const [engErr, setEngErr] = useState<string | null>(null);
-  const engOpenRef = useRef(false);
-  const engTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Monotonic id so a slow response never overwrites a newer translation.
-  const engSeq = useRef(0);
-
-  useEffect(() => {
-    return () => {
-      if (engTimer.current) clearTimeout(engTimer.current);
-    };
-  }, []);
-
-  async function translateNow() {
-    const text = htmlToPlainText(contentRef.current);
-    const seq = ++engSeq.current;
-    if (!text) {
-      setEngText("");
-      setEngBusy(false);
-      setEngErr(null);
-      return;
-    }
-    setEngBusy(true);
-    setEngErr(null);
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, target: "en" }),
-      });
-      const data = (await res.json()) as { translated?: string; error?: string };
-      if (seq !== engSeq.current) return;
-      if (!res.ok) setEngErr(data.error ?? "Çeviri alınamadı.");
-      else setEngText(data.translated ?? "");
-    } catch {
-      if (seq === engSeq.current) setEngErr("Çeviri servisine ulaşılamadı.");
-    } finally {
-      if (seq === engSeq.current) setEngBusy(false);
-    }
-  }
-
-  /** Debounced translation while typing; only runs when the panel is open. */
-  function scheduleTranslate() {
-    if (!engOpenRef.current) return;
-    if (engTimer.current) clearTimeout(engTimer.current);
-    setEngBusy(true);
-    engTimer.current = setTimeout(() => void translateNow(), 700);
-  }
-
-  function toggleEng() {
-    const next = !engOpen;
-    setEngOpen(next);
-    engOpenRef.current = next;
-    if (next) void translateNow();
-    else if (engTimer.current) clearTimeout(engTimer.current);
-  }
 
   function signature() {
     const m = meta.current;
@@ -256,21 +188,7 @@ export function NoteForm({
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">İçerik</label>
-          <button
-            type="button"
-            onClick={toggleEng}
-            title="Yazdığın metni anlık olarak İngilizceye çevir (dil pratiği)"
-            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-              engOpen
-                ? "border-sky-500/50 bg-sky-500/10 text-sky-700 dark:text-sky-300"
-                : "border-[var(--border)] text-stone-500 hover:bg-stone-500/10"
-            }`}
-          >
-            🇬🇧 Eng {engOpen ? "▴" : "▾"}
-          </button>
-        </div>
+        <label className="text-sm font-medium">İçerik</label>
         <RichTextEditor
           initialHtml={toEditorHtml(note?.content ?? "")}
           accent="amber"
@@ -280,31 +198,9 @@ export function NoteForm({
           }
           onChange={(html) => {
             contentRef.current = html;
-            scheduleTranslate();
           }}
           onSave={(html) => persist(html)}
         />
-        {engOpen && (
-          <div className="animate-in rounded-xl border border-sky-500/30 bg-sky-400/5 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                English · anlık çeviri
-              </p>
-              {engBusy && (
-                <span className="text-[11px] text-stone-400">Çevriliyor…</span>
-              )}
-            </div>
-            {engErr ? (
-              <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                {engErr}
-              </p>
-            ) : (
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-                {engText || "Yazmaya başla — çeviri burada görünecek."}
-              </p>
-            )}
-          </div>
-        )}
         <p className="text-xs text-stone-500">
           <code>[[Not Başlığı]]</code> → notlar arası bağlantı (Zettelkasten) ·{" "}
           <code>#etiket</code> → akıllı etiket · yazdıklarınız otomatik kaydedilir
