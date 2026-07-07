@@ -618,6 +618,52 @@ export function RichTextEditor({
     setTags((prev) => prev.filter((t) => t.id !== tagId));
   }
 
+  /**
+   * "Vurguyu kaldır": strips highlights from the current selection — both the
+   * coloured tag `<mark>`s intersecting it and any manual (🖍) background
+   * colour. Tag marks are unwrapped in place so the text itself is untouched.
+   */
+  function removeHighlightFromSelection() {
+    const range = pendingRangeRef.current;
+    const root = ref.current;
+    if (!range || !root) return;
+
+    root.querySelectorAll<HTMLElement>("mark.tag-mark").forEach((m) => {
+      if (!range.intersectsNode(m)) return;
+      const parent = m.parentNode;
+      if (!parent) return;
+      while (m.firstChild) parent.insertBefore(m.firstChild, m);
+      parent.removeChild(m);
+    });
+
+    // Clear manual background colour with the same sentinel trick as
+    // `clearForeColor`: paint the selection, then strip the sentinel spans.
+    const sel = window.getSelection();
+    if (sel) {
+      ref.current?.focus();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      try {
+        document.execCommand("styleWithCSS", false, "true");
+      } catch {
+        /* not all browsers support styleWithCSS */
+      }
+      document.execCommand("hiliteColor", false, "rgb(2, 2, 2)");
+      root.querySelectorAll('[style*="rgb(2, 2, 2)"]').forEach((el) => {
+        const e = el as HTMLElement;
+        e.style.backgroundColor = "";
+        if (!e.getAttribute("style")) e.replaceWith(...e.childNodes);
+      });
+      sel.removeAllRanges();
+    }
+
+    pendingRangeRef.current = null;
+    setFloating(null);
+    setPickerOpen(false);
+    handleInput();
+    void doSave();
+  }
+
   function removeMark(mark: HTMLElement) {
     const parent = mark.parentNode;
     if (!parent) return;
@@ -1065,6 +1111,15 @@ export function RichTextEditor({
                   className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
                 />
               </label>
+              <button
+                type="button"
+                title="Seçimdeki etiket ve fon vurgularını kaldır"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={removeHighlightFromSelection}
+                className="w-full rounded border border-[var(--border)] px-1.5 py-1 text-[11px] font-medium text-stone-500 hover:bg-rose-500/10 hover:text-rose-600"
+              >
+                ✕ Vurguyu kaldır
+              </button>
 
               <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
