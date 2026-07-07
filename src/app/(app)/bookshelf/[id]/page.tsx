@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CoverUpload } from "./CoverUpload";
 import { BookDescription } from "./BookDescription";
+import { EditBookModal } from "./EditBookModal";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { normalizeCategory } from "@/lib/categories";
@@ -72,7 +73,18 @@ export default async function BookDetailPage({
           title={book.title}
         />
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold leading-tight">{book.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-bold leading-tight">{book.title}</h1>
+            <EditBookModal
+              book={{
+                id: book.id,
+                title: book.title,
+                authors: book.authors,
+                year: book.year,
+                category,
+              }}
+            />
+          </div>
           <p className="mt-1 text-sm text-stone-500">
             {book.authors.join(", ")}
             {book.year ? ` · ${book.year}` : ""}

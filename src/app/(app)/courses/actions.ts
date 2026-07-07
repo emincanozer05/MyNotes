@@ -25,7 +25,7 @@ export async function addCourse(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim() || null;
   const status = normalizeStatus(formData.get("status"));
 
-  await supabase.from("sources").insert({
+  const row = {
     user_id: user.id,
     kind: "other",
     title,
@@ -33,11 +33,17 @@ export async function addCourse(formData: FormData) {
     year: Number(formData.get("year")) || null,
     cover_url: cover,
     url,
-    // Courses are S&C content: pin them to the "spor" category so their note
-    // tags and highlighted passages surface on the Spor post-it board.
-    category: "spor",
     metadata: { category: CATEGORY, status },
-  });
+  };
+
+  // Courses are S&C content: pin them to the "spor" category so their note
+  // tags and highlighted passages surface on the Spor post-it board. On a DB
+  // where the 0008 migration isn't applied yet the column doesn't exist, so
+  // retry without it rather than failing to add the course.
+  const { error } = await supabase
+    .from("sources")
+    .insert({ ...row, category: "spor" });
+  if (error) await supabase.from("sources").insert(row);
 
   revalidatePath("/courses");
 }

@@ -72,6 +72,53 @@ export async function addBook(formData: FormData) {
   revalidatePath("/bookshelf");
 }
 
+/** Updates a book's basic info (title, authors, year, category) in place. */
+export async function updateBookInfo(
+  formData: FormData,
+): Promise<{ error?: string | null }> {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const authors = String(formData.get("authors") ?? "").trim();
+  if (!id) return { error: "Kitap bulunamadı." };
+  if (!title || !authors) return { error: "Kitap adı ve yazar boş olamaz." };
+
+  const authorList = authors
+    .split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+
+  // Category lives in metadata (see addBook); merge so summary/notes survive.
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .eq("kind", "book")
+    .maybeSingle();
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    category: normalizeCategory(formData.get("category")),
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({
+      title,
+      authors: authorList,
+      year: Number(formData.get("year")) || null,
+      metadata,
+    })
+    .eq("id", id)
+    .eq("kind", "book");
+
+  revalidatePath(`/bookshelf/${id}`);
+  revalidatePath("/bookshelf");
+  return { error: error?.message ?? null };
+}
+
 export async function deleteBook(formData: FormData) {
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
