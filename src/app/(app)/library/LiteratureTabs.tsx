@@ -385,57 +385,35 @@ export function LiteratureTabs({
             </p>
           )}
 
-          {/* Live-fetched articles */}
-          {fetched && fetched.length > 0 && (
-            <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-400/5 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-bold">
-                  🔄 Yeni getirilen makaleler{" "}
-                  <span className="font-normal text-stone-500">
-                    ({fetched.length})
-                  </span>
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleFetchArticles}
-                    disabled={fetching}
-                    className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10 disabled:opacity-60"
-                  >
-                    ↻ Yenile
-                  </button>
-                  <button
-                    onClick={() => setFetched(null)}
-                    className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-                  >
-                    ✕ Kapat
-                  </button>
-                </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {fetched.map((a) => (
-                  <FeedCard
-                    key={a.pmid}
-                    article={a}
-                    isSaved={savedPmids.has(a.pmid)}
-                    busy={pending && busyPmid === a.pmid}
-                    error={saveErrors[a.pmid] || null}
-                    onSave={() => handleSaveFetched(a)}
-                    onUnsave={() => handleUnsave(a.pmid)}
-                  />
-                ))}
-              </div>
+          {/* Fetched articles replace the curated set in place. */}
+          {fetched && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-bold">
+                🔄 Yeni getirilen makaleler{" "}
+                <span className="font-normal text-stone-500">
+                  ({fetched.length})
+                </span>
+              </p>
+              <button
+                onClick={() => setFetched(null)}
+                className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10"
+              >
+                ↩ Günün seçimlerine dön
+              </button>
             </div>
           )}
 
           <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {curated.map((a) => (
+            {(fetched ?? curated).map((a) => (
               <FeedCard
                 key={a.pmid}
                 article={a}
                 isSaved={savedPmids.has(a.pmid)}
                 busy={pending && busyPmid === a.pmid}
                 error={saveErrors[a.pmid] || null}
-                onSave={() => handleSave(a.pmid)}
+                onSave={() =>
+                  fetched ? handleSaveFetched(a) : handleSave(a.pmid)
+                }
                 onUnsave={() => handleUnsave(a.pmid)}
               />
             ))}
