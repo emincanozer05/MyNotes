@@ -25,7 +25,11 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  metadata: { summary?: string; notes?: { html?: string }[] } | null;
+  metadata: {
+    category?: string;
+    summary?: string;
+    notes?: { html?: string }[];
+  } | null;
 }
 
 function hasAnyNote(meta: BookRow["metadata"]): boolean {
@@ -49,12 +53,14 @@ export default async function BookshelfPage({
       .from("sources")
       .select("id, title, authors, year, cover_url, metadata")
       .eq("kind", "book")
-      .eq("category", category)
       .order("created_at", { ascending: false }),
     supabase.from("notes").select("source_id"),
   ]);
 
-  const books = (booksData ?? []) as BookRow[];
+  // Category lives in metadata; legacy books without one fall back to default.
+  const books = ((booksData ?? []) as BookRow[]).filter(
+    (b) => normalizeCategory(b.metadata?.category) === category,
+  );
   const countBySource = new Map<string, number>();
   for (const n of noteCounts ?? []) {
     if (n.source_id) {
