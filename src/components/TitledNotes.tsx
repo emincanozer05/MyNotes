@@ -201,7 +201,6 @@ export function TitledNotes({
             key={active.id}
             initialHtml={active.html}
             accent="amber"
-            saveLabel="Notu Kaydet"
             placeholder="Bu başlık altındaki notunu buraya yaz…"
             onSave={saveActiveHtml}
             tagCategory={tagCategory}

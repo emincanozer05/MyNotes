@@ -26,16 +26,7 @@ interface BookRow {
   metadata: {
     category?: string;
     status?: string;
-    summary?: string;
-    notes?: { html?: string }[];
   } | null;
-}
-
-function hasAnyNote(meta: BookRow["metadata"]): boolean {
-  if (Array.isArray(meta?.notes)) {
-    return meta.notes.some((n) => (n.html ?? "").replace(/<[^>]*>/g, "").trim());
-  }
-  return Boolean(meta?.summary?.replace(/<[^>]*>/g, "").trim());
 }
 
 export default async function BookshelfPage({
@@ -73,7 +64,6 @@ export default async function BookshelfPage({
     cover_url: b.cover_url,
     category: normalizeCategory(b.metadata?.category),
     status: normalizeStatus(b.metadata?.status),
-    hasSummary: hasAnyNote(b.metadata),
     noteCount: countBySource.get(b.id) ?? 0,
     spineCls: spineColor(b.title),
   }));

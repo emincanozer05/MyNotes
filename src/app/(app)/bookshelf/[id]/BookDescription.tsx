@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveBookDescription } from "../actions";
 
 /** Short free-text description shown under the book's title/author/year. */
@@ -14,8 +14,18 @@ export function BookDescription({
   const [value, setValue] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   const dirty = value.trim() !== saved.trim();
+
+  // Grow the textarea with its content so the full text is always visible —
+  // no inner scrollbar.
+  useEffect(() => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   async function save() {
     setSaving(true);
@@ -30,11 +40,12 @@ export function BookDescription({
         Açıklama
       </label>
       <textarea
+        ref={taRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Kitap hakkında kısa bilgi…"
-        rows={3}
-        className="mt-1 w-full resize-y rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none"
+        rows={2}
+        className="mt-1 w-full resize-none overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none"
       />
       {dirty && (
         <div className="mt-1.5 flex items-center gap-2">

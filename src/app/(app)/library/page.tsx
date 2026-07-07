@@ -28,11 +28,11 @@ export default async function LibraryPage() {
     }
   }
 
-  const todayLabel = new Date().toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  // The feed auto-fetches fresh PubMed articles client-side; the curated set
+  // is only the fallback, shuffled per request so even it varies on refresh.
+  // (Deliberately impure: this server component renders once per request.)
+  // eslint-disable-next-line react-hooks/purity
+  const curated = [...CURATED_ARTICLES].sort(() => Math.random() - 0.5);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -49,8 +49,7 @@ export default async function LibraryPage() {
       <LiteratureTabs
         saved={articles}
         noteCounts={noteCounts}
-        curated={CURATED_ARTICLES}
-        todayLabel={todayLabel}
+        curated={curated}
       />
     </div>
   );

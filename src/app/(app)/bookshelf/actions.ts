@@ -186,6 +186,35 @@ export async function saveBookDescription(id: string, description: string) {
   return { error: error?.message ?? null };
 }
 
+/** Sets the book's reading status (Okunuyor / Tamamlandı / Planlandı). */
+export async function setBookStatus(id: string, status: string) {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .eq("kind", "book")
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    status: normalizeStatus(status),
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "book");
+
+  revalidatePath(`/bookshelf/${id}`);
+  revalidatePath("/bookshelf");
+  return { error: error?.message ?? null };
+}
+
 /** Sets a book cover from an uploaded image (data URL) or a pasted URL. */
 export async function setBookCover(id: string, cover: string) {
   const supabase = await createClient();

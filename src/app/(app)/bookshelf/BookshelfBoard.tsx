@@ -17,7 +17,6 @@ export interface BookCardData {
   cover_url: string | null;
   category: string;
   status: CourseStatus;
-  hasSummary: boolean;
   noteCount: number;
   spineCls: string;
 }
@@ -142,11 +141,6 @@ export function BookshelfBoard({
                       <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
                       {status.label}
                     </span>
-                    {b.hasSummary && (
-                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                        ✓ Özet
-                      </span>
-                    )}
                     {b.noteCount > 0 && (
                       <Link
                         href={`/notes?source=${b.id}`}

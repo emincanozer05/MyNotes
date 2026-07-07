@@ -225,7 +225,6 @@ export function NoteForm({
         <RichTextEditor
           initialHtml={toEditorHtml(note?.content ?? "")}
           accent="amber"
-          saveLabel={note?.id ? "Notu Güncelle" : "Notu Kaydet"}
           placeholder={
             "Notunuzu yazın… Biçimlendirin, görsel ekleyin (köşe/kenardan boyutlandırın).\n\n[[Not Başlığı]] → bağlantı · #etiket → akıllı etiket"
           }
