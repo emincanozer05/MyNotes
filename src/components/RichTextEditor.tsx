@@ -25,14 +25,6 @@ const TEXT_COLORS = [
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
-/** HTML → plain text with line breaks kept, for the live translation call. */
-function htmlToPlainText(html: string): string {
-  const withBreaks = html.replace(/<(br|\/p|\/div|\/li|\/h[1-4])[^>]*>/gi, "$&\n");
-  const div = document.createElement("div");
-  div.innerHTML = withBreaks;
-  return (div.textContent ?? "").replace(/\n{3,}/g, "\n\n").trim();
-}
-
 /** Shared id for the marks born from one selection (see `data-tag-group`). */
 function newTagGroupId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -129,43 +121,64 @@ export function RichTextEditor({
   const ringCls = accent === "lime" ? "ring-lime-500" : "ring-amber-500";
   const handleColor = accent === "lime" ? "#84cc16" : "#f59e0b";
 
-  // ---- "Eng" live translation (language practice) -----------------------
+  // ---- "Eng" in-place translation (language practice) --------------------
+  // When open, the editor is hidden and a read-only clone of the note —
+  // identical markup, styles, sizes and images, only the words translated —
+  // is shown in its place. Toggling off returns to the editable original.
   const [engOpen, setEngOpen] = useState(false);
-  const [engText, setEngText] = useState("");
+  const [engHtml, setEngHtml] = useState("");
   const [engBusy, setEngBusy] = useState(false);
   const [engErr, setEngErr] = useState<string | null>(null);
-  const engOpenRef = useRef(false);
-  const engTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Monotonic id so a slow response never overwrites a newer translation.
   const engSeq = useRef(0);
 
-  useEffect(() => {
-    return () => {
-      if (engTimer.current) clearTimeout(engTimer.current);
-    };
-  }, []);
-
   const translateNow = useCallback(async () => {
-    const text = htmlToPlainText(ref.current?.innerHTML ?? latestHtmlRef.current);
+    const root = ref.current;
     const seq = ++engSeq.current;
-    if (!text) {
-      setEngText("");
+    if (!root) return;
+
+    // Clone the note and collect its text nodes; translating node-by-node
+    // keeps every tag (headings, colours, sizes, images) exactly in place.
+    const clone = root.cloneNode(true) as HTMLElement;
+    const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if ((n as Text).data.trim()) nodes.push(n as Text);
+    }
+    if (nodes.length === 0) {
+      setEngHtml(clone.innerHTML);
       setEngBusy(false);
       setEngErr(null);
       return;
     }
+
     setEngBusy(true);
     setEngErr(null);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, target: "en" }),
+        body: JSON.stringify({ texts: nodes.map((n) => n.data), target: "en" }),
       });
-      const data = (await res.json()) as { translated?: string; error?: string };
+      const data = (await res.json()) as {
+        translations?: string[];
+        error?: string;
+      };
       if (seq !== engSeq.current) return;
-      if (!res.ok) setEngErr(data.error ?? "Çeviri alınamadı.");
-      else setEngText(data.translated ?? "");
+      if (!res.ok || !Array.isArray(data.translations)) {
+        setEngErr(data.error ?? "Çeviri alınamadı.");
+        return;
+      }
+      nodes.forEach((n, i) => {
+        const t = data.translations![i];
+        if (typeof t === "string" && t.trim()) {
+          // Keep the node's original edge whitespace so words don't fuse.
+          const lead = n.data.match(/^\s*/)?.[0] ?? "";
+          const trail = n.data.match(/\s*$/)?.[0] ?? "";
+          n.data = lead + t.trim() + trail;
+        }
+      });
+      setEngHtml(clone.innerHTML);
     } catch {
       if (seq === engSeq.current) setEngErr("Çeviri servisine ulaşılamadı.");
     } finally {
@@ -173,20 +186,12 @@ export function RichTextEditor({
     }
   }, []);
 
-  /** Debounced translation while typing; only runs when the panel is open. */
-  const scheduleTranslate = useCallback(() => {
-    if (!engOpenRef.current) return;
-    if (engTimer.current) clearTimeout(engTimer.current);
-    setEngBusy(true);
-    engTimer.current = setTimeout(() => void translateNow(), 700);
-  }, [translateNow]);
-
   function toggleEng() {
     const next = !engOpen;
     setEngOpen(next);
-    engOpenRef.current = next;
+    setEngErr(null);
     if (next) void translateNow();
-    else if (engTimer.current) clearTimeout(engTimer.current);
+    else engSeq.current++; // cancel a translation still in flight
   }
 
   // ---- Content persistence (imperative, mount-only) --------------------
@@ -233,7 +238,6 @@ export function RichTextEditor({
     onChangeRef.current?.(html);
     setSaveState("saving");
     scheduleSave();
-    scheduleTranslate();
   }
 
   // Flush the pending save when leaving (e.g. switching title tabs).
@@ -721,12 +725,19 @@ export function RichTextEditor({
 
   return (
     <div className="glass-card rounded-2xl p-4">
-      {/* Top-right: live English translation toggle (language practice) */}
-      <div className="flex justify-end">
+      {/* Top-right: in-place English translation toggle (language practice) */}
+      <div className="flex items-center justify-end gap-2">
+        {engOpen && (
+          <span className="text-[11px] text-stone-400">
+            {engBusy
+              ? "Çevriliyor…"
+              : engErr ?? "İngilizce görünüm — düzenlemek için kapat"}
+          </span>
+        )}
         <button
           type="button"
           onClick={toggleEng}
-          title="Yazdığın metni anlık olarak İngilizceye çevir (dil pratiği)"
+          title="Metni aynı yerleşimle İngilizce göster (dil pratiği)"
           className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
             engOpen
               ? "border-sky-500/50 bg-sky-500/10 text-sky-700 dark:text-sky-300"
@@ -772,8 +783,22 @@ export function RichTextEditor({
               setFloating({ kind: "mark", top: rect.top - 42, left: rect.left, mark });
             }
           }}
-          className="rte mt-3 rounded-lg text-[11pt] focus:outline-none"
+          className={`rte mt-3 rounded-lg text-[11pt] focus:outline-none ${
+            engOpen ? "hidden" : ""
+          }`}
         />
+
+        {/* In-place English view: same markup and styles, words translated. */}
+        {engOpen && (
+          <div
+            className={`rte mt-3 rounded-lg text-[11pt] ${engBusy ? "opacity-60" : ""}`}
+            // Keep the editor's image/tag tooling out of the read-only view.
+            onMouseMove={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            dangerouslySetInnerHTML={{ __html: engHtml }}
+          />
+        )}
 
         {box && (
           <div data-img-overlay>
@@ -1097,28 +1122,6 @@ export function RichTextEditor({
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {engOpen && (
-        <div className="animate-in mt-3 rounded-xl border border-sky-500/30 bg-sky-400/5 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-              English · anlık çeviri
-            </p>
-            {engBusy && (
-              <span className="text-[11px] text-stone-400">Çevriliyor…</span>
-            )}
-          </div>
-          {engErr ? (
-            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-              {engErr}
-            </p>
-          ) : (
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-              {engText || "Yazmaya başla — çeviri burada görünecek."}
-            </p>
           )}
         </div>
       )}
