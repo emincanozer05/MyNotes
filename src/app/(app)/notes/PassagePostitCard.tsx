@@ -50,7 +50,8 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
           className="ml-3.5 self-start rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
           style={{ background: passage.tagColor ?? "#78716c" }}
         >
-          🏷 {passage.tagName}
+          <span className="opacity-70"># </span>
+          {passage.tagName}
         </span>
         <p className="mt-2 flex-1 whitespace-pre-wrap text-[12px] font-medium leading-snug line-clamp-6">
           “{passage.text}”
@@ -87,7 +88,8 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
               className="ml-3.5 self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
               style={{ background: passage.tagColor ?? "#78716c" }}
             >
-              🏷 {passage.tagName}
+              <span className="opacity-70"># </span>
+              {passage.tagName}
             </span>
             <p className="mt-3 overflow-y-auto whitespace-pre-wrap pr-1 text-lg font-medium leading-relaxed">
               “{passage.text}”

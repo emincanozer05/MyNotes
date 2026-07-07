@@ -17,6 +17,7 @@ interface BookRow {
   cover_url: string | null;
   metadata: {
     category?: string;
+    status?: string;
     summary?: string;
     description?: string;
     notes?: TitledNote[];
@@ -82,6 +83,7 @@ export default async function BookDetailPage({
                 authors: book.authors,
                 year: book.year,
                 category,
+                status: book.metadata?.status ?? "",
               }}
             />
           </div>

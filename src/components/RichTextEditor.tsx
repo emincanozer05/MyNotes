@@ -979,7 +979,7 @@ export function RichTextEditor({
                 className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
                 style={{ background: floating.mark.dataset.tagColor || "#78716c" }}
               >
-                🏷 {floating.mark.dataset.tagName}
+                # {floating.mark.dataset.tagName}
               </span>
               <button
                 type="button"

@@ -2,11 +2,12 @@
 // Each category keeps its own isolated set of tags (see the `category` column
 // on the `tags` table); tags never cross from one category to another.
 
+// Tab icons are flat SVGs in `src/components/CategoryIcon.tsx` (no emoji).
 export const CATEGORIES = [
-  { slug: "spor", label: "Spor", icon: "🏋" },
-  { slug: "tarih", label: "Tarih", icon: "🏛" },
-  { slug: "bilim", label: "Bilim", icon: "🔬" },
-  { slug: "felsefe", label: "Felsefe", icon: "🦉" },
+  { slug: "spor", label: "Spor" },
+  { slug: "tarih", label: "Tarih" },
+  { slug: "bilim", label: "Bilim" },
+  { slug: "felsefe", label: "Felsefe" },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];

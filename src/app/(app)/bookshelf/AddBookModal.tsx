@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
 import { CATEGORIES, normalizeCategory } from "@/lib/categories";
+import { COURSE_STATUSES, STATUS_META } from "@/lib/status";
 import { addBook } from "./actions";
 
 const inputCls =
@@ -107,6 +108,18 @@ export function AddBookModal({ category }: { category?: string }) {
               Yıl
             </label>
             <input id="bk-year" name="year" type="number" className={inputCls} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="bk-status" className="text-sm font-medium">
+              Durum
+            </label>
+            <select id="bk-status" name="status" defaultValue="planned" className={inputCls}>
+              {COURSE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_META[s].label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1">
             <label htmlFor="bk-cover" className="text-sm font-medium">

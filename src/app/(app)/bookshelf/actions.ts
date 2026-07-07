@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { normalizeCategory } from "@/lib/categories";
+import { normalizeStatus } from "@/lib/status";
 
 /** Looks up a cover image for a book by title via Open Library (no API key). */
 async function findCoverByTitle(
@@ -66,7 +67,10 @@ export async function addBook(formData: FormData) {
     authors: authorList,
     year: Number(formData.get("year")) || null,
     cover_url: coverUrl,
-    metadata: { category: normalizeCategory(formData.get("category")) },
+    metadata: {
+      category: normalizeCategory(formData.get("category")),
+      status: normalizeStatus(formData.get("status")),
+    },
   });
 
   revalidatePath("/bookshelf");
@@ -101,6 +105,7 @@ export async function updateBookInfo(
   const metadata = {
     ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
     category: normalizeCategory(formData.get("category")),
+    status: normalizeStatus(formData.get("status")),
   };
 
   const { error } = await supabase
