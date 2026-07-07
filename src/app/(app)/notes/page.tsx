@@ -35,7 +35,7 @@ interface NoteRow {
   id: string;
   title: string;
   content: string;
-  category: string;
+  category?: string;
   source_id: string | null;
   source_title: string | null;
   source_author: string | null;
@@ -47,8 +47,9 @@ interface SourceRow {
   id: string;
   kind: string;
   title: string;
-  category: string;
+  category?: string;
   metadata: {
+    category?: string;
     summary?: string;
     notes?: { id: string; title: string; html: string }[];
   } | null;
@@ -69,7 +70,7 @@ export default async function NotesPage({
   const category = normalizeCategory(categoryParam);
   const supabase = await createClient();
 
-  const [{ data: notes }, { data: sources }] = await Promise.all([
+  const [notesRes, sourcesRes] = await Promise.all([
     supabase
       .from("notes")
       .select(
@@ -78,6 +79,24 @@ export default async function NotesPage({
       .order("created_at", { ascending: false }),
     supabase.from("sources").select("id, kind, title, category, metadata"),
   ]);
+
+  // On a DB without the 0008 migration the `category` columns don't exist and
+  // the selects above fail wholesale — retry without them so the board still
+  // renders. Categories then come from `metadata` (books keep theirs there),
+  // defaulting to "spor".
+  const notes = notesRes.error
+    ? (
+        await supabase
+          .from("notes")
+          .select(
+            "id, title, content, source_id, source_title, source_author, source_year, note_tags(tags(name, color))",
+          )
+          .order("created_at", { ascending: false })
+      ).data
+    : notesRes.data;
+  const sources = sourcesRes.error
+    ? (await supabase.from("sources").select("id, kind, title, metadata")).data
+    : sourcesRes.data;
 
   // Map each source id to its kind so a note can link back to its source.
   const sourceKindById = new Map<string, string>(
@@ -112,7 +131,12 @@ export default async function NotesPage({
   const passages: BoardItem[] = [];
   for (const s of (sources ?? []) as SourceRow[]) {
     const base = sourceHref(s.kind, s.id);
-    const srcCategory = normalizeCategory(s.category);
+    // A book's category is managed in its `metadata` (see bookshelf actions),
+    // so highlighted passages land on that category's board. The schema column
+    // is the fallback for sources that don't keep it there (e.g. articles);
+    // courses' metadata.category is the "course" marker, not a board slug, and
+    // normalizes to the default "spor" — exactly where S&C content belongs.
+    const srcCategory = normalizeCategory(s.metadata?.category ?? s.category);
     // Anchor each passage to its titled note (or the seeded legacy summary)
     // plus its index inside that note, so "Kaynağa git" scrolls straight to
     // the exact highlighted text.
