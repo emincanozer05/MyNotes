@@ -4,9 +4,9 @@ import { NoteForm } from "../NoteForm";
 export default async function NewNotePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; source?: string }>;
+  searchParams: Promise<{ error?: string; source?: string; category?: string }>;
 }) {
-  const { error, source } = await searchParams;
+  const { error, source, category } = await searchParams;
   const supabase = await createClient();
   const { data: sources } = await supabase
     .from("sources")
@@ -17,14 +17,20 @@ export default async function NewNotePage({
   const preset = source
     ? (sources ?? []).find((s) => s.id === source)
     : undefined;
-  const initialNote = preset
-    ? {
-        source_id: preset.id,
-        source_title: preset.title,
-        source_author: preset.authors.join(", "),
-        source_year: preset.year,
-      }
-    : undefined;
+  const initialNote =
+    preset || category
+      ? {
+          ...(category ? { category } : {}),
+          ...(preset
+            ? {
+                source_id: preset.id,
+                source_title: preset.title,
+                source_author: preset.authors.join(", "),
+                source_year: preset.year,
+              }
+            : {}),
+        }
+      : undefined;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

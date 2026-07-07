@@ -14,20 +14,16 @@ async function countOf(
 export default async function BackupPage() {
   const supabase = await createClient();
 
-  const [sources, notes, tags, flashcards, voice] = await Promise.all([
+  const [sources, notes, tags] = await Promise.all([
     countOf(supabase, "sources"),
     countOf(supabase, "notes"),
     countOf(supabase, "tags"),
-    countOf(supabase, "flashcards"),
-    countOf(supabase, "voice_notes"),
   ]);
 
   const stats = [
     { label: "Kaynak", value: sources },
     { label: "Not", value: notes },
     { label: "Etiket", value: tags },
-    { label: "Flashcard", value: flashcards },
-    { label: "Ses notu", value: voice },
   ];
 
   return (
@@ -42,7 +38,7 @@ export default async function BackupPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-3 gap-3">
         {stats.map((s) => (
           <div
             key={s.label}
@@ -58,9 +54,7 @@ export default async function BackupPage() {
 
       <p className="rounded-xl border border-[var(--border)] p-4 text-xs text-stone-500">
         💡 İpucu: Önemli çalışmalardan sonra düzenli olarak yedek indir. Yedek
-        dosyası; makale, kitap, not, etiket ve flashcard verilerini
-        içerir. Ses <b>kayıtlarının</b> ses dosyaları depoda tutulur; yedek JSON
-        yalnızca başlık ve transkript bilgisini taşır.
+        dosyası; makale, kitap, not ve etiket verilerini içerir.
       </p>
     </div>
   );

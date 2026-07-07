@@ -7,8 +7,6 @@ const NAV_ITEMS = [
   { href: "/", label: "Panel", icon: "◈" },
   { href: "/library", label: "Literatür", icon: "❧" },
   { href: "/notes", label: "Post-it Notlar", icon: "✎" },
-  { href: "/flashcards", label: "Flashcard", icon: "▤" },
-  { href: "/voice", label: "Ses Notu", icon: "♪" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
   { href: "/courses", label: "Kurslar / Eğitimler", icon: "❖" },
   { href: "/insights", label: "Bilgi Derinliği", icon: "◔" },
@@ -23,10 +21,10 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
       <div className="px-4 py-5">
         <Link href="/" className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 text-sm font-black text-white">
-            S
+            N
           </span>
           <span className="text-lg font-extrabold tracking-tight gradient-text">
-            S&amp;C Hub
+            NoteFlow
           </span>
         </Link>
       </div>

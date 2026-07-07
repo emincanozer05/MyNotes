@@ -108,7 +108,11 @@ export default async function ArticleDetailPage({
           Makaleden çıkardığın bilgileri buraya yaz — yazı tipini, boyutunu ve
           rengini ayarlayabilir, görsel ekleyip boyutlandırabilirsin.
         </p>
-        <ArticleEditor articleId={article.id} initialHtml={summary} />
+        <ArticleEditor
+          articleId={article.id}
+          initialHtml={summary}
+          tagCategory={article.category}
+        />
         <div className="mt-3 flex items-center gap-2">
           <SummaryReadModal html={summary} title={article.title} />
           <span className="text-xs text-stone-400">

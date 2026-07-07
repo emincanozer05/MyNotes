@@ -3,33 +3,31 @@ import { createClient } from "@/lib/supabase/server";
 
 const MODULES = [
   { title: "Literatür", detail: "RCT makalelerini getir, konu başlığına göre kütüphaneni oluştur", href: "/library", grad: "from-rose-500 to-orange-500", icon: "❧" },
-  { title: "Post-it Notlar", detail: "Renkli post-it'ler, [[bağlantılar]] ve #etiketler", href: "/notes", grad: "from-amber-500 to-yellow-500", icon: "✎" },
-  { title: "Ses Notu", detail: "Sahada konuş, transkript otomatik nota dönüşsün", href: "/voice", grad: "from-cyan-500 to-sky-500", icon: "♪" },
-  { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane, zengin metin özetleri", href: "/bookshelf", grad: "from-emerald-500 to-teal-500", icon: "▥" },
+  { title: "Post-it Notlar", detail: "Spor, Tarih, Bilim ve Felsefe kategorilerinde renkli post-it'ler", href: "/notes", grad: "from-amber-500 to-yellow-500", icon: "✎" },
+  { title: "Kitap Rafı", detail: "Kategorilere ayrılmış kapaklı dijital kütüphane, zengin metin özetleri", href: "/bookshelf", grad: "from-emerald-500 to-teal-500", icon: "▥" },
   { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights", grad: "from-indigo-500 to-blue-500", icon: "◔" },
 ];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const nowIso = new Date().toISOString();
 
   const [
     { count: articleCount },
     { count: noteCount },
     { count: tagCount },
-    { count: dueCount },
+    { count: bookCount },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
     supabase.from("notes").select("*", { count: "exact", head: true }),
     supabase.from("tags").select("*", { count: "exact", head: true }),
-    supabase.from("flashcards").select("*", { count: "exact", head: true }).lte("due_at", nowIso),
+    supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "book"),
   ]);
 
   const stats = [
     { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
     { label: "Not", value: noteCount ?? 0, href: "/notes", grad: "from-amber-500 to-yellow-500" },
     { label: "Etiket", value: tagCount ?? 0, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
-    { label: "Tekrarı gelen kart", value: dueCount ?? 0, href: "/flashcards", grad: "from-cyan-500 to-sky-500" },
+    { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf", grad: "from-emerald-500 to-teal-500" },
   ];
 
   return (
@@ -59,20 +57,6 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
-
-      {(dueCount ?? 0) > 0 && (
-        <div className="animate-in overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/10 to-rose-500/10 p-5">
-          <p className="text-sm font-semibold">
-            🔔 Bugün tekrarı gelen {dueCount} flashcard&apos;ınız var.
-          </p>
-          <Link
-            href="/flashcards"
-            className="mt-1 inline-block text-sm font-semibold text-amber-700 dark:text-amber-400 hover:underline"
-          >
-            Çalışmaya başla →
-          </Link>
-        </div>
-      )}
 
       <div>
         <h2 className="text-lg font-bold">Modüller</h2>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { CATEGORIES, categoryLabel, normalizeCategory } from "@/lib/categories";
 import { deleteBook } from "./actions";
 import { AddBookModal } from "./AddBookModal";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
@@ -34,7 +35,13 @@ function hasAnyNote(meta: BookRow["metadata"]): boolean {
   return Boolean(meta?.summary?.replace(/<[^>]*>/g, "").trim());
 }
 
-export default async function BookshelfPage() {
+export default async function BookshelfPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const { category: categoryParam } = await searchParams;
+  const category = normalizeCategory(categoryParam);
   const supabase = await createClient();
 
   const [{ data: booksData }, { data: noteCounts }] = await Promise.all([
@@ -42,6 +49,7 @@ export default async function BookshelfPage() {
       .from("sources")
       .select("id, title, authors, year, cover_url, metadata")
       .eq("kind", "book")
+      .eq("category", category)
       .order("created_at", { ascending: false }),
     supabase.from("notes").select("source_id"),
   ]);
@@ -62,11 +70,34 @@ export default async function BookshelfPage() {
             <span className="gradient-text">Kitap Rafı</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            Kapak görselleriyle dijital kütüphaneniz. Her kitap için zengin metin
-            özeti yazın, görsel ekleyin.
+            {categoryLabel(category)} rafı — her kategorinin kitapları ayrı
+            tutulur. Her kitap için zengin metin özeti yazın, görsel ekleyin.
           </p>
         </div>
-        <AddBookModal />
+        <AddBookModal category={category} />
+      </div>
+
+      {/* Kategori sekmeleri */}
+      <div className="flex flex-wrap gap-1.5">
+        {CATEGORIES.map((c) => {
+          const active = c.slug === category;
+          return (
+            <Link
+              key={c.slug}
+              href={`/bookshelf?category=${c.slug}`}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                active
+                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow"
+                  : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
+              }`}
+            >
+              <span aria-hidden className="mr-1">
+                {c.icon}
+              </span>
+              {c.label}
+            </Link>
+          );
+        })}
       </div>
 
       {books.length > 0 ? (

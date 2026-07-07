@@ -1,7 +1,7 @@
-# S&C Hub — Kuvvet & Kondisyon Bilgi Platformu
+# NoteFlow — Bilgi Yönetimi Platformu
 
-Kuvvet & Kondisyon antrenörleri için akademik literatür takibi, bilimsel not
-alma, veri analitiği ve koçluk araçlarını bir araya getiren web uygulaması.
+Akademik literatür takibi, bilimsel not alma ve kategorili bilgi yönetimini
+(Spor, Tarih, Bilim, Felsefe) bir araya getiren web uygulaması.
 
 ## Teknoloji Yığını
 

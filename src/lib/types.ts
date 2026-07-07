@@ -13,6 +13,7 @@ export interface Source {
   url: string | null;
   abstract: string | null;
   cover_url: string | null;
+  category: string;
   metadata: Record<string, unknown>;
   created_at: string;
 }

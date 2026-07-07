@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { pastelize } from "@/lib/color";
 import { extractTaggedPassages, type TaggedPassage } from "@/lib/wiki";
+import { CATEGORIES, categoryLabel, normalizeCategory } from "@/lib/categories";
 import { PostitCard, type PostitData } from "./PostitCard";
 import { PassagePostitCard } from "./PassagePostitCard";
 import { NewPostitButton } from "./NewPostitButton";
@@ -27,12 +28,14 @@ interface BoardItem extends TaggedPassage {
   key: string;
   sourceLabel: string;
   href: string;
+  category: string;
 }
 
 interface NoteRow {
   id: string;
   title: string;
   content: string;
+  category: string;
   source_id: string | null;
   source_title: string | null;
   source_author: string | null;
@@ -44,6 +47,7 @@ interface SourceRow {
   id: string;
   kind: string;
   title: string;
+  category: string;
   metadata: {
     summary?: string;
     notes?: { id: string; title: string; html: string }[];
@@ -59,19 +63,20 @@ function sourceHref(kind: string, id: string): string {
 export default async function NotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tag?: string; q?: string }>;
+  searchParams: Promise<{ tag?: string; q?: string; category?: string }>;
 }) {
-  const { tag, q } = await searchParams;
+  const { tag, q, category: categoryParam } = await searchParams;
+  const category = normalizeCategory(categoryParam);
   const supabase = await createClient();
 
   const [{ data: notes }, { data: sources }] = await Promise.all([
     supabase
       .from("notes")
       .select(
-        "id, title, content, source_id, source_title, source_author, source_year, note_tags(tags(name, color))",
+        "id, title, content, category, source_id, source_title, source_author, source_year, note_tags(tags(name, color))",
       )
       .order("created_at", { ascending: false }),
-    supabase.from("sources").select("id, kind, title, metadata"),
+    supabase.from("sources").select("id, kind, title, category, metadata"),
   ]);
 
   // Map each source id to its kind so a note can link back to its source.
@@ -90,6 +95,7 @@ export default async function NotesPage({
       id: n.id,
       title: n.title,
       content: n.content ?? "",
+      category: normalizeCategory(n.category),
       source_title: n.source_title ?? "",
       source_author: n.source_author ?? "",
       source_year: n.source_year,
@@ -106,6 +112,7 @@ export default async function NotesPage({
   const passages: BoardItem[] = [];
   for (const s of (sources ?? []) as SourceRow[]) {
     const base = sourceHref(s.kind, s.id);
+    const srcCategory = normalizeCategory(s.category);
     // Anchor each passage to its titled note (or the seeded legacy summary)
     // plus its index inside that note, so "Kaynağa git" scrolls straight to
     // the exact highlighted text.
@@ -115,6 +122,7 @@ export default async function NotesPage({
         key: `src-${s.id}-sum-${i}`,
         sourceLabel: s.title,
         href: `${base}#note-legacy~${i}`,
+        category: srcCategory,
       }),
     );
     for (const tn of s.metadata?.notes ?? []) {
@@ -124,26 +132,32 @@ export default async function NotesPage({
           key: `src-${s.id}-${tn.id}-${i}`,
           sourceLabel: tn.title ? `${s.title} › ${tn.title}` : s.title,
           href: `${base}#note-${tn.id}~${i}`,
+          category: srcCategory,
         }),
       );
     }
   }
 
-  // Distinct tags (name + colour) across notes and passages, for the filter.
+  // Everything shown on the board is scoped to the active category first, so
+  // the tag chips below (and their colours) only reflect this category.
+  const categoryNotes = noteCards.filter((n) => n.category === category);
+  const categoryPassages = passages.filter((it) => it.category === category);
+
+  // Distinct tags (name + colour) within this category, for the filter.
   const tagColorByName = new Map<string, string | null>();
-  for (const n of noteCards) {
+  for (const n of categoryNotes) {
     for (const t of n.tags) if (!tagColorByName.has(t.name)) tagColorByName.set(t.name, null);
   }
-  for (const it of passages) {
+  for (const it of categoryPassages) {
     if (!tagColorByName.has(it.tagName)) tagColorByName.set(it.tagName, it.tagColor);
   }
   const allTags = [...tagColorByName.entries()]
     .map(([name, color]) => ({ name, color }))
     .sort((a, b) => a.name.localeCompare(b.name, "tr"));
 
-  // Apply the active tag / search filters.
+  // Apply the active tag / search filters within the category subset.
   const needle = q?.trim().toLocaleLowerCase("tr") ?? "";
-  const shownNotes = noteCards.filter((n) => {
+  const shownNotes = categoryNotes.filter((n) => {
     if (tag && !n.tags.some((t) => t.name === tag)) return false;
     if (!needle) return true;
     const plain = n.content.replace(/<[^>]*>/g, " ").toLocaleLowerCase("tr");
@@ -151,7 +165,7 @@ export default async function NotesPage({
       n.title.toLocaleLowerCase("tr").includes(needle) || plain.includes(needle)
     );
   });
-  const shownPassages = passages.filter(
+  const shownPassages = categoryPassages.filter(
     (it) =>
       (!tag || it.tagName === tag) &&
       (!needle ||
@@ -169,13 +183,38 @@ export default async function NotesPage({
             <span className="gradient-text">Post-it Notlar</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            Notların ve etiketlediğin cümlelerin renkli post-it&apos;ler olur.
+            {categoryLabel(category)} panosu — notların ve etiketlediğin
+            cümlelerin renkli post-it&apos;ler olur.
           </p>
         </div>
-        <NewPostitButton />
+        <NewPostitButton category={category} />
+      </div>
+
+      {/* Kategori sekmeleri: her kategori kendi post-it'leri ve etiketleriyle */}
+      <div className="flex flex-wrap gap-1.5">
+        {CATEGORIES.map((c) => {
+          const active = c.slug === category;
+          return (
+            <Link
+              key={c.slug}
+              href={`/notes?category=${c.slug}`}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                active
+                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow"
+                  : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
+              }`}
+            >
+              <span aria-hidden className="mr-1">
+                {c.icon}
+              </span>
+              {c.label}
+            </Link>
+          );
+        })}
       </div>
 
       <form className="flex gap-2">
+        <input type="hidden" name="category" value={category} />
         <input
           name="q"
           defaultValue={q}
@@ -191,7 +230,7 @@ export default async function NotesPage({
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           <Link
-            href="/notes"
+            href={`/notes?category=${category}`}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               !tag
                 ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white"
@@ -205,7 +244,7 @@ export default async function NotesPage({
             return (
               <Link
                 key={t.name}
-                href={`/notes?tag=${encodeURIComponent(t.name)}`}
+                href={`/notes?category=${category}&tag=${encodeURIComponent(t.name)}`}
                 className="rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
                 style={{
                   background: t.color ?? "#78716c",

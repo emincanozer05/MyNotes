@@ -52,6 +52,7 @@ export function RichTextEditor({
   placeholder = "Buraya yazın… Biçimlendirin, görsel ekleyin.",
   accent = "amber",
   saveLabel = "Kaydet",
+  tagCategory,
 }: {
   initialHtml: string;
   onSave: (html: string) => Promise<{ error?: string | null }>;
@@ -60,6 +61,8 @@ export function RichTextEditor({
   placeholder?: string;
   accent?: Accent;
   saveLabel?: string;
+  /** Inline highlight tags are created within (and picked from) this category. */
+  tagCategory?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -103,8 +106,8 @@ export function RichTextEditor({
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    void getUserTags().then(setTags);
-  }, []);
+    void getUserTags(tagCategory).then(setTags);
+  }, [tagCategory]);
 
   // Close the floating tag UI on outside clicks.
   useEffect(() => {
@@ -566,7 +569,7 @@ export function RichTextEditor({
   async function handleCreateTag() {
     const name = newTagName.trim();
     if (!name) return;
-    const res = await createOrGetTag(name, newTagColor);
+    const res = await createOrGetTag(name, newTagColor, tagCategory);
     if (res.tag) {
       const created = res.tag;
       setTags((prev) =>
