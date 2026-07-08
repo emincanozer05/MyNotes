@@ -13,20 +13,20 @@ export default async function DashboardPage() {
 
   const [
     { count: articleCount },
-    { count: noteCount },
-    { count: tagCount },
+    { count: courseCount },
+    { count: postitCount },
     { count: bookCount },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
+    supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "other"),
     supabase.from("notes").select("*", { count: "exact", head: true }),
-    supabase.from("tags").select("*", { count: "exact", head: true }),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "book"),
   ]);
 
   const stats = [
     { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
-    { label: "Not", value: noteCount ?? 0, href: "/notes", grad: "from-amber-500 to-yellow-500" },
-    { label: "Etiket", value: tagCount ?? 0, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
+    { label: "Kurs", value: courseCount ?? 0, href: "/courses", grad: "from-amber-500 to-yellow-500" },
+    { label: "Post-it", value: postitCount ?? 0, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
     { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf", grad: "from-emerald-500 to-teal-500" },
   ];
 
