@@ -13,6 +13,8 @@ export interface PassageItem {
   text: string;
   tagName: string;
   tagColor: string | null;
+  /** Every tag on the passage (a highlight can carry several). */
+  tags: { name: string; color: string | null }[];
   sourceLabel: string;
   href: string;
   tilt: string;
@@ -85,7 +87,9 @@ export function NotesBoard({
       }
     }
     for (const it of categoryPassages) {
-      if (!tagColorByName.has(it.tagName)) tagColorByName.set(it.tagName, it.tagColor);
+      for (const t of it.tags) {
+        if (!tagColorByName.has(t.name)) tagColorByName.set(t.name, t.color);
+      }
     }
     return [...tagColorByName.entries()]
       .map(([name, color]) => ({ name, color }))
@@ -104,7 +108,7 @@ export function NotesBoard({
   });
   const shownPassages = categoryPassages.filter(
     (it) =>
-      (!tag || it.tagName === tag) &&
+      (!tag || it.tags.some((t) => t.name === tag)) &&
       (!needle ||
         it.text.toLocaleLowerCase("tr").includes(needle) ||
         it.sourceLabel.toLocaleLowerCase("tr").includes(needle)),
@@ -202,6 +206,7 @@ export function NotesBoard({
                 text: it.text,
                 tagName: it.tagName,
                 tagColor: it.tagColor,
+                tags: it.tags,
                 sourceLabel: it.sourceLabel,
                 href: it.href,
                 tilt: it.tilt,

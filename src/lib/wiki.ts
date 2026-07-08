@@ -4,6 +4,8 @@ export const WIKI_LINK_RE = /\[\[([^\]]+)\]\]/g;
 export const HASHTAG_RE = /(^|[\s(“"'])#([\p{L}\p{N}_-]+)/gu;
 /** `<mark data-tag-name="…">` passages tagged inline in the rich-text editor. */
 export const MARK_TAG_NAME_RE = /data-tag-name="([^"]+)"/g;
+/** Pipe-separated list of ALL tags on a mark (multi-tag highlights). */
+export const MARK_TAG_NAMES_RE = /data-tag-names="([^"]+)"/g;
 
 export function extractWikiLinks(content: string): string[] {
   const titles = [...content.matchAll(WIKI_LINK_RE)]
@@ -25,16 +27,29 @@ export function extractHashtags(content: string): string[] {
  * out separately from #hashtags to keep the `note_tags` table in sync.
  */
 export function extractMarkTags(html: string): string[] {
-  const names = [...html.matchAll(MARK_TAG_NAME_RE)]
-    .map((m) => normalizeTag(decodeHtmlEntities(m[1])))
+  const names = [
+    ...[...html.matchAll(MARK_TAG_NAME_RE)].map((m) => m[1]),
+    // Multi-tag marks list every tag pipe-separated in data-tag-names.
+    ...[...html.matchAll(MARK_TAG_NAMES_RE)].flatMap((m) => m[1].split("|")),
+  ]
+    .map((n) => normalizeTag(decodeHtmlEntities(n)))
     .filter(Boolean);
   return [...new Set(names)];
 }
 
+/** One tag carried by a highlighted passage. */
+export interface PassageTag {
+  name: string;
+  color: string | null;
+}
+
 /** A passage highlighted + tagged inline in the editor (`<mark>` element). */
 export interface TaggedPassage {
+  /** Primary (first) tag — drives the post-it colour. */
   tagName: string;
   tagColor: string | null;
+  /** Every tag on the passage (a mark can carry several). */
+  tags: PassageTag[];
   text: string;
 }
 
@@ -66,6 +81,26 @@ export function extractTaggedPassages(
     const tagColor = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : null;
     const group = /data-tag-group="([^"]*)"/.exec(attrs)?.[1] || null;
 
+    // All tags on the mark: multi-tag marks carry them pipe-separated in
+    // data-tag-names / data-tag-colors; single-tag (legacy) marks fall back
+    // to the primary attributes.
+    const namesRaw = /data-tag-names="([^"]*)"/.exec(attrs)?.[1];
+    const colorsRaw = /data-tag-colors="([^"]*)"/.exec(attrs)?.[1] ?? "";
+    let tags: PassageTag[];
+    if (namesRaw) {
+      const names = decodeHtmlEntities(namesRaw).split("|");
+      const colors = decodeHtmlEntities(colorsRaw).split("|");
+      tags = names
+        .map((n, i) => ({
+          name: normalizeTag(n),
+          color: /^#[0-9a-fA-F]{6}$/.test(colors[i] ?? "") ? colors[i] : null,
+        }))
+        .filter((t) => t.name);
+    } else {
+      tags = [{ name: tagName, color: tagColor }];
+    }
+    if (tags.length === 0) continue;
+
     const text = decodeHtmlEntities(
       m[2].replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " "),
     )
@@ -77,10 +112,15 @@ export function extractTaggedPassages(
     if (group && prev && prev.group === group && prev.tagName === tagName) {
       prev.text += `\n${text}`;
     } else {
-      out.push({ tagName, tagColor, text, group });
+      out.push({ tagName, tagColor, tags, text, group });
     }
   }
-  return out.map(({ tagName, tagColor, text }) => ({ tagName, tagColor, text }));
+  return out.map(({ tagName, tagColor, tags, text }) => ({
+    tagName,
+    tagColor,
+    tags,
+    text,
+  }));
 }
 
 /** Decodes the entities the browser escapes into HTML attribute values. */

@@ -19,13 +19,33 @@ export function ArticleTagsEditor({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(current.join(", "));
+  // Tags being edited as a list; the input only holds the tag being typed, so
+  // picking a datalist suggestion never wipes the ones already added.
+  const [list, setList] = useState<string[]>(current);
+  const [input, setInput] = useState("");
   const [pending, startTransition] = useTransition();
   const listId = useId();
 
+  function addFromInput(): string[] {
+    const parts = input
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const next = [...list];
+    for (const p of parts) {
+      if (!next.some((t) => t.toLocaleLowerCase("tr") === p.toLocaleLowerCase("tr"))) {
+        next.push(p);
+      }
+    }
+    setList(next);
+    setInput("");
+    return next;
+  }
+
   function save() {
+    const finalList = addFromInput();
     startTransition(async () => {
-      await updateArticleTags(articleId, value);
+      await updateArticleTags(articleId, finalList.join(","));
       setEditing(false);
       router.refresh();
     });
@@ -46,7 +66,8 @@ export function ArticleTagsEditor({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setValue(current.join(", "));
+            setList(current);
+            setInput("");
             setEditing(true);
           }}
           className="rounded-full border border-dashed border-stone-400/50 px-2.5 py-0.5 text-[11px] font-semibold text-stone-500 transition-colors hover:border-sky-500/50 hover:text-sky-600"
@@ -59,18 +80,45 @@ export function ArticleTagsEditor({
   }
 
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {list.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"
+        >
+          #{tag}
+          <button
+            type="button"
+            onClick={() => setList((prev) => prev.filter((t) => t !== tag))}
+            title={`${tag} etiketini kaldır`}
+            className="text-sky-500/70 hover:text-rose-500"
+          >
+            ×
+          </button>
+        </span>
+      ))}
       <input
         list={listId}
-        value={value}
+        value={input}
         autoFocus
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") save();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (input.trim()) addFromInput();
+            else save();
+          }
+          if (e.key === ",") {
+            e.preventDefault();
+            addFromInput();
+          }
           if (e.key === "Escape") setEditing(false);
+          if (e.key === "Backspace" && !input) {
+            setList((prev) => prev.slice(0, -1));
+          }
         }}
-        placeholder="Etiketler (virgülle ayır)"
-        className="w-48 rounded-md border border-sky-500/50 bg-[var(--surface)] px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-sky-500"
+        placeholder="Etiket yaz, Enter'a bas"
+        className="w-36 rounded-md border border-sky-500/50 bg-[var(--surface)] px-2 py-0.5 text-xs outline-none focus:ring-2 focus:ring-sky-500"
       />
       <datalist id={listId}>
         {allTags.map((t) => (

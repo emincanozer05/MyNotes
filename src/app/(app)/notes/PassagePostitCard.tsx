@@ -9,6 +9,8 @@ export interface PassageData {
   text: string;
   tagName: string;
   tagColor: string | null;
+  /** Every tag on the passage (a highlight can carry several). */
+  tags: { name: string; color: string | null }[];
   sourceLabel: string;
   href: string;
   tilt: string;
@@ -46,12 +48,17 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
         style={{ transform: `rotate(${passage.tilt})`, background: bg }}
       >
         <span className="postit-pin" aria-hidden />
-        <span
-          className="ml-3.5 self-start rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
-          style={{ background: passage.tagColor ?? "#78716c" }}
-        >
-          <span className="opacity-70"># </span>
-          {passage.tagName}
+        <span className="ml-3.5 flex flex-wrap gap-1 self-start">
+          {passage.tags.map((t) => (
+            <span
+              key={t.name}
+              className="rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
+              style={{ background: t.color ?? "#78716c" }}
+            >
+              <span className="opacity-70"># </span>
+              {t.name}
+            </span>
+          ))}
         </span>
         <p className="mt-2 flex-1 whitespace-pre-wrap text-[12px] font-medium leading-snug line-clamp-6">
           “{passage.text}”
@@ -84,12 +91,17 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
               ×
             </button>
 
-            <span
-              className="ml-3.5 self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
-              style={{ background: passage.tagColor ?? "#78716c" }}
-            >
-              <span className="opacity-70"># </span>
-              {passage.tagName}
+            <span className="ml-3.5 flex flex-wrap gap-1.5 self-start">
+              {passage.tags.map((t) => (
+                <span
+                  key={t.name}
+                  className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                  style={{ background: t.color ?? "#78716c" }}
+                >
+                  <span className="opacity-70"># </span>
+                  {t.name}
+                </span>
+              ))}
             </span>
             <p className="mt-3 overflow-y-auto whitespace-pre-wrap pr-1 text-lg font-medium leading-relaxed">
               “{passage.text}”

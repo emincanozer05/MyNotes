@@ -479,12 +479,78 @@ export function RichTextEditor({
     mark.dataset.tagId = tag.id;
     mark.dataset.tagName = tag.name;
     mark.dataset.tagColor = tag.color ?? "#78716c";
+    // Full tag list (a mark can carry several tags, pipe-separated).
+    mark.dataset.tagNames = tag.name;
+    mark.dataset.tagColors = tag.color ?? "#78716c";
     // Marks born from the same selection share a group id, so the post-it
     // board can show the whole selection as a single passage.
     mark.dataset.tagGroup = groupId;
     mark.style.backgroundColor = tagHighlightBg(tag.color);
     mark.style.color = "#fff";
     return mark;
+  }
+
+  /** Every tag carried by a mark (legacy single-tag marks included). */
+  function markTagList(mark: HTMLElement): { name: string; color: string }[] {
+    const names = (mark.dataset.tagNames ?? mark.dataset.tagName ?? "")
+      .split("|")
+      .filter(Boolean);
+    const colors = (mark.dataset.tagColors ?? mark.dataset.tagColor ?? "").split("|");
+    return names.map((n, i) => ({ name: n, color: colors[i] || "#78716c" }));
+  }
+
+  /** All marks born from the same selection as `mark` (its tag group). */
+  function groupMarksOf(mark: HTMLElement): HTMLElement[] {
+    const group = mark.dataset.tagGroup;
+    if (!group || !ref.current) return [mark];
+    return [
+      ...ref.current.querySelectorAll<HTMLElement>(
+        `mark.tag-mark[data-tag-group="${group}"]`,
+      ),
+    ];
+  }
+
+  /**
+   * Rewrites a mark's tag list. The first tag stays the primary one — it
+   * drives the highlight colour and the post-it. An empty list unwraps the
+   * mark so the text is left untouched.
+   */
+  function setMarkTagList(
+    mark: HTMLElement,
+    list: { name: string; color: string }[],
+  ) {
+    if (list.length === 0) {
+      const parent = mark.parentNode;
+      if (!parent) return;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+      return;
+    }
+    mark.dataset.tagName = list[0].name;
+    mark.dataset.tagColor = list[0].color;
+    mark.dataset.tagNames = list.map((t) => t.name.replace(/\|/g, "")).join("|");
+    mark.dataset.tagColors = list.map((t) => t.color).join("|");
+    mark.style.backgroundColor = tagHighlightBg(list[0].color);
+  }
+
+  /** Adds `tag` to a mark (and its whole selection group), ignoring dupes. */
+  function addTagToMarkGroup(mark: HTMLElement, tag: UserTag) {
+    for (const m of groupMarksOf(mark)) {
+      const list = markTagList(m);
+      if (list.some((t) => t.name === tag.name)) continue;
+      setMarkTagList(m, [...list, { name: tag.name, color: tag.color ?? "#78716c" }]);
+    }
+  }
+
+  /** Removes one tag from a mark group; the last tag removes the highlight. */
+  function removeTagFromMarkGroup(mark: HTMLElement, name: string) {
+    for (const m of groupMarksOf(mark)) {
+      setMarkTagList(m, markTagList(m).filter((t) => t.name !== name));
+    }
+    setFloating(null);
+    setPickerOpen(false);
+    handleInput();
+    void doSave();
   }
 
   /** Closest block-level ancestor of `node` inside the editor (or the root). */
@@ -542,6 +608,7 @@ export function RichTextEditor({
       scopeNode.nodeType === Node.TEXT_NODE ? scopeNode.parentNode ?? root : scopeNode;
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
     const groups: Text[][] = [];
+    const markedInSelection = new Set<HTMLElement>();
     let lastBlock: Node | null = null;
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const t = n as Text;
@@ -552,7 +619,13 @@ export function RichTextEditor({
         range.compareBoundaryPoints(Range.START_TO_START, r) <= 0 &&
         range.compareBoundaryPoints(Range.END_TO_END, r) >= 0;
       if (!covered) continue;
-      if ((t.parentElement as HTMLElement | null)?.closest("mark.tag-mark")) {
+      const existingMark = (t.parentElement as HTMLElement | null)?.closest(
+        "mark.tag-mark",
+      ) as HTMLElement | null;
+      if (existingMark) {
+        // Text already highlighted: the new tag is ADDED to that mark, so a
+        // passage can carry several tags.
+        markedInSelection.add(existingMark);
         lastBlock = null;
         continue;
       }
@@ -573,6 +646,7 @@ export function RichTextEditor({
       mark.appendChild(r.extractContents());
       r.insertNode(mark);
     }
+    for (const m of markedInSelection) addTagToMarkGroup(m, tag);
 
     window.getSelection()?.removeAllRanges();
     pendingRangeRef.current = null;
@@ -582,6 +656,22 @@ export function RichTextEditor({
     // Save right away instead of waiting for the debounce, so the tag (and
     // the post-it colour it drives) is persisted as soon as it's applied.
     void doSave();
+  }
+
+  /**
+   * Applies a picked/created tag to the current target: the clicked mark
+   * (adding a second, third… tag to it) or the pending text selection.
+   */
+  function applyTag(tag: UserTag) {
+    if (floating?.kind === "mark") {
+      addTagToMarkGroup(floating.mark, tag);
+      setFloating(null);
+      setPickerOpen(false);
+      handleInput();
+      void doSave();
+      return;
+    }
+    applyTagToSelection(tag);
   }
 
   async function handleCreateTag() {
@@ -602,7 +692,7 @@ export function RichTextEditor({
           : [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "tr")),
       );
       setNewTagName("");
-      applyTagToSelection(created);
+      applyTag(created);
     } catch {
       setTagError("Etiket kaydedilemedi — bağlantıyı kontrol edin.");
     } finally {
@@ -663,10 +753,14 @@ export function RichTextEditor({
   }
 
   function removeMark(mark: HTMLElement) {
-    const parent = mark.parentNode;
-    if (!parent) return;
-    while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
-    parent.removeChild(mark);
+    // Unwrap the whole selection group so a multi-paragraph highlight doesn't
+    // leave orphaned marks behind.
+    for (const m of groupMarksOf(mark)) {
+      const parent = m.parentNode;
+      if (!parent) continue;
+      while (m.firstChild) parent.insertBefore(m.firstChild, m);
+      parent.removeChild(m);
+    }
     setFloating(null);
     handleInput();
     void doSave();
@@ -971,21 +1065,43 @@ export function RichTextEditor({
           ref={popoverRef}
           style={{ position: "fixed", top: floating.top, left: floating.left, zIndex: 50 }}
         >
-          {floating.kind === "mark" ? (
-            <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1 shadow-lg">
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
-                style={{ background: floating.mark.dataset.tagColor || "#78716c" }}
+          {floating.kind === "mark" && !pickerOpen ? (
+            <div className="flex max-w-[calc(100vw-16px)] flex-wrap items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1 shadow-lg">
+              {markTagList(floating.mark).map((t) => (
+                <span
+                  key={t.name}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+                  style={{ background: t.color }}
+                >
+                  # {t.name}
+                  <button
+                    type="button"
+                    onClick={() => removeTagFromMarkGroup(floating.mark, t.name)}
+                    title={`${t.name} etiketini bu vurgudan kaldır`}
+                    className="rounded-full text-white/70 hover:text-white"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setTagError(null);
+                  setPickerOpen(true);
+                }}
+                title="Bu vurguya etiket ekle"
+                className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-semibold text-stone-500 hover:bg-stone-500/10"
               >
-                # {floating.mark.dataset.tagName}
-              </span>
+                + Etiket
+              </button>
               <button
                 type="button"
                 onClick={() => removeMark(floating.mark)}
-                title="Etiketi kaldır"
+                title="Vurguyu tamamen kaldır"
                 className="rounded-full px-1.5 text-xs text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
               >
-                🗑 Kaldır
+                🗑
               </button>
             </div>
           ) : !pickerOpen ? (
@@ -1154,7 +1270,7 @@ export function RichTextEditor({
                     <span key={t.id} className="relative inline-flex">
                       <button
                         type="button"
-                        onClick={() => applyTagToSelection(t)}
+                        onClick={() => applyTag(t)}
                         className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
                         style={{ background: t.color ?? "#78716c" }}
                       >
