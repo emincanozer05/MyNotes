@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { extractTaggedPassages } from "@/lib/wiki";
 
 const MODULES = [
   { title: "Literatür", detail: "RCT makalelerini getir, konu başlığına göre kütüphaneni oluştur", href: "/library", grad: "from-rose-500 to-orange-500", icon: "❧" },
@@ -14,19 +15,40 @@ export default async function DashboardPage() {
   const [
     { count: articleCount },
     { count: courseCount },
-    { count: postitCount },
+    { count: noteCount },
     { count: bookCount },
+    { data: sourceMetas },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "other"),
     supabase.from("notes").select("*", { count: "exact", head: true }),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "book"),
+    supabase.from("sources").select("metadata"),
   ]);
+
+  // The notes board shows tagged passages (highlights inside article summaries
+  // and book/course notes) as post-its too, so the panel counts them together
+  // with the notes — the total across every category matches the board.
+  const passageCount = (
+    (sourceMetas ?? []) as {
+      metadata: { summary?: string; notes?: { html: string }[] } | null;
+    }[]
+  ).reduce(
+    (sum, s) =>
+      sum +
+      extractTaggedPassages(s.metadata?.summary).length +
+      (s.metadata?.notes ?? []).reduce(
+        (n, tn) => n + extractTaggedPassages(tn.html).length,
+        0,
+      ),
+    0,
+  );
+  const postitCount = (noteCount ?? 0) + passageCount;
 
   const stats = [
     { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
     { label: "Kurs", value: courseCount ?? 0, href: "/courses", grad: "from-amber-500 to-yellow-500" },
-    { label: "Post-it", value: postitCount ?? 0, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
+    { label: "Post-it", value: postitCount, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
     { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf", grad: "from-emerald-500 to-teal-500" },
   ];
 

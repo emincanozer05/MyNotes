@@ -33,6 +33,64 @@ function newTagGroupId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * Inline styles/attributes that carry foreign formatting from the copied page.
+ * They are stripped on paste so the text always lands as the note's own
+ * 11pt, justified body text.
+ */
+const PASTE_STRIPPED_STYLES = [
+  "font-size",
+  "font-family",
+  "line-height",
+  "letter-spacing",
+  "white-space",
+  "text-align",
+  "color",
+  "background",
+  "background-color",
+];
+
+/** Cleans clipboard HTML: no scripts, no foreign fonts/sizes/colours. */
+function sanitizePastedHtml(html: string): string {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+  tpl.content
+    .querySelectorAll("script, style, meta, link, title")
+    .forEach((el) => el.remove());
+  tpl.content.querySelectorAll("*").forEach((node) => {
+    const el = node as HTMLElement;
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase();
+      if (
+        name.startsWith("on") ||
+        ["class", "id", "size", "face", "color", "bgcolor", "align"].includes(name)
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+    if (el.style) {
+      for (const prop of PASTE_STRIPPED_STYLES) el.style.removeProperty(prop);
+      if (!el.getAttribute("style")) el.removeAttribute("style");
+    }
+    // "Always 11pt" includes pasted headings — the editor's own h1/h2 CSS
+    // would otherwise re-enlarge them.
+    if (/^H[1-6]$/.test(el.tagName)) el.style.fontSize = "11pt";
+  });
+  return tpl.innerHTML;
+}
+
+/** Plain-text fallback: escape and keep the paragraph/line structure. */
+function pastedTextToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped
+    .split(/\n{2,}/)
+    .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
 type FloatingUI =
   | { kind: "select"; top: number; left: number; text: string }
   | { kind: "mark"; top: number; left: number; mark: HTMLElement };
@@ -431,6 +489,22 @@ export function RichTextEditor({
         }
       }
     }
+
+    // Text pasted from another page always lands as 11pt, justified body
+    // text: foreign fonts/sizes/colours are stripped, structure (paragraphs,
+    // lists, links, bold/italic) is kept.
+    const html = e.clipboardData.getData("text/html");
+    const text = e.clipboardData.getData("text/plain");
+    if (!html && !text) return;
+    e.preventDefault();
+    const body = html ? sanitizePastedHtml(html) : pastedTextToHtml(text);
+    document.execCommand(
+      "insertHTML",
+      false,
+      `<div style="font-size:11pt;text-align:justify;">${body}</div>`,
+    );
+    styleNewImages();
+    handleInput();
   }
 
   function cancelHide() {
