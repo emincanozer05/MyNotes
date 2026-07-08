@@ -8,6 +8,7 @@ import {
   extractMarkTags,
   extractWikiLinks,
   parseTagInput,
+  removeTaggedPassage,
 } from "@/lib/wiki";
 import { normalizeCategory, type CategorySlug } from "@/lib/categories";
 
@@ -186,6 +187,50 @@ export async function deleteNote(formData: FormData) {
   const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   if (id) await supabase.from("notes").delete().eq("id", id);
+  revalidatePath("/notes");
+  redirect("/notes");
+}
+
+/**
+ * Removes a tagged-passage post-it by un-highlighting it in its source: the
+ * `<mark>` around the passage is stripped (its text is kept), so the passage
+ * stops surfacing as a post-it while the source content stays intact. The
+ * passage lives either in the source's `metadata.summary` (legacy) or in one of
+ * its titled `metadata.notes` (identified by `noteRef`), at `index` as numbered
+ * by {@link extractTaggedPassages}.
+ */
+export async function deletePassageHighlight(formData: FormData) {
+  const { supabase } = await requireUser();
+  const sourceId = String(formData.get("sourceId") ?? "");
+  const noteRef = String(formData.get("noteRef") ?? "");
+  const index = Number(formData.get("index") ?? -1);
+  if (!sourceId || !Number.isInteger(index) || index < 0) redirect("/notes");
+
+  const { data: src } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", sourceId)
+    .single();
+
+  const metadata = (src?.metadata ?? {}) as {
+    summary?: string;
+    notes?: { id: string; title: string; html: string }[];
+  };
+
+  if (noteRef) {
+    const notes = metadata.notes ?? [];
+    const idx = notes.findIndex((n) => n.id === noteRef);
+    if (idx >= 0) {
+      const updated = removeTaggedPassage(notes[idx].html, index);
+      if (updated !== null) notes[idx] = { ...notes[idx], html: updated };
+      metadata.notes = notes;
+    }
+  } else {
+    const updated = removeTaggedPassage(metadata.summary, index);
+    if (updated !== null) metadata.summary = updated;
+  }
+
+  await supabase.from("sources").update({ metadata }).eq("id", sourceId);
   revalidatePath("/notes");
   redirect("/notes");
 }

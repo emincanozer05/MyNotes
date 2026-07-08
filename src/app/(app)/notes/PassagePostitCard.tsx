@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pastelize } from "@/lib/color";
+import { deletePassageHighlight } from "./actions";
 
 export interface PassageData {
   key: string;
@@ -14,6 +15,12 @@ export interface PassageData {
   sourceLabel: string;
   href: string;
   tilt: string;
+  /** Source + location the highlight lives in, so it can be un-highlighted. */
+  sourceId: string;
+  /** Titled note id the passage sits in, or "" for the legacy summary. */
+  noteRef: string;
+  /** Passage index within its note/summary (extractTaggedPassages order). */
+  passageIndex: number;
 }
 
 /**
@@ -48,6 +55,30 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
         style={{ transform: `rotate(${passage.tilt})`, background: bg }}
       >
         <span className="postit-pin" aria-hidden />
+
+        {/* Delete (top-right X) — un-highlights the passage in its source. */}
+        <form
+          action={deletePassageHighlight}
+          className="absolute right-1.5 top-1.5 z-10"
+        >
+          <input type="hidden" name="sourceId" value={passage.sourceId} />
+          <input type="hidden" name="noteRef" value={passage.noteRef} />
+          <input type="hidden" name="index" value={passage.passageIndex} />
+          <button
+            type="submit"
+            title="Vurguyu kaldır"
+            aria-label="Vurguyu kaldır"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!window.confirm("Bu vurgu kaldırılsın mı? (metin kaynakta kalır)"))
+                e.preventDefault();
+            }}
+            className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs font-bold leading-none text-stone-700/70 opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+          >
+            ×
+          </button>
+        </form>
+
         <span className="ml-3.5 flex flex-wrap gap-1 self-start">
           {passage.tags.map((t) => (
             <span

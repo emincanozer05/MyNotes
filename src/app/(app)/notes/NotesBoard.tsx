@@ -19,6 +19,12 @@ export interface PassageItem {
   href: string;
   tilt: string;
   category: string;
+  /** Source + location the highlight lives in, so it can be un-highlighted. */
+  sourceId: string;
+  /** Titled note id the passage sits in, or "" for the legacy summary. */
+  noteRef: string;
+  /** Passage index within its note/summary (extractTaggedPassages order). */
+  passageIndex: number;
 }
 
 /**
@@ -210,6 +216,9 @@ export function NotesBoard({
                 sourceLabel: it.sourceLabel,
                 href: it.href,
                 tilt: it.tilt,
+                sourceId: it.sourceId,
+                noteRef: it.noteRef,
+                passageIndex: it.passageIndex,
               }}
             />
           ))}
