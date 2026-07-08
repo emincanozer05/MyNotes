@@ -5,6 +5,7 @@ import { CoverUpload } from "./CoverUpload";
 import { BookDescription } from "./BookDescription";
 import { EditBookModal } from "./EditBookModal";
 import { BookStatusControls } from "./BookStatusControls";
+import { BookLink } from "./BookLink";
 import { normalizeStatus } from "@/lib/status";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
@@ -22,6 +23,7 @@ interface BookRow {
     status?: string;
     summary?: string;
     description?: string;
+    link?: string;
     notes?: TitledNote[];
   } | null;
 }
@@ -70,11 +72,14 @@ export default async function BookDetailPage({
       </Link>
 
       <div className="glass-card flex gap-5 rounded-2xl p-5">
-        <CoverUpload
-          bookId={book.id}
-          coverUrl={book.cover_url}
-          title={book.title}
-        />
+        <div className="flex w-28 shrink-0 flex-col gap-2">
+          <CoverUpload
+            bookId={book.id}
+            coverUrl={book.cover_url}
+            title={book.title}
+          />
+          <BookLink bookId={book.id} initial={book.metadata?.link ?? ""} />
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <h1 className="text-2xl font-bold leading-tight">{book.title}</h1>
