@@ -15,6 +15,7 @@ import { AddArticleForm } from "./AddArticleForm";
 import { TranslatedTitle } from "./TranslatedTitle";
 import { ArticleTopicEditor } from "./ArticleTopicEditor";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
+import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { SummaryReadModal } from "./SummaryReadModal";
 
 type TabId = "feed" | "saved" | "annotated";
@@ -200,6 +201,7 @@ export function LiteratureTabs({
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [noteTagFilter, setNoteTagFilter] = useState<string>("all");
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -251,6 +253,21 @@ export function LiteratureTabs({
     for (const a of savedList) for (const t of tagsOf(a)) set.add(t);
     return [...set].sort((a, b) => a.localeCompare(b, "tr"));
   }, [savedList]);
+
+  // Tags present in "Notlarım" (filter chips) + the filtered list itself.
+  const noteTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of notlarim) for (const t of tagsOf(a)) set.add(t);
+    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
+  }, [notlarim]);
+
+  const notlarimFiltered = useMemo(
+    () =>
+      noteTagFilter === "all"
+        ? notlarim
+        : notlarim.filter((a) => tagsOf(a).includes(noteTagFilter)),
+    [notlarim, noteTagFilter],
+  );
 
   const byTopic = useMemo(() => {
     let filtered =
@@ -548,8 +565,9 @@ export function LiteratureTabs({
                                 </div>
                               )}
                               <h4 className="text-sm font-semibold leading-snug">
-                                <TranslatedTitle
-                                  text={a.title}
+                                <ArticleTitleEditor
+                                  articleId={a.id}
+                                  title={a.title}
                                   href={articleLink(a)}
                                 />
                               </h4>
@@ -630,26 +648,70 @@ export function LiteratureTabs({
       {tab === "annotated" &&
         (notlarim.length > 0 ? (
           <div className="space-y-2">
-            {notlarim.map((a) => {
+            {/* Tag filter chips */}
+            {noteTags.length > 0 && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-xs font-semibold text-stone-500">
+                  Etiket:
+                </span>
+                <button
+                  onClick={() => setNoteTagFilter("all")}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    noteTagFilter === "all"
+                      ? "btn-gradient"
+                      : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-300"
+                  }`}
+                >
+                  Tümü ({notlarim.length})
+                </button>
+                {noteTags.map((t) => {
+                  const n = notlarim.filter((a) =>
+                    tagsOf(a).includes(t),
+                  ).length;
+                  return (
+                    <button
+                      key={t}
+                      onClick={() =>
+                        setNoteTagFilter((prev) => (prev === t ? "all" : t))
+                      }
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                        noteTagFilter === t
+                          ? "btn-gradient"
+                          : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+                      }`}
+                    >
+                      #{t} ({n})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {notlarimFiltered.length === 0 && (
+              <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
+                Bu etiketle eşleşen makale yok.
+              </p>
+            )}
+
+            {notlarimFiltered.map((a) => {
               const noteCount = noteCounts[a.id] ?? 0;
               return (
                 <div key={a.id} className="glass-card rounded-xl p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="mb-1 flex flex-wrap items-center gap-2">
-                        {isMyNote(a) && (
-                          <span className="rounded border border-sky-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                            Kendi eklediğim
-                          </span>
-                        )}
-                        {hasSummary(a) && (
-                          <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                            Özet var
-                          </span>
-                        )}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5">
+                        <ArticleTagsEditor
+                          articleId={a.id}
+                          current={tagsOf(a)}
+                          allTags={allTags}
+                        />
                       </div>
                       <h4 className="text-sm font-semibold leading-snug">
-                        <TranslatedTitle text={a.title} href={articleLink(a)} />
+                        <ArticleTitleEditor
+                          articleId={a.id}
+                          title={a.title}
+                          href={articleLink(a)}
+                        />
                       </h4>
                       <p className="mt-1 text-xs text-stone-500">
                         {a.authors.slice(0, 3).join(", ")}
@@ -665,16 +727,6 @@ export function LiteratureTabs({
                     </form>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <ArticleTopicEditor
-                      articleId={a.id}
-                      current={topicOf(a)}
-                      topics={allTopics}
-                    />
-                    <ArticleTagsEditor
-                      articleId={a.id}
-                      current={tagsOf(a)}
-                      allTags={allTags}
-                    />
                     <Link
                       href={`/library/${a.id}`}
                       className="btn-gradient rounded-full px-4 py-1.5 font-semibold"
