@@ -152,6 +152,26 @@ function parseTags(raw: string): string[] {
   return tags;
 }
 
+/** Updates the title of a saved / own article. */
+export async function updateArticleTitle(id: string, title: string) {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const trimmed = title.trim();
+  if (!trimmed) return { error: "Makale başlığı boş olamaz." };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ title: trimmed })
+    .eq("id", id)
+    .eq("kind", "article");
+
+  if (error) return { error: error.message };
+  revalidatePath("/library");
+  return { error: null };
+}
+
 /** Updates (or sets) the tag list of a saved / own article. */
 export async function updateArticleTags(id: string, tagsRaw: string) {
   const supabase = await createClient();
