@@ -27,10 +27,14 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refresh the auth token; do not run logic between createServerClient and getUser.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh the auth token; do not run logic between createServerClient and
+  // getClaims. Unlike getUser(), getClaims() verifies the JWT locally against
+  // the project's cached public signing keys instead of calling the Supabase
+  // Auth server on every request — removing a network round-trip from every
+  // navigation. It still refreshes an expired session via getSession(), and
+  // falls back to getUser() automatically on legacy HS256 projects.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));

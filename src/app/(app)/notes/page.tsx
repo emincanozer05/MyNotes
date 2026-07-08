@@ -62,6 +62,9 @@ export default async function NotesPage({
 
   // Every category is fetched at once; the client board filters instantly on
   // tab clicks instead of re-querying the server per category.
+  // board_sources() (migration 0009) returns the rich-text fields with <img>
+  // tags stripped in the database, so embedded base64 images never cross the
+  // network just to extract the highlighted passages.
   const [notesRes, sourcesRes] = await Promise.all([
     supabase
       .from("notes")
@@ -69,13 +72,13 @@ export default async function NotesPage({
         "id, title, content, category, source_id, source_title, source_author, source_year, note_tags(tags(name, color))",
       )
       .order("created_at", { ascending: false }),
-    supabase.from("sources").select("id, kind, title, category, metadata"),
+    supabase.rpc("board_sources"),
   ]);
 
   // On a DB without the 0008 migration the `category` columns don't exist and
-  // the selects above fail wholesale — retry without them so the board still
-  // renders. Categories then come from `metadata` (books keep theirs there),
-  // defaulting to "spor".
+  // the notes select above fails wholesale — retry without them so the board
+  // still renders. Categories then come from `metadata` (books keep theirs
+  // there), defaulting to "spor".
   const notes = notesRes.error
     ? (
         await supabase
@@ -86,9 +89,21 @@ export default async function NotesPage({
           .order("created_at", { ascending: false })
       ).data
     : notesRes.data;
-  const sources = sourcesRes.error
-    ? (await supabase.from("sources").select("id, kind, title, metadata")).data
-    : sourcesRes.data;
+
+  // Without the 0009 migration the RPC doesn't exist — fall back to the raw
+  // (heavier) metadata select, then to the pre-0008 shape without `category`.
+  let sources = sourcesRes.error ? null : (sourcesRes.data as SourceRow[]);
+  if (!sources) {
+    const raw = await supabase
+      .from("sources")
+      .select("id, kind, title, category, metadata");
+    sources = (
+      raw.error
+        ? (await supabase.from("sources").select("id, kind, title, metadata"))
+            .data
+        : raw.data
+    ) as SourceRow[] | null;
+  }
 
   // Map each source id to its kind so a note can link back to its source.
   const sourceKindById = new Map<string, string>(

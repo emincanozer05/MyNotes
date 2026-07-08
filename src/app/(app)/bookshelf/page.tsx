@@ -23,10 +23,8 @@ interface BookRow {
   authors: string[];
   year: number | null;
   cover_url: string | null;
-  metadata: {
-    category?: string;
-    status?: string;
-  } | null;
+  meta_category: string | null;
+  meta_status: string | null;
 }
 
 export default async function BookshelfPage({
@@ -40,13 +38,18 @@ export default async function BookshelfPage({
 
   // All categories are fetched at once; the client board filters instantly on
   // tab clicks instead of re-querying the server per category.
+  // Only the two metadata keys the cards need are selected — pulling the whole
+  // jsonb would ship every book's rich-text notes (with embedded base64
+  // images) just to render the shelf, which is what made this page slow.
   const [{ data: booksData }, { data: noteCounts }] = await Promise.all([
     supabase
       .from("sources")
-      .select("id, title, authors, year, cover_url, metadata")
+      .select(
+        "id, title, authors, year, cover_url, meta_category:metadata->>category, meta_status:metadata->>status",
+      )
       .eq("kind", "book")
       .order("created_at", { ascending: false }),
-    supabase.from("notes").select("source_id"),
+    supabase.from("notes").select("source_id").not("source_id", "is", null),
   ]);
 
   const countBySource = new Map<string, number>();
@@ -62,8 +65,8 @@ export default async function BookshelfPage({
     authors: b.authors,
     year: b.year,
     cover_url: b.cover_url,
-    category: normalizeCategory(b.metadata?.category),
-    status: normalizeStatus(b.metadata?.status),
+    category: normalizeCategory(b.meta_category),
+    status: normalizeStatus(b.meta_status),
     noteCount: countBySource.get(b.id) ?? 0,
     spineCls: spineColor(b.title),
   }));

@@ -12,7 +12,7 @@ interface CourseRow {
   year: number | null;
   cover_url: string | null;
   url: string | null;
-  metadata: { status?: string; summary?: string } | null;
+  meta_status: string | null;
 }
 
 const GRAD = [
@@ -31,9 +31,14 @@ function grad(title: string) {
 export default async function CoursesPage() {
   const supabase = await createClient();
 
+  // Only the status key is read from metadata — selecting the whole jsonb
+  // would ship every course's rich-text notes (with embedded base64 images)
+  // just to render the card grid, which is what made this page slow.
   const { data } = await supabase
     .from("sources")
-    .select("id, title, authors, year, cover_url, url, metadata")
+    .select(
+      "id, title, authors, year, cover_url, url, meta_status:metadata->>status",
+    )
     .eq("kind", "other")
     .contains("metadata", { category: "course" })
     .order("created_at", { ascending: false });
@@ -58,7 +63,7 @@ export default async function CoursesPage() {
       {courses.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {courses.map((c) => {
-            const status = normalizeStatus(c.metadata?.status);
+            const status = normalizeStatus(c.meta_status);
             const meta = STATUS_META[status];
             return (
               <div

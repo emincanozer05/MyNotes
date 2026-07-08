@@ -17,14 +17,22 @@ export default async function DashboardPage() {
     { count: courseCount },
     { count: noteCount },
     { count: bookCount },
-    { data: sourceMetas },
+    boardRes,
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "other"),
     supabase.from("notes").select("*", { count: "exact", head: true }),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "book"),
-    supabase.from("sources").select("metadata"),
+    // board_sources() (migration 0009) returns the rich-text fields with
+    // <img> tags stripped in the database, so embedded base64 images never
+    // cross the network just to count highlighted passages.
+    supabase.rpc("board_sources"),
   ]);
+
+  // Fallback for a DB without the 0009 migration: raw metadata (heavier).
+  const sourceMetas = boardRes.error
+    ? (await supabase.from("sources").select("metadata")).data
+    : boardRes.data;
 
   // The notes board shows tagged passages (highlights inside article summaries
   // and book/course notes) as post-its too, so the panel counts them together
