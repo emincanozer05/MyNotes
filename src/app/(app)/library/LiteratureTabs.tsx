@@ -14,6 +14,7 @@ import {
 import { AddArticleForm } from "./AddArticleForm";
 import { TranslatedTitle } from "./TranslatedTitle";
 import { ArticleTopicEditor } from "./ArticleTopicEditor";
+import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { SummaryReadModal } from "./SummaryReadModal";
 
 type TabId = "feed" | "saved" | "annotated";
@@ -38,6 +39,11 @@ function isOpenAccess(journal: string | null): boolean {
 function topicOf(a: Source): string {
   const t = (a.metadata as { topic?: string } | null)?.topic;
   return t && t.trim() ? t : "Diğer";
+}
+
+function tagsOf(a: Source): string[] {
+  const tags = (a.metadata as { tags?: unknown } | null)?.tags;
+  return Array.isArray(tags) ? tags.filter((t): t is string => Boolean(t) && typeof t === "string") : [];
 }
 
 function isMyNote(a: Source): boolean {
@@ -193,6 +199,7 @@ export function LiteratureTabs({
   const [busyPmid, setBusyPmid] = useState<string | null>(null);
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [topicFilter, setTopicFilter] = useState<string>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -225,17 +232,34 @@ export function LiteratureTabs({
     return [...set].sort((a, b) => a.localeCompare(b, "tr"));
   }, [saved]);
 
+  // All tags across saved + own articles (suggestions for the tag editor).
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of saved) for (const t of tagsOf(a)) set.add(t);
+    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
+  }, [saved]);
+
   const topics = useMemo(() => {
     const set = new Set<string>();
     for (const a of savedList) set.add(topicOf(a));
     return [...set].sort((a, b) => a.localeCompare(b, "tr"));
   }, [savedList]);
 
+  // Tags present in the saved list (filter chips in "Kaydedilenler").
+  const savedTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of savedList) for (const t of tagsOf(a)) set.add(t);
+    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
+  }, [savedList]);
+
   const byTopic = useMemo(() => {
-    const filtered =
+    let filtered =
       topicFilter === "all"
         ? savedList
         : savedList.filter((a) => topicOf(a) === topicFilter);
+    if (tagFilter !== "all") {
+      filtered = filtered.filter((a) => tagsOf(a).includes(tagFilter));
+    }
     const m = new Map<string, Source[]>();
     for (const a of filtered) {
       const t = topicOf(a);
@@ -243,7 +267,7 @@ export function LiteratureTabs({
       m.get(t)!.push(a);
     }
     return m;
-  }, [savedList, topicFilter]);
+  }, [savedList, topicFilter, tagFilter]);
 
   function handleSave(pmid: string) {
     setBusyPmid(pmid);
@@ -452,6 +476,51 @@ export function LiteratureTabs({
               })}
             </div>
 
+            {/* Tag filter chips */}
+            {savedTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-xs font-semibold text-stone-500">
+                  Etiket:
+                </span>
+                <button
+                  onClick={() => setTagFilter("all")}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    tagFilter === "all"
+                      ? "btn-gradient"
+                      : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-300"
+                  }`}
+                >
+                  Tümü
+                </button>
+                {savedTags.map((t) => {
+                  const n = savedList.filter((a) =>
+                    tagsOf(a).includes(t),
+                  ).length;
+                  return (
+                    <button
+                      key={t}
+                      onClick={() =>
+                        setTagFilter((prev) => (prev === t ? "all" : t))
+                      }
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                        tagFilter === t
+                          ? "btn-gradient"
+                          : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+                      }`}
+                    >
+                      #{t} ({n})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {byTopic.size === 0 && (
+              <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
+                Bu filtrelerle eşleşen makale yok.
+              </p>
+            )}
+
             {[...byTopic.keys()]
               .sort((a, b) => a.localeCompare(b, "tr"))
               .map((topic) => (
@@ -509,6 +578,11 @@ export function LiteratureTabs({
                               articleId={a.id}
                               current={topicOf(a)}
                               topics={allTopics}
+                            />
+                            <ArticleTagsEditor
+                              articleId={a.id}
+                              current={tagsOf(a)}
+                              allTags={allTags}
                             />
                             {a.doi && (
                               <a
@@ -595,6 +669,11 @@ export function LiteratureTabs({
                       articleId={a.id}
                       current={topicOf(a)}
                       topics={allTopics}
+                    />
+                    <ArticleTagsEditor
+                      articleId={a.id}
+                      current={tagsOf(a)}
+                      allTags={allTags}
                     />
                     <Link
                       href={`/library/${a.id}`}

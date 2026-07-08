@@ -137,6 +137,49 @@ export async function updateArticleTopic(id: string, topic: string) {
   return { error: null };
 }
 
+/** Normalizes a comma-separated tag string into a deduplicated list. */
+function parseTags(raw: string): string[] {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const part of raw.split(",")) {
+    const tag = part.trim();
+    const key = tag.toLocaleLowerCase("tr");
+    if (tag && !seen.has(key)) {
+      seen.add(key);
+      tags.push(tag);
+    }
+  }
+  return tags;
+}
+
+/** Updates (or sets) the tag list of a saved / own article. */
+export async function updateArticleTags(id: string, tagsRaw: string) {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  const metadata = {
+    ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+    tags: parseTags(tagsRaw),
+  };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata })
+    .eq("id", id)
+    .eq("kind", "article");
+
+  if (error) return { error: error.message };
+  revalidatePath("/library");
+  return { error: null };
+}
+
 /** Adds an article entered manually by the user (own reading list). */
 export async function addOwnArticle(formData: FormData) {
   const supabase = await createClient();
@@ -155,6 +198,7 @@ export async function addOwnArticle(formData: FormData) {
   const journal = String(formData.get("journal") ?? "").trim() || null;
   const doi = String(formData.get("doi") ?? "").trim() || null;
   const topic = String(formData.get("topic") ?? "").trim() || "Diğer";
+  const tags = parseTags(String(formData.get("tags") ?? ""));
   const abstract = String(formData.get("abstract") ?? "").trim() || null;
 
   const { error } = await supabase.from("sources").insert({
@@ -168,7 +212,7 @@ export async function addOwnArticle(formData: FormData) {
     url: doi ? `https://doi.org/${doi}` : null,
     abstract,
     // mynote: own-added articles land in the "Notlarım" tab (not "Kaydedilenler").
-    metadata: { topic, manual: true, mynote: true },
+    metadata: { topic, tags, manual: true, mynote: true },
   });
 
   if (error) {
