@@ -14,6 +14,7 @@ interface Fields {
   year: string;
   doi: string;
   topic: string;
+  tags: string;
   abstract: string;
 }
 
@@ -24,6 +25,7 @@ const EMPTY: Fields = {
   year: "",
   doi: "",
   topic: "",
+  tags: "",
   abstract: "",
 };
 
@@ -94,6 +96,7 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
     formData.set("year", f.year);
     formData.set("doi", f.doi);
     formData.set("topic", f.topic);
+    formData.set("tags", f.tags);
     formData.set("abstract", f.abstract);
     startTransition(async () => {
       const res = await addOwnArticle(formData);
@@ -180,6 +183,12 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
           className={inputCls}
         />
       </div>
+      <input
+        value={f.tags}
+        onChange={(e) => set("tags", e.target.value)}
+        placeholder="Etiketler (virgülle ayır: hipertrofi, periodizasyon)"
+        className={inputCls}
+      />
       <textarea
         value={f.abstract}
         onChange={(e) => set("abstract", e.target.value)}
