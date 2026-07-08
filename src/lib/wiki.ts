@@ -55,21 +55,31 @@ export interface TaggedPassage {
 
 const MARK_RE = /<mark\b([^>]*)>([\s\S]*?)<\/mark>/gi;
 
+/** A `<mark>` element kept for editing: its source range and inner HTML. */
+interface MarkMatch {
+  start: number;
+  end: number;
+  inner: string;
+}
+
+interface ParsedPassage extends TaggedPassage {
+  group: string | null;
+  /** The `<mark>` element(s) making up this passage, in document order. */
+  matches: MarkMatch[];
+}
+
 /**
- * Pulls every tagged passage out of stored HTML: the highlighted text plus the
- * tag it carries (name + colour, read straight from the `<mark>` data-*). Used
- * to turn each highlight into its own post-it card, wherever it was tagged
- * (notes, article summaries, book/course notes).
+ * Core parser shared by {@link extractTaggedPassages} and
+ * {@link removeTaggedPassage}: walks every valid `<mark>` in the HTML, merges
+ * marks sharing a `data-tag-group` into one passage, and records each
+ * contributing mark's source range so a passage can later be un-highlighted.
  *
  * A single selection spanning several paragraphs / list items is stored as one
  * `<mark>` per block, all sharing a `data-tag-group` id — those are merged back
  * into ONE passage here (line per block), so one selection = one post-it.
  */
-export function extractTaggedPassages(
-  html: string | null | undefined,
-): TaggedPassage[] {
-  if (!html) return [];
-  const out: (TaggedPassage & { group: string | null })[] = [];
+function parseMarkPassages(html: string): ParsedPassage[] {
+  const out: ParsedPassage[] = [];
   for (const m of html.matchAll(MARK_RE)) {
     const attrs = m[1];
     const nameRaw = /data-tag-name="([^"]*)"/.exec(attrs)?.[1];
@@ -108,19 +118,61 @@ export function extractTaggedPassages(
       .trim();
     if (!text) continue;
 
+    const match: MarkMatch = {
+      start: m.index ?? 0,
+      end: (m.index ?? 0) + m[0].length,
+      inner: m[2],
+    };
+
     const prev = out[out.length - 1];
     if (group && prev && prev.group === group && prev.tagName === tagName) {
       prev.text += `\n${text}`;
+      prev.matches.push(match);
     } else {
-      out.push({ tagName, tagColor, tags, text, group });
+      out.push({ tagName, tagColor, tags, text, group, matches: [match] });
     }
   }
-  return out.map(({ tagName, tagColor, tags, text }) => ({
+  return out;
+}
+
+/**
+ * Pulls every tagged passage out of stored HTML: the highlighted text plus the
+ * tag it carries (name + colour, read straight from the `<mark>` data-*). Used
+ * to turn each highlight into its own post-it card, wherever it was tagged
+ * (notes, article summaries, book/course notes).
+ */
+export function extractTaggedPassages(
+  html: string | null | undefined,
+): TaggedPassage[] {
+  if (!html) return [];
+  return parseMarkPassages(html).map(({ tagName, tagColor, tags, text }) => ({
     tagName,
     tagColor,
     tags,
     text,
   }));
+}
+
+/**
+ * Removes the highlight around the passage at `index` (as numbered by
+ * {@link extractTaggedPassages}) from the stored HTML, unwrapping the
+ * `<mark>` element(s) so the passage's text is preserved — only the tag/colour
+ * highlight is dropped. Returns the updated HTML, or `null` when the index is
+ * out of range (nothing to change).
+ */
+export function removeTaggedPassage(
+  html: string | null | undefined,
+  index: number,
+): string | null {
+  if (!html) return null;
+  const target = parseMarkPassages(html)[index];
+  if (!target) return null;
+  // Splice from the end so earlier ranges keep their offsets valid.
+  let result = html;
+  for (const mark of [...target.matches].sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, mark.start) + mark.inner + result.slice(mark.end);
+  }
+  return result;
 }
 
 /** Decodes the entities the browser escapes into HTML attribute values. */

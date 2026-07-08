@@ -140,6 +140,9 @@ export default async function NotesPage({
         href: `${base}#note-legacy~${i}`,
         category: srcCategory,
         tilt: tiltFor(`src-${s.id}-sum-${i}`),
+        sourceId: s.id,
+        noteRef: "",
+        passageIndex: i,
       }),
     );
     for (const tn of s.metadata?.notes ?? []) {
@@ -151,6 +154,9 @@ export default async function NotesPage({
           href: `${base}#note-${tn.id}~${i}`,
           category: srcCategory,
           tilt: tiltFor(`src-${s.id}-${tn.id}-${i}`),
+          sourceId: s.id,
+          noteRef: tn.id,
+          passageIndex: i,
         }),
       );
     }
