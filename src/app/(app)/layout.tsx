@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { BackButton } from "@/components/BackButton";
 import { HeaderSearch } from "@/components/HeaderSearch";
+import { ScrollToSearchText } from "@/components/ScrollToSearchText";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 
@@ -39,6 +40,7 @@ export default async function AppLayout({
           </form>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <ScrollToSearchText />
       </div>
     </div>
   );

@@ -189,8 +189,12 @@ export default async function SearchPage({
         </div>
       )}
 
+      {/* #ara= fragment: ScrollToSearchText scrolls the target page to the word. */}
       <ul className="space-y-3">
         {hits.map((hit, i) => {
+          const deepHref = hit.href
+            ? `${hit.href}#ara=${encodeURIComponent(query)}`
+            : null;
           const card = (
             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-amber-400/60">
               <div className="mb-1 flex items-center gap-2">
@@ -210,7 +214,7 @@ export default async function SearchPage({
           );
           return (
             <li key={i}>
-              {hit.href ? <Link href={hit.href}>{card}</Link> : card}
+              {deepHref ? <Link href={deepHref}>{card}</Link> : card}
             </li>
           );
         })}
