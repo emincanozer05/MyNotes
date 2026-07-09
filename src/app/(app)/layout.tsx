@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { BackButton } from "@/components/BackButton";
+import { HeaderSearch } from "@/components/HeaderSearch";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 
@@ -24,6 +26,11 @@ export default async function AppLayout({
             <span className="hidden text-xs font-medium text-stone-400 sm:inline">
               Kuvvet &amp; Kondisyon Bilgi Platformu
             </span>
+          </div>
+          <div className="flex flex-1 justify-center px-4">
+            <Suspense fallback={null}>
+              <HeaderSearch />
+            </Suspense>
           </div>
           <form action={logout}>
             <button className="rounded-full px-3 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-rose-500/10 hover:text-rose-500">
