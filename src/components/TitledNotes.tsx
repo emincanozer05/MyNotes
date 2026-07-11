@@ -134,10 +134,10 @@ export function TitledNotes({
         </Link>
       </div>
 
-      {/* Title chips (drag to reorder) */}
+      {/* Title chips (drag to reorder), numbered by their order */}
       {notes.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {notes.map((n) => {
+        <div className="flex flex-wrap gap-2">
+          {notes.map((n, i) => {
             const isActive = n.id === activeId;
             return (
               <span
@@ -147,46 +147,52 @@ export function TitledNotes({
                 onDragEnter={() => handleDragEnter(n.id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDragEnd={handleDragEnd}
-                className={`inline-flex cursor-grab items-center gap-1 rounded-full border px-1 py-0.5 text-xs font-semibold active:cursor-grabbing ${
+                title="Sürükleyerek sırala"
+                className={`group inline-flex cursor-grab items-center gap-1.5 rounded-xl border py-1 pl-1.5 pr-1 text-xs font-semibold shadow-sm transition-all active:cursor-grabbing ${
                   dragId === n.id ? "opacity-50" : ""
                 } ${
                   isActive
-                    ? "border-amber-500/60 bg-amber-400/10 text-amber-700 dark:text-amber-300"
-                    : "border-[var(--border)] text-stone-500"
+                    ? "border-amber-500/70 bg-gradient-to-b from-amber-400/20 to-amber-500/10 text-amber-700 shadow-amber-500/20 dark:text-amber-300"
+                    : "border-[var(--border)] text-stone-500 hover:border-stone-400/60 hover:text-stone-400 dark:hover:border-stone-500/60"
                 }`}
               >
                 <span
                   aria-hidden
-                  title="Sürükleyerek sırala"
-                  className="select-none pl-1 text-stone-400"
+                  className={`flex h-5 w-5 shrink-0 select-none items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${
+                    isActive
+                      ? "bg-amber-500 text-stone-950 shadow-sm shadow-amber-500/40"
+                      : "bg-stone-500/15 text-stone-500 group-hover:bg-stone-500/25"
+                  }`}
                 >
-                  ⠿
+                  {i + 1}
                 </span>
                 <button
                   type="button"
                   onClick={() => setActiveId(n.id)}
                   onDoubleClick={() => renameTitle(n.id)}
                   title="Seç (çift tıkla: yeniden adlandır)"
-                  className="py-0.5 pr-1"
+                  className="max-w-56 truncate py-0.5 tracking-wide"
                 >
                   {n.title}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => renameTitle(n.id)}
-                  title="Yeniden adlandır"
-                  className="text-stone-400 hover:text-amber-600"
-                >
-                  ✎
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeTitle(n.id)}
-                  title="Sil"
-                  className="pr-1 text-stone-400 hover:text-rose-500"
-                >
-                  ×
-                </button>
+                <span className="flex items-center gap-0.5 opacity-40 transition-opacity group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => renameTitle(n.id)}
+                    title="Yeniden adlandır"
+                    className="rounded-md px-1 py-0.5 text-stone-400 hover:bg-stone-500/10 hover:text-amber-600"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeTitle(n.id)}
+                    title="Sil"
+                    className="rounded-md px-1 py-0.5 text-stone-400 hover:bg-rose-500/10 hover:text-rose-500"
+                  >
+                    ×
+                  </button>
+                </span>
               </span>
             );
           })}
@@ -196,7 +202,15 @@ export function TitledNotes({
       {/* Active editor */}
       {active ? (
         <div ref={editorRef} className="scroll-mt-20">
-          <h3 className="mb-2 text-sm font-bold">{active.title}</h3>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
+            <span
+              aria-hidden
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold tabular-nums text-stone-950"
+            >
+              {notes.findIndex((n) => n.id === active.id) + 1}
+            </span>
+            {active.title}
+          </h3>
           <RichTextEditor
             key={active.id}
             initialHtml={active.html}
