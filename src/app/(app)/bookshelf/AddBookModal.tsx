@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
-import { CATEGORIES, normalizeCategory } from "@/lib/categories";
+import { CATEGORIES, normalizeCategory, type Category } from "@/lib/categories";
 import { COURSE_STATUSES, STATUS_META } from "@/lib/status";
 import { addBook } from "./actions";
 
@@ -11,7 +11,13 @@ const inputCls =
   "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500";
 
 /** Compact top-right "add book" trigger that opens a centered modal form. */
-export function AddBookModal({ category }: { category?: string }) {
+export function AddBookModal({
+  category,
+  categories = CATEGORIES,
+}: {
+  category?: string;
+  categories?: readonly Category[];
+}) {
   const defaultCategory = normalizeCategory(category);
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -83,7 +89,7 @@ export function AddBookModal({ category }: { category?: string }) {
               defaultValue={defaultCategory}
               className={inputCls}
             >
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.label}
                 </option>

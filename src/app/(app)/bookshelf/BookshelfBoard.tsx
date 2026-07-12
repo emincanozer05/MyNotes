@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CATEGORIES, categoryLabel, normalizeCategory } from "@/lib/categories";
+import {
+  CATEGORIES,
+  categoryLabel,
+  normalizeCategory,
+  type Category,
+} from "@/lib/categories";
 import { STATUS_META, type CourseStatus } from "@/lib/status";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { AddCategoryButton } from "@/components/AddCategoryButton";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { deleteBook } from "./actions";
 import { AddBookModal } from "./AddBookModal";
@@ -29,15 +35,36 @@ export interface BookCardData {
 export function BookshelfBoard({
   books,
   initialCategory,
+  categories: initialCategories = CATEGORIES,
 }: {
   books: BookCardData[];
   initialCategory: string;
+  categories?: readonly Category[];
 }) {
   const [category, setCategory] = useState(normalizeCategory(initialCategory));
+  // Optimistically-added categories are merged with the server list so a new
+  // tab shows instantly; router.refresh() then reconciles the two.
+  const [added, setAdded] = useState<Category[]>([]);
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Category[] = [];
+    for (const c of [...initialCategories, ...added]) {
+      if (!seen.has(c.slug)) {
+        seen.add(c.slug);
+        out.push(c);
+      }
+    }
+    return out;
+  }, [initialCategories, added]);
 
-  function switchCategory(slug: (typeof CATEGORIES)[number]["slug"]) {
+  function switchCategory(slug: string) {
     setCategory(slug);
     window.history.replaceState(null, "", `/bookshelf?category=${slug}`);
+  }
+
+  function handleAdded(c: Category) {
+    setAdded((prev) => (prev.some((x) => x.slug === c.slug) ? prev : [...prev, c]));
+    switchCategory(c.slug);
   }
 
   const shown = books.filter((b) => b.category === category);
@@ -50,16 +77,16 @@ export function BookshelfBoard({
             <span className="gradient-text">Kitap Rafı</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            {categoryLabel(category)} rafı — her kategorinin kitapları ayrı
-            tutulur. Her kitap için zengin metin özeti yazın, görsel ekleyin.
+            {categoryLabel(category, categories)} rafı — her kategorinin kitapları
+            ayrı tutulur. Her kitap için zengin metin özeti yazın, görsel ekleyin.
           </p>
         </div>
-        <AddBookModal category={category} />
+        <AddBookModal category={category} categories={categories} />
       </div>
 
       {/* Kategori sekmeleri */}
-      <div className="flex flex-wrap gap-1.5">
-        {CATEGORIES.map((c) => {
+      <div className="flex flex-wrap items-center gap-1.5">
+        {categories.map((c) => {
           const active = c.slug === category;
           return (
             <button
@@ -77,6 +104,7 @@ export function BookshelfBoard({
             </button>
           );
         })}
+        <AddCategoryButton onAdded={handleAdded} />
       </div>
 
       {shown.length > 0 ? (
@@ -133,7 +161,7 @@ export function BookshelfBoard({
                     {/* Kitabın türü (kategorisi) ve okuma durumu */}
                     <span className="flex items-center gap-1 rounded-full bg-stone-500/10 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:text-stone-400">
                       <CategoryIcon slug={b.category} className="h-2.5 w-2.5" />
-                      {categoryLabel(b.category)}
+                      {categoryLabel(b.category, categories)}
                     </span>
                     <span
                       className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.pill}`}

@@ -10,6 +10,7 @@ import { normalizeStatus } from "@/lib/status";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { normalizeCategory } from "@/lib/categories";
+import { getCategories } from "../../categoriesActions";
 import { refreshCover } from "../actions";
 
 interface BookRow {
@@ -45,18 +46,20 @@ export default async function BookDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: bookData }, { count: noteCount }] = await Promise.all([
-    supabase
-      .from("sources")
-      .select("id, title, authors, year, cover_url, metadata")
-      .eq("id", id)
-      .eq("kind", "book")
-      .maybeSingle(),
-    supabase
-      .from("notes")
-      .select("*", { count: "exact", head: true })
-      .eq("source_id", id),
-  ]);
+  const [{ data: bookData }, { count: noteCount }, categories] =
+    await Promise.all([
+      supabase
+        .from("sources")
+        .select("id, title, authors, year, cover_url, metadata")
+        .eq("id", id)
+        .eq("kind", "book")
+        .maybeSingle(),
+      supabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("source_id", id),
+      getCategories(),
+    ]);
 
   if (!bookData) notFound();
   const book = bookData as BookRow;
@@ -92,6 +95,7 @@ export default async function BookDetailPage({
                 category,
                 status: book.metadata?.status ?? "",
               }}
+              categories={categories}
             />
           </div>
           <p className="mt-1 text-sm text-stone-500">

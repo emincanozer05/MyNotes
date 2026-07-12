@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCategory } from "@/lib/categories";
 import { normalizeStatus } from "@/lib/status";
+import { getCategories } from "../categoriesActions";
 import { BookshelfBoard, type BookCardData } from "./BookshelfBoard";
 
 const SPINE_COLORS = [
@@ -41,16 +42,18 @@ export default async function BookshelfPage({
   // Only the two metadata keys the cards need are selected — pulling the whole
   // jsonb would ship every book's rich-text notes (with embedded base64
   // images) just to render the shelf, which is what made this page slow.
-  const [{ data: booksData }, { data: noteCounts }] = await Promise.all([
-    supabase
-      .from("sources")
-      .select(
-        "id, title, authors, year, cover_url, meta_category:metadata->>category, meta_status:metadata->>status",
-      )
-      .eq("kind", "book")
-      .order("created_at", { ascending: false }),
-    supabase.from("notes").select("source_id").not("source_id", "is", null),
-  ]);
+  const [{ data: booksData }, { data: noteCounts }, categories] =
+    await Promise.all([
+      supabase
+        .from("sources")
+        .select(
+          "id, title, authors, year, cover_url, meta_category:metadata->>category, meta_status:metadata->>status",
+        )
+        .eq("kind", "book")
+        .order("created_at", { ascending: false }),
+      supabase.from("notes").select("source_id").not("source_id", "is", null),
+      getCategories(),
+    ]);
 
   const countBySource = new Map<string, number>();
   for (const n of noteCounts ?? []) {
@@ -73,7 +76,11 @@ export default async function BookshelfPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <BookshelfBoard books={books} initialCategory={category} />
+      <BookshelfBoard
+        books={books}
+        initialCategory={category}
+        categories={categories}
+      />
     </div>
   );
 }

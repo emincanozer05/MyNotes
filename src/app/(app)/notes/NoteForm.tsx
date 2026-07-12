@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { CATEGORIES, normalizeCategory } from "@/lib/categories";
+import { CATEGORIES, normalizeCategory, type Category } from "@/lib/categories";
 import { upsertNote } from "./actions";
 
 interface SourceOption {
@@ -47,10 +47,12 @@ export function NoteForm({
   sources,
   note,
   error,
+  categories = CATEGORIES,
 }: {
   sources: SourceOption[];
   note?: NoteValues;
   error?: string;
+  categories?: readonly Category[];
 }) {
   const [sourceId, setSourceId] = useState(note?.source_id ?? "");
   const [sourceTitle, setSourceTitle] = useState(note?.source_title ?? "");
@@ -184,7 +186,7 @@ export function NoteForm({
           }}
           className={inputCls}
         >
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <option key={c.slug} value={c.slug}>
               {c.label}
             </option>
