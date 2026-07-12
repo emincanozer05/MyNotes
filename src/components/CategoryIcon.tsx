@@ -1,9 +1,8 @@
-import { normalizeCategory } from "@/lib/categories";
-
 /**
- * Flat, single-colour (currentColor) 2D icons for the four content
- * categories — used in the category tab pills instead of emoji so they adopt
- * the tab's text colour in both themes.
+ * Flat, single-colour (currentColor) 2D icons for the content categories —
+ * used in the category tab pills instead of emoji so they adopt the tab's text
+ * colour in both themes. The four built-in categories have bespoke icons; any
+ * user-added category falls back to a generic tag icon.
  */
 export function CategoryIcon({
   slug,
@@ -23,7 +22,7 @@ export function CategoryIcon({
     "aria-hidden": true,
   };
 
-  switch (normalizeCategory(slug)) {
+  switch (slug) {
     case "tarih": // classical temple
       return (
         <svg {...common}>
@@ -42,10 +41,17 @@ export function CategoryIcon({
           <path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.4 10.9c.9.7 1.4 1.6 1.4 2.6v.5h4v-.5c0-1 .5-1.9 1.4-2.6A6 6 0 0 0 12 3Z" />
         </svg>
       );
-    default: // spor — barbell
+    case "spor": // barbell
       return (
         <svg {...common}>
           <path d="M2 10v4M5.5 7v10M18.5 7v10M22 10v4M5.5 12h13" />
+        </svg>
+      );
+    default: // user-added category — generic tag
+      return (
+        <svg {...common}>
+          <path d="M3 5.6A2.6 2.6 0 0 1 5.6 3H11a2 2 0 0 1 1.4.6l8 8a2 2 0 0 1 0 2.8l-5.6 5.6a2 2 0 0 1-2.8 0l-8-8A2 2 0 0 1 3 10.6V5.6Z" />
+          <circle cx="7.5" cy="7.5" r="1.05" />
         </svg>
       );
   }

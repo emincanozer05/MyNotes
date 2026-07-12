@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCategories } from "../../../categoriesActions";
 import { NoteForm } from "../../NoteForm";
 
 export default async function EditNotePage({
@@ -13,7 +14,7 @@ export default async function EditNotePage({
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: note }, { data: sources }] = await Promise.all([
+  const [{ data: note }, { data: sources }, categories] = await Promise.all([
     supabase
       .from("notes")
       .select("*, note_tags(tags(name))")
@@ -23,6 +24,7 @@ export default async function EditNotePage({
       .from("sources")
       .select("id, title, authors, year")
       .order("created_at", { ascending: false }),
+    getCategories(),
   ]);
 
   if (!note) notFound();
@@ -39,6 +41,7 @@ export default async function EditNotePage({
         sources={sources ?? []}
         error={error}
         note={{ ...note, tags }}
+        categories={categories}
       />
     </div>
   );

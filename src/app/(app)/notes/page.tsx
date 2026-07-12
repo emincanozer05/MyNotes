@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { pastelize } from "@/lib/color";
 import { extractTaggedPassages } from "@/lib/wiki";
 import { normalizeCategory } from "@/lib/categories";
+import { getCategories } from "../categoriesActions";
 import type { PostitData } from "./PostitCard";
 import { NotesBoard, type PassageItem } from "./NotesBoard";
 
@@ -65,7 +66,7 @@ export default async function NotesPage({
   // board_sources() (migration 0009) returns the rich-text fields with <img>
   // tags stripped in the database, so embedded base64 images never cross the
   // network just to extract the highlighted passages.
-  const [notesRes, sourcesRes] = await Promise.all([
+  const [notesRes, sourcesRes, categories] = await Promise.all([
     supabase
       .from("notes")
       .select(
@@ -73,6 +74,7 @@ export default async function NotesPage({
       )
       .order("created_at", { ascending: false }),
     supabase.rpc("board_sources"),
+    getCategories(),
   ]);
 
   // On a DB without the 0008 migration the `category` columns don't exist and
@@ -185,6 +187,7 @@ export default async function NotesPage({
         initialCategory={category}
         initialTag={tag}
         initialQ={q}
+        categories={categories}
       />
     </div>
   );

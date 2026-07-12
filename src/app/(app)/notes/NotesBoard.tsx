@@ -1,8 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CATEGORIES, categoryLabel, normalizeCategory } from "@/lib/categories";
+import {
+  CATEGORIES,
+  categoryLabel,
+  normalizeCategory,
+  type Category,
+} from "@/lib/categories";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { AddCategoryButton } from "@/components/AddCategoryButton";
 import { PostitCard, type PostitData } from "./PostitCard";
 import { PassagePostitCard } from "./PassagePostitCard";
 import { NewPostitButton } from "./NewPostitButton";
@@ -39,16 +45,32 @@ export function NotesBoard({
   initialCategory,
   initialTag,
   initialQ,
+  categories: initialCategories = CATEGORIES,
 }: {
   cards: PostitData[];
   passages: PassageItem[];
   initialCategory: string;
   initialTag?: string;
   initialQ?: string;
+  categories?: readonly Category[];
 }) {
   const [category, setCategory] = useState(normalizeCategory(initialCategory));
   const [tag, setTag] = useState(initialTag ?? "");
   const [q, setQ] = useState(initialQ ?? "");
+  // Optimistically-added categories merge with the server list so the new tab
+  // shows instantly; router.refresh() then reconciles the two.
+  const [added, setAdded] = useState<Category[]>([]);
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Category[] = [];
+    for (const c of [...initialCategories, ...added]) {
+      if (!seen.has(c.slug)) {
+        seen.add(c.slug);
+        out.push(c);
+      }
+    }
+    return out;
+  }, [initialCategories, added]);
 
   function syncUrl(next: { category: string; tag: string; q: string }) {
     const params = new URLSearchParams({ category: next.category });
@@ -57,10 +79,15 @@ export function NotesBoard({
     window.history.replaceState(null, "", `/notes?${params.toString()}`);
   }
 
-  function switchCategory(slug: (typeof CATEGORIES)[number]["slug"]) {
+  function switchCategory(slug: string) {
     setCategory(slug);
     setTag(""); // tags are category-scoped; the active one may not exist here
     syncUrl({ category: slug, tag: "", q });
+  }
+
+  function handleAdded(c: Category) {
+    setAdded((prev) => (prev.some((x) => x.slug === c.slug) ? prev : [...prev, c]));
+    switchCategory(c.slug);
   }
 
   function switchTag(name: string) {
@@ -130,16 +157,16 @@ export function NotesBoard({
             <span className="gradient-text">Post-it Notlar</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            {categoryLabel(category)} panosu — notların ve etiketlediğin
-            cümlelerin renkli post-it&apos;ler olur.
+            {categoryLabel(category, categories)} panosu — notların ve
+            etiketlediğin cümlelerin renkli post-it&apos;ler olur.
           </p>
         </div>
         <NewPostitButton category={category} />
       </div>
 
       {/* Kategori sekmeleri: her kategori kendi post-it'leri ve etiketleriyle */}
-      <div className="flex flex-wrap gap-1.5">
-        {CATEGORIES.map((c) => {
+      <div className="flex flex-wrap items-center gap-1.5">
+        {categories.map((c) => {
           const active = c.slug === category;
           return (
             <button
@@ -157,6 +184,7 @@ export function NotesBoard({
             </button>
           );
         })}
+        <AddCategoryButton onAdded={handleAdded} />
       </div>
 
       <input

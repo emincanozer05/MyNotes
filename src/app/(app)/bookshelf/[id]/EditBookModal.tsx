@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
-import { CATEGORIES, normalizeCategory } from "@/lib/categories";
+import { CATEGORIES, normalizeCategory, type Category } from "@/lib/categories";
 import { COURSE_STATUSES, STATUS_META, normalizeStatus } from "@/lib/status";
 import { updateBookInfo } from "../actions";
 
@@ -17,6 +17,7 @@ const inputCls =
  */
 export function EditBookModal({
   book,
+  categories = CATEGORIES,
 }: {
   book: {
     id: string;
@@ -26,6 +27,7 @@ export function EditBookModal({
     category: string;
     status: string;
   };
+  categories?: readonly Category[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -120,7 +122,7 @@ export function EditBookModal({
               defaultValue={normalizeCategory(book.category)}
               className={inputCls}
             >
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.label}
                 </option>
