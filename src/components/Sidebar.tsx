@@ -38,6 +38,14 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             <Link
               key={item.href}
               href={item.href}
+              // These tabs are dynamic routes (Supabase queries per request), so
+              // the default prefetch only warms the loading skeleton and the real
+              // content still waits for a server round-trip on click. `prefetch`
+              // fetches the full route data ahead of time; combined with the 30s
+              // client router cache (next.config staleTimes.dynamic) tab switches
+              // land on real content instantly. The Sidebar lives in the persistent
+              // app layout, so this prefetch happens once per link, not per nav.
+              prefetch
               className={`group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 active
                   ? "bg-[var(--surface-2)] font-semibold text-[var(--foreground)]"
