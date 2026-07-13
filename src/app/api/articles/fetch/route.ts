@@ -20,6 +20,20 @@ const TOPICS: { topic: string; term: string }[] = [
   { topic: "Kondisyon", term: "conditioning team sport athletes training" },
 ];
 
+// Population gate — the feed is only for studies run on professional / trained
+// athletes, never on clinical, obese, or elderly cohorts.
+//
+// ATHLETE_POP forces at least one "trained athlete" signal into every query
+// (even topics like "muscle hypertrophy resistance training" that don't name
+// athletes themselves). EXCLUDE_POP drops the populations the user doesn't want:
+// obese/overweight, elderly (MeSH "Aged" = 65+, plus free-text variants), and
+// disease cohorts. Injured athletes doing return-to-sport work are still
+// athletes, so injury/rehabilitation is deliberately NOT excluded.
+const ATHLETE_POP =
+  'AND (athlete*[tiab] OR athletic[tiab] OR sportsmen[tiab] OR sportswomen[tiab] OR players[tiab] OR "well-trained"[tiab] OR "resistance-trained"[tiab] OR "trained men"[tiab] OR "trained women"[tiab] OR "physically active"[tiab])';
+const EXCLUDE_POP =
+  'NOT (obes*[tiab] OR overweight[tiab] OR "Aged"[Mesh] OR elderly[tiab] OR "older adults"[tiab] OR geriatric[tiab] OR sarcopeni*[tiab] OR frailty[tiab] OR "Chronic Disease"[Mesh] OR diabet*[tiab] OR cancer[tiab] OR oncolog*[tiab] OR osteoporos*[tiab] OR "cardiovascular disease"[tiab] OR hypertension[tiab] OR "metabolic syndrome"[tiab] OR stroke[tiab] OR "Parkinson Disease"[Mesh] OR COPD[tiab])';
+
 function stripTags(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -48,10 +62,13 @@ async function esearch(
 async function findIds(bucketTerm: string): Promise<string[]> {
   // Publication-type filter must use the spaced form; the no-space token
   // "randomizedcontrolledtrial[pt]" matches nothing on PubMed.
-  const rct = `(${bucketTerm}) AND "randomized controlled trial"[pt] AND hasabstract[text] AND English[lang]`;
-  const broad = `(${bucketTerm}) AND hasabstract[text] AND English[lang]`;
+  // Every fallback keeps the athlete-population gate so loosening the study
+  // type never lets clinical/obese/elderly cohorts back into the feed.
+  const rct = `(${bucketTerm}) AND "randomized controlled trial"[pt] AND hasabstract[text] AND English[lang] ${ATHLETE_POP} ${EXCLUDE_POP}`;
+  const broad = `(${bucketTerm}) AND hasabstract[text] AND English[lang] ${ATHLETE_POP} ${EXCLUDE_POP}`;
+  const safety = `athletes[tiab] AND hasabstract[text] AND English[lang] ${EXCLUDE_POP}`;
 
-  for (const term of [rct, broad, "(athletes) AND hasabstract[text]"]) {
+  for (const term of [rct, broad, safety]) {
     // First hit gives the real result count so the offset never overshoots.
     const head = await esearch(term, 0);
     if (head.count === 0) continue;
