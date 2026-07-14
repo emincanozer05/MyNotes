@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Panel", icon: "◈" },
-  { href: "/library", label: "Literatür", icon: "❧" },
+  { href: "/library", label: "Literatür", icon: "☰" },
   { href: "/notes", label: "Post-it Notlar", icon: "✎" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
   { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "❖" },
