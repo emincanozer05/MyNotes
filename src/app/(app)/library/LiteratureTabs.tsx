@@ -372,7 +372,7 @@ export function LiteratureTabs({
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+            className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-bold transition-colors ${
               tab === t.id
                 ? "border-amber-400 text-amber-700 dark:text-amber-300"
                 : "border-transparent text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
