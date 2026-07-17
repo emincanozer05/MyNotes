@@ -48,8 +48,8 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
               prefetch
               className={`group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 active
-                  ? "bg-[var(--surface-2)] font-semibold text-[var(--foreground)]"
-                  : "font-medium text-[var(--muted)] hover:bg-[var(--surface-2)]"
+                  ? "bg-[var(--surface-2)] font-bold text-[var(--foreground)]"
+                  : "font-bold text-[var(--muted)] hover:bg-[var(--surface-2)]"
               }`}
             >
               <span aria-hidden className="w-4 text-center opacity-80">
