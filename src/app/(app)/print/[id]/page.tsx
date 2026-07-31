@@ -75,7 +75,9 @@ export default async function PrintSourcePage({
           </div>
         </header>
 
-        <div className="mt-6 space-y-6 [&_a]:text-amber-700 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-bold [&_img]:my-2 [&_img]:h-auto [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">
+        {/* Headings/lists/quotes come from `.note-html`, so the printout keeps
+            the same type scale the editor shows (h1 16pt, h2 14pt, bold). */}
+        <div className="mt-6 space-y-6 [&_a]:text-amber-700">
           {notes.length > 0 ? (
             notes.map((n) => (
               <section key={n.id} className="break-inside-avoid">
@@ -83,7 +85,7 @@ export default async function PrintSourcePage({
                   {n.title}
                 </h2>
                 <div
-                  className="mt-2 text-[11pt] leading-relaxed text-stone-800"
+                  className="note-html mt-2 text-[11pt] text-stone-800"
                   dangerouslySetInnerHTML={{
                     __html: n.html || "<p>—</p>",
                   }}
@@ -92,7 +94,7 @@ export default async function PrintSourcePage({
             ))
           ) : summary.replace(/<[^>]*>/g, "").trim() ? (
             <div
-              className="text-[11pt] leading-relaxed text-stone-800"
+              className="note-html text-[11pt] text-stone-800"
               dangerouslySetInnerHTML={{ __html: summary }}
             />
           ) : (
