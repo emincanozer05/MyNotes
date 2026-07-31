@@ -79,7 +79,7 @@ export default async function PrintSourcePage({
           {notes.length > 0 ? (
             notes.map((n) => (
               <section key={n.id} className="break-inside-avoid">
-                <h2 className="border-l-4 border-amber-500 pl-2 text-base font-bold">
+                <h2 className="border-l-4 border-amber-500 pl-2 text-[16pt] font-bold leading-snug">
                   {n.title}
                 </h2>
                 <div
