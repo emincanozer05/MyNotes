@@ -18,7 +18,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-roca);
+  --font-sans: var(--font-gravity);
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }
 
@@ -39,7 +39,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Roca ships 300/400/700/900 only — headings and tab labels always render in
+/* Gravity's heaviest cut is Bold — headings and tab labels always render in
    the true bold cut instead of a synthesized in-between weight. */
 h1,
 h2,
@@ -262,6 +262,11 @@ h6 {
 /* ---------------------------------------------------------------------------
    A4 print output (article notes)
 --------------------------------------------------------------------------- */
+.a4-sheet,
+.a4-sheet * {
+  /* The printed sheet uses the same brand font as the screen UI. */
+  font-family: var(--font-gravity), ui-sans-serif, system-ui, sans-serif;
+}
 .a4-sheet {
   background: #fff;
   color: #111;
@@ -273,7 +278,11 @@ h6 {
 }
 @media print {
   .no-print { display: none !important; }
-  body { background: #fff !important; }
+  body {
+    background: #fff !important;
+    /* Printing must not fall back to the browser's default font. */
+    font-family: var(--font-gravity), ui-sans-serif, system-ui, sans-serif;
+  }
   /* The app's scroll container would otherwise clip the printout to one
      screen — let the whole note flow across pages. */
   main {
