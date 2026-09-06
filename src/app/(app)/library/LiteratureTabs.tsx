@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Source } from "@/lib/types";
@@ -205,6 +206,10 @@ export function LiteratureTabs({
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
+  // Keyword search: `searchInput` is what's typed, `activeQuery` is the
+  // keyword the currently shown feed was fetched with (null = daily feed).
+  const [searchInput, setSearchInput] = useState("");
+  const [activeQuery, setActiveQuery] = useState<string | null>(null);
 
   const savedPmids = useMemo(
     () => new Set(saved.map((a) => a.pmid).filter(Boolean) as string[]),
@@ -329,18 +334,30 @@ export function LiteratureTabs({
     });
   }
 
-  // Fetch 6 fresh RCTs from PubMed; runs automatically on every page load so
-  // each refresh shows different articles, and again via the "Yenile" button.
-  async function handleFetchArticles() {
+  // Fetch articles from PubMed. Without a keyword: 6 fresh RCTs, re-rolled on
+  // every page load and on "Yenile". With a keyword: the most recent articles
+  // matching it, newest first.
+  async function handleFetchArticles(query?: string | null) {
+    const q = query?.trim() || "";
     setFetching(true);
     setFetchErr(null);
+    setActiveQuery(q || null);
     try {
-      const res = await fetch("/api/articles/fetch");
+      const res = await fetch(
+        q
+          ? `/api/articles/fetch?q=${encodeURIComponent(q)}`
+          : "/api/articles/fetch",
+      );
       const data = await res.json();
       if (!res.ok) {
         setFetchErr(data.error ?? "Makaleler getirilemedi.");
       } else if (!data.articles || data.articles.length === 0) {
-        setFetchErr("Yeni makale bulunamadı, tekrar dene.");
+        setFetched(q ? [] : null);
+        setFetchErr(
+          q
+            ? `"${q}" için makale bulunamadı. Başka bir anahtar kelime dene.`
+            : "Yeni makale bulunamadı, tekrar dene.",
+        );
       } else {
         setFetched(data.articles as FeedArticle[]);
       }
@@ -349,6 +366,18 @@ export function LiteratureTabs({
     } finally {
       setFetching(false);
     }
+  }
+
+  function handleSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!searchInput.trim()) return;
+    setTab("feed");
+    void handleFetchArticles(searchInput);
+  }
+
+  function handleClearSearch() {
+    setSearchInput("");
+    void handleFetchArticles(null);
   }
 
   useEffect(() => {
@@ -387,12 +416,37 @@ export function LiteratureTabs({
             )}
           </button>
         ))}
-        <button
-          onClick={() => setShowAdd((v) => !v)}
-          className="btn-gradient ml-auto mb-1 rounded-full px-4 py-1.5 text-xs font-semibold"
+        {/* Keyword search — literature scan on any term the user types */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="ml-auto mb-1 flex items-center gap-2"
         >
-          {showAdd ? "✕ Kapat" : "+ Kendi Makaleni Ekle"}
-        </button>
+          <div className="relative">
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Anahtar Kelime Gir…"
+              aria-label="Anahtar kelime ile literatür tara"
+              className="w-52 rounded-full border border-[var(--border)] bg-[var(--surface)] py-1.5 pl-4 pr-9 text-xs font-medium outline-none transition-colors focus:border-amber-500 sm:w-64"
+            />
+            <button
+              type="submit"
+              disabled={!searchInput.trim() || fetching}
+              aria-label="Ara"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-xs text-stone-500 transition-colors hover:text-amber-600 disabled:opacity-40 dark:hover:text-amber-400"
+            >
+              🔍
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdd((v) => !v)}
+            className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold"
+          >
+            {showAdd ? "✕ Kapat" : "+ Kendi Makaleni Ekle"}
+          </button>
+        </form>
       </div>
 
       {/* ---------- Manual add panel (own articles) ---------- */}
@@ -414,11 +468,26 @@ export function LiteratureTabs({
       {tab === "feed" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-stone-500">
-              Her yenilemede PubMed&apos;den taze makaleler gelir.
-            </p>
+            {activeQuery ? (
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-stone-500">
+                <span className="rounded-full bg-amber-400/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
+                  🔍 {activeQuery}
+                </span>
+                için PubMed&apos;deki en güncel makaleler.
+                <button
+                  onClick={handleClearSearch}
+                  className="text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
+                >
+                  ✕ Aramayı temizle
+                </button>
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-stone-500">
+                Her yenilemede PubMed&apos;den taze makaleler gelir.
+              </p>
+            )}
             <button
-              onClick={handleFetchArticles}
+              onClick={() => void handleFetchArticles(activeQuery)}
               disabled={fetching}
               className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold disabled:opacity-60"
             >
@@ -432,9 +501,11 @@ export function LiteratureTabs({
             </p>
           )}
 
-          {fetching && !fetched ? (
+          {fetching ? (
             <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
-              Makaleler getiriliyor…
+              {activeQuery
+                ? `"${activeQuery}" için literatür taranıyor…`
+                : "Makaleler getiriliyor…"}
             </p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
