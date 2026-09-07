@@ -37,12 +37,12 @@ export default async function LibraryPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="animate-in">
-        <h1 className="text-4xl font-extrabold italic tracking-tight">
+        <h1 className="text-4xl font-extrabold tracking-tight">
           <span className="gradient-text">Literatür</span>
         </h1>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+        <p className="mt-2 text-sm text-[var(--muted)]">
           Günlük makale akışını incele, beğendiklerini kaydet, kendi
-          makalelerini ekle ve not aldıklarını A4 olarak yazdır.
+          makalelerini ekle ve özetlerini A4 olarak çıktı al.
         </p>
       </div>
 
