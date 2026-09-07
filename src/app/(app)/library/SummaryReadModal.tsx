@@ -8,10 +8,13 @@ export function SummaryReadModal({
   html,
   title,
   label = "📖 Özeti oku",
+  className = "btn-ghost rounded-full px-4 py-2 text-sm font-semibold",
 }: {
   html: string;
   title?: string;
   label?: string;
+  /** Trigger button styling — callers size it to their surrounding row. */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const hasContent = Boolean(html && html.replace(/<[^>]*>/g, "").trim());
@@ -22,7 +25,7 @@ export function SummaryReadModal({
         type="button"
         onClick={() => setOpen(true)}
         disabled={!hasContent}
-        className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-amber-500/10 disabled:opacity-50"
+        className={`${className} disabled:opacity-50`}
         title={hasContent ? "Özeti oku" : "Önce bir özet yazıp kaydet"}
       >
         {label}

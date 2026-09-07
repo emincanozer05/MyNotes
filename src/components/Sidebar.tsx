@@ -19,12 +19,20 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
   return (
     <aside className="no-print flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
       <div className="px-4 py-5">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 text-sm font-black text-white">
+        <Link
+          href="/"
+          className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 text-sm font-black text-white shadow-[var(--shadow-1)]">
             N
           </span>
-          <span className="text-lg font-extrabold tracking-tight gradient-text">
-            NoteFlow
+          <span className="flex flex-col leading-none">
+            <span className="text-lg font-extrabold tracking-tight gradient-text">
+              NoteFlow
+            </span>
+            <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              S&amp;C Hub
+            </span>
           </span>
         </Link>
       </div>
@@ -46,13 +54,26 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
               // land on real content instantly. The Sidebar lives in the persistent
               // app layout, so this prefetch happens once per link, not per nav.
               prefetch
-              className={`group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+              aria-current={active ? "page" : undefined}
+              className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
                 active
                   ? "bg-[var(--surface-2)] font-bold text-[var(--foreground)]"
-                  : "font-bold text-[var(--muted)] hover:bg-[var(--surface-2)]"
+                  : "font-bold text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
               }`}
             >
-              <span aria-hidden className="w-4 text-center opacity-80">
+              {/* Accent rail marks the active section at a glance */}
+              <span
+                aria-hidden
+                className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--brand-1)] transition-opacity ${
+                  active ? "opacity-100" : "opacity-0"
+                }`}
+              />
+              <span
+                aria-hidden
+                className={`w-4 text-center transition-colors ${
+                  active ? "text-[var(--brand-1)]" : "opacity-70"
+                }`}
+              >
                 {item.icon}
               </span>
               {item.label}
@@ -60,8 +81,14 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
           );
         })}
       </nav>
-      <div className="border-t border-[var(--border)] px-4 py-3">
-        <p className="truncate text-xs text-stone-500" title={userEmail}>
+      <div className="mt-2 flex items-center gap-2 border-t border-[var(--border)] px-4 py-3">
+        <span
+          aria-hidden
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-[11px] font-bold uppercase text-[var(--muted)]"
+        >
+          {userEmail.charAt(0) || "?"}
+        </span>
+        <p className="truncate text-xs text-[var(--muted)]" title={userEmail}>
           {userEmail}
         </p>
       </div>

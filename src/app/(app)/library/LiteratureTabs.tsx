@@ -110,9 +110,9 @@ function FeedCard({
   const link = feedLink(article);
 
   return (
-    <article className="glass-card flex flex-col rounded-2xl border-t-2 border-t-amber-400/70 p-5">
+    <article className="glass-card flex flex-col rounded-2xl border-t-2 border-t-[var(--brand-1)] p-5">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+        <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--accent-text)]">
           {article.topic}
         </span>
         {isOpenAccess(article.journal) && <OpenAccessBadge />}
@@ -162,7 +162,7 @@ function FeedCard({
           <button
             onClick={onUnsave}
             disabled={busy}
-            className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold text-stone-600 transition-colors hover:bg-rose-500/10 hover:text-rose-600 disabled:opacity-50 dark:text-stone-300"
+            className="btn-ghost rounded-full px-4 py-1.5 text-xs font-semibold text-[var(--muted)] hover:!border-rose-500/40 hover:text-rose-600 disabled:opacity-50"
           >
             {busy ? "…" : "↩ Geri al"}
           </button>
@@ -401,16 +401,23 @@ export function LiteratureTabs({
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-bold transition-colors ${
+            aria-current={tab === t.id ? "page" : undefined}
+            className={`-mb-px flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-bold transition-colors ${
               tab === t.id
-                ? "border-amber-400 text-amber-700 dark:text-amber-300"
-                : "border-transparent text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
+                ? "border-[var(--brand-1)] text-[var(--accent-text)]"
+                : "border-transparent text-stone-500 hover:bg-[var(--surface-2)] hover:text-stone-700 dark:hover:text-stone-300"
             }`}
           >
             <span aria-hidden>{t.icon}</span>
             {t.label}
             {t.count !== undefined && (
-              <span className="rounded-md border border-[var(--border)] px-1.5 py-0.5 text-[11px] font-semibold">
+              <span
+                className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                  tab === t.id
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                    : "bg-[var(--surface-2)] text-stone-500"
+                }`}
+              >
                 {t.count}
               </span>
             )}
@@ -428,7 +435,7 @@ export function LiteratureTabs({
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Anahtar Kelime Gir…"
               aria-label="Anahtar kelime ile literatür tara"
-              className="w-52 rounded-full border border-[var(--border)] bg-[var(--surface)] py-1.5 pl-4 pr-9 text-xs font-medium outline-none transition-colors focus:border-amber-500 sm:w-64"
+              className="w-52 rounded-full border border-[var(--border)] bg-[var(--surface-2)] py-2 pl-4 pr-9 text-xs font-medium outline-none transition-colors focus:border-[var(--brand-1)] focus:bg-[var(--surface)] sm:w-64"
             />
             <button
               type="submit"
@@ -538,10 +545,8 @@ export function LiteratureTabs({
               </span>
               <button
                 onClick={() => setTopicFilter("all")}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                  topicFilter === "all"
-                    ? "btn-gradient"
-                    : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-300"
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  topicFilter === "all" ? "btn-gradient" : "chip"
                 }`}
               >
                 Tümü ({savedList.length})
@@ -552,10 +557,8 @@ export function LiteratureTabs({
                   <button
                     key={t}
                     onClick={() => setTopicFilter(t)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                      topicFilter === t
-                        ? "btn-gradient"
-                        : "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      topicFilter === t ? "btn-gradient" : "chip chip-accent"
                     }`}
                   >
                     {t} ({n})
@@ -572,10 +575,8 @@ export function LiteratureTabs({
                 </span>
                 <button
                   onClick={() => setTagFilter("all")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    tagFilter === "all"
-                      ? "btn-gradient"
-                      : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-300"
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    tagFilter === "all" ? "btn-gradient" : "chip"
                   }`}
                 >
                   Tümü
@@ -590,10 +591,8 @@ export function LiteratureTabs({
                       onClick={() =>
                         setTagFilter((prev) => (prev === t ? "all" : t))
                       }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                        tagFilter === t
-                          ? "btn-gradient"
-                          : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        tagFilter === t ? "btn-gradient" : "chip chip-accent"
                       }`}
                     >
                       #{t} ({n})
@@ -613,8 +612,8 @@ export function LiteratureTabs({
               .sort((a, b) => a.localeCompare(b, "tr"))
               .map((topic) => (
                 <div key={topic}>
-                  <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  <h3 className="section-rule mb-2.5 text-sm font-bold">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--brand-1)]" />
                     {topic}
                     <span className="text-xs font-normal text-stone-400">
                       ({byTopic.get(topic)!.length})
@@ -718,19 +717,17 @@ export function LiteratureTabs({
       {/* ---------- Tab: Notlarım ---------- */}
       {tab === "annotated" &&
         (notlarim.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {/* Tag filter chips */}
             {noteTags.length > 0 && (
-              <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="mr-1 text-xs font-semibold text-stone-500">
                   Etiket:
                 </span>
                 <button
                   onClick={() => setNoteTagFilter("all")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                    noteTagFilter === "all"
-                      ? "btn-gradient"
-                      : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-300"
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    noteTagFilter === "all" ? "btn-gradient" : "chip"
                   }`}
                 >
                   Tümü ({notlarim.length})
@@ -745,10 +742,10 @@ export function LiteratureTabs({
                       onClick={() =>
                         setNoteTagFilter((prev) => (prev === t ? "all" : t))
                       }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         noteTagFilter === t
                           ? "btn-gradient"
-                          : "bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+                          : "chip chip-accent"
                       }`}
                     >
                       #{t} ({n})
@@ -758,82 +755,92 @@ export function LiteratureTabs({
               </div>
             )}
 
-            {notlarimFiltered.length === 0 && (
+            {notlarimFiltered.length === 0 ? (
               <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
                 Bu etiketle eşleşen makale yok.
               </p>
-            )}
-
-            {notlarimFiltered.map((a) => {
-              const noteCount = noteCounts[a.id] ?? 0;
-              return (
-                <div key={a.id} className="glass-card rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1.5">
-                        <ArticleTagsEditor
-                          articleId={a.id}
-                          current={tagsOf(a)}
-                          allTags={allTags}
-                        />
+            ) : (
+              /* Rectangular cards laid out side by side, equal height */
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {notlarimFiltered.map((a) => {
+                  const noteCount = noteCounts[a.id] ?? 0;
+                  return (
+                    <article
+                      key={a.id}
+                      className="glass-card flex flex-col rounded-2xl p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <ArticleTagsEditor
+                            articleId={a.id}
+                            current={tagsOf(a)}
+                            allTags={allTags}
+                          />
+                        </div>
+                        <form action={deleteArticle}>
+                          <input type="hidden" name="id" value={a.id} />
+                          <button
+                            onClick={(e) => {
+                              if (!window.confirm("Bu makale silinsin mi?"))
+                                e.preventDefault();
+                            }}
+                            className="shrink-0 text-xs text-stone-400 transition-colors hover:text-rose-500"
+                          >
+                            Sil
+                          </button>
+                        </form>
                       </div>
-                      <h4 className="text-sm font-semibold leading-snug">
+
+                      {/* No line clamp: the title's inline editor expands in
+                          place and a clamped box would hide its input. */}
+                      <h4 className="mt-2.5 text-sm font-semibold leading-snug">
                         <ArticleTitleEditor
                           articleId={a.id}
                           title={a.title}
                           href={articleLink(a)}
                         />
                       </h4>
-                      <p className="mt-1 text-xs text-stone-500">
+                      <p className="mt-1.5 line-clamp-2 text-xs text-stone-500">
                         {a.authors.slice(0, 3).join(", ")}
                         {a.year && ` · ${a.year}`}
                         {noteCount > 0 && ` · ${noteCount} not`}
                       </p>
-                    </div>
-                    <form action={deleteArticle}>
-                      <input type="hidden" name="id" value={a.id} />
-                      <button className="shrink-0 text-xs text-stone-400 hover:text-rose-500">
-                        Sil
-                      </button>
-                    </form>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <Link
-                      href={`/library/${a.id}`}
-                      className="btn-gradient rounded-full px-4 py-1.5 font-semibold"
-                    >
-                      ✎ Özet yaz / düzenle
-                    </Link>
-                    {hasSummary(a) && (
-                      <SummaryReadModal
-                        html={summaryOf(a)}
-                        title={a.title}
-                        label="📖 Özeti oku"
-                      />
-                    )}
-                    <Link
-                      href={`/notes/new?source=${a.id}`}
-                      className="rounded-full border border-[var(--border)] px-4 py-1.5 font-semibold transition-colors hover:bg-stone-500/10"
-                    >
-                      + Not al
-                    </Link>
-                    {noteCount > 0 && (
-                      <Link
-                        href={`/library/print/${a.id}`}
-                        className="rounded-full border border-[var(--border)] px-4 py-1.5 font-semibold transition-colors hover:bg-stone-500/10"
-                      >
-                        🖨 Yazdır (A4)
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+
+                      {/* Actions pinned to the bottom so cards line up */}
+                      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-[var(--border)] pt-3 text-xs">
+                        <Link
+                          href={`/library/${a.id}`}
+                          title="Özet yaz / düzenle"
+                          className="btn-gradient rounded-full px-3 py-1.5 font-semibold"
+                        >
+                          ✎ Özet yaz
+                        </Link>
+                        {hasSummary(a) && (
+                          <SummaryReadModal
+                            html={summaryOf(a)}
+                            title={a.title}
+                            label="📖 Oku"
+                            className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
+                          />
+                        )}
+                        <Link
+                          href={`/library/print/${a.id}`}
+                          title="A4 çıktı sayfasını aç"
+                          className="btn-ghost rounded-full px-3 py-1.5 font-semibold"
+                        >
+                          🖨 Çıktı al
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
             Kendi makaleni ekle veya kaydettiğin bir makaleye özet/not yaz —
-            burada toplanır ve A4 olarak yazdırabilirsin.
+            burada toplanır ve A4 olarak çıktı alabilirsin.
           </p>
         ))}
     </div>

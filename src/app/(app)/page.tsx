@@ -76,12 +76,17 @@ export default async function DashboardPage() {
           <Link
             key={s.label}
             href={s.href}
-            className="glass-card group relative overflow-hidden rounded-2xl p-5"
+            className="glass-card card-lift group relative overflow-hidden rounded-2xl p-5"
           >
+            {/* Hairline of the stat's own colour along the top edge */}
+            <span
+              aria-hidden
+              className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${s.grad}`}
+            />
             <p className={`bg-gradient-to-br ${s.grad} bg-clip-text text-4xl font-black text-transparent`}>
               {s.value}
             </p>
-            <p className="mt-1 text-sm font-medium text-stone-500 dark:text-stone-400">
+            <p className="mt-1 text-sm font-medium text-[var(--muted)]">
               {s.label}
             </p>
           </Link>
@@ -89,23 +94,29 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-lg font-bold">Modüller</h2>
+        <h2 className="section-rule text-lg font-bold">Modüller</h2>
         <div className="stagger mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((m) => (
             <Link
               key={m.title}
               href={m.href}
-              className="glass-card group rounded-2xl p-5"
+              className="glass-card card-lift group flex flex-col rounded-2xl p-5"
             >
               <span
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white`}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white shadow-[var(--shadow-1)]`}
               >
                 {m.icon}
               </span>
-              <p className="mt-3 font-bold">{m.title}</p>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                {m.detail}
+              <p className="mt-3 flex items-center gap-1.5 font-bold">
+                {m.title}
+                <span
+                  aria-hidden
+                  className="translate-x-0 text-[var(--muted)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
+                >
+                  →
+                </span>
               </p>
+              <p className="mt-1 text-sm text-[var(--muted)]">{m.detail}</p>
             </Link>
           ))}
         </div>

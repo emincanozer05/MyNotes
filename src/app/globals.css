@@ -6,13 +6,24 @@
   --foreground: #37352f;
   --surface: #ffffff;
   --surface-2: #f1f1ef;
-  --border: #e9e9e7;
+  --surface-3: #e8e8e5;
+  --border: #e6e6e3;
+  --border-strong: #d7d7d3;
   --muted: #787774;
   /* Accent stops (warm; used sparingly) */
   --brand-1: #d9730d;
   --brand-2: #de5451;
   --brand-3: #9065b0;
   --brand-4: #337ea9;
+  /* Derived accent tints, so components don't hard-code opacity values */
+  --accent: var(--brand-1);
+  --accent-soft: color-mix(in srgb, var(--brand-1) 10%, transparent);
+  --accent-text: #b45309;
+  --ring: color-mix(in srgb, var(--brand-1) 45%, transparent);
+  /* Elevation — two steps only, so cards stay flat and calm */
+  --shadow-1: 0 1px 2px rgba(15, 12, 8, 0.05), 0 1px 1px rgba(15, 12, 8, 0.03);
+  --shadow-2: 0 8px 24px -12px rgba(15, 12, 8, 0.22), 0 2px 6px -2px rgba(15, 12, 8, 0.08);
+  --radius: 14px;
 }
 
 @theme inline {
@@ -24,12 +35,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #191919;
-    --foreground: #e6e6e4;
-    --surface: #202020;
-    --surface-2: #2a2a28;
-    --border: #2f2f2e;
+    --background: #171716;
+    --foreground: #e8e8e5;
+    --surface: #1f1f1e;
+    --surface-2: #292928;
+    --surface-3: #333331;
+    --border: #302f2e;
+    --border-strong: #403f3d;
     --muted: #9b9a97;
+    --accent-text: #f0a05a;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 10px 30px -14px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -37,6 +53,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* One consistent focus ring across the whole app (keyboard users only). */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand-1) 28%, transparent);
 }
 
 /* Gravity's heaviest cut is Bold — headings and tab labels always render in
@@ -50,14 +78,43 @@ h6 {
   font-weight: 700;
 }
 
+/* Headings track a little tighter than body copy at display sizes. */
+h1,
+h2 {
+  letter-spacing: -0.02em;
+}
+
 /* ---------------------------------------------------------------------------
-   Layout helper classes kept as no-ops so existing markup stays valid.
-   (Entrance/stagger animations removed for a calmer, faster UI.)
+   Entrance motion — one short fade-up, never a stagger cascade. Motion is
+   opt-out via the OS "reduce motion" setting.
 --------------------------------------------------------------------------- */
-.animate-in,
-.animate-pop,
+.animate-in {
+  animation: fade-up 0.28s cubic-bezier(0.22, 0.9, 0.35, 1) both;
+}
+.animate-pop {
+  animation: fade-up 0.2s cubic-bezier(0.22, 0.9, 0.35, 1) both;
+}
 .stagger > * {
-  animation: none;
+  animation: fade-up 0.28s cubic-bezier(0.22, 0.9, 0.35, 1) both;
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -69,23 +126,96 @@ h6 {
 }
 
 .glass-card {
-  /* Solid surface, subtle border — Notion-like flat card */
+  /* Solid surface, hairline border, one step of elevation on hover */
   background: var(--surface);
   border: 1px solid var(--border);
-  transition: border-color 0.12s ease, background-color 0.12s ease;
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 .glass-card:hover {
-  border-color: color-mix(in srgb, var(--foreground) 16%, var(--border));
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-2);
+}
+
+/* Cards that are themselves a link/button lift very slightly on hover. */
+.card-lift:hover {
+  transform: translateY(-2px);
 }
 
 .btn-gradient {
-  /* Solid warm accent button (calm, not flashy) */
-  background: var(--brand-1);
+  /* Warm accent button — a hair of gradient for depth, not flash */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-1) 92%, #fff) 0%,
+    var(--brand-1) 100%
+  );
   color: #fff;
-  transition: filter 0.12s ease;
+  border: 1px solid color-mix(in srgb, var(--brand-1) 75%, #000);
+  box-shadow: var(--shadow-1);
+  transition:
+    filter 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 .btn-gradient:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.06);
+  box-shadow: var(--shadow-2);
+}
+.btn-gradient:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Neutral, bordered counterpart to .btn-gradient. */
+.btn-ghost {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: inherit;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.btn-ghost:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+/* Filter pills (topic / tag chips). */
+.chip {
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  color: var(--muted);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.chip:hover {
+  background: var(--surface-3);
+  color: var(--foreground);
+}
+.chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.chip-accent:hover {
+  background: color-mix(in srgb, var(--brand-1) 18%, transparent);
+}
+
+/* Section heading rule — a label with a hairline that fills the row. */
+.section-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.section-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
 /* Accent bar is now a no-op (kept for markup compatibility) */

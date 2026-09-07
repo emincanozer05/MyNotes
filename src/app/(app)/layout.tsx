@@ -21,10 +21,10 @@ export default async function AppLayout({
     <div className="flex flex-1">
       <Sidebar userEmail={user.email ?? ""} />
       <div className="flex flex-1 flex-col">
-        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-6 py-2.5">
+        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_86%,transparent)] px-6 py-2.5 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <BackButton />
-            <span className="hidden text-xs font-medium text-stone-400 sm:inline">
+            <span className="hidden text-xs font-medium text-[var(--muted)] sm:inline">
               Kuvvet &amp; Kondisyon Bilgi Platformu
             </span>
           </div>
@@ -34,12 +34,12 @@ export default async function AppLayout({
             </Suspense>
           </div>
           <form action={logout}>
-            <button className="rounded-full px-3 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-rose-500/10 hover:text-rose-500">
+            <button className="rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-500">
               Çıkış yap
             </button>
           </form>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-6 py-7">{children}</main>
         <ScrollToSearchText />
       </div>
     </div>
