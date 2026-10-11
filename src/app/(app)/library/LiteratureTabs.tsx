@@ -17,52 +17,25 @@ import { TranslatedTitle } from "./TranslatedTitle";
 import { ArticleTopicEditor } from "./ArticleTopicEditor";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
-import { SummaryReadModal } from "./SummaryReadModal";
+import { MyNoteCard } from "./MyNoteCard";
+import {
+  FilterChips,
+  LibraryToolbar,
+  type SortId,
+  type ViewId,
+} from "./LibraryToolbar";
+import {
+  articleLink,
+  hasSummary,
+  isMyNote,
+  isOpenAccess,
+  matchesQuery,
+  sortArticles,
+  tagsOf,
+  topicOf,
+} from "./articleMeta";
 
 type TabId = "feed" | "saved" | "annotated";
-
-/** Journals in the curated set that publish open access. */
-const OA_JOURNALS = [
-  "scientific reports",
-  "plos",
-  "medicina",
-  "journal of sports science & medicine",
-  "frontiers",
-  "bmc",
-  "peerj",
-];
-
-function isOpenAccess(journal: string | null): boolean {
-  if (!journal) return false;
-  const j = journal.toLowerCase();
-  return OA_JOURNALS.some((oa) => j.includes(oa));
-}
-
-function topicOf(a: Source): string {
-  const t = (a.metadata as { topic?: string } | null)?.topic;
-  return t && t.trim() ? t : "Diğer";
-}
-
-function tagsOf(a: Source): string[] {
-  const tags = (a.metadata as { tags?: unknown } | null)?.tags;
-  return Array.isArray(tags) ? tags.filter((t): t is string => Boolean(t) && typeof t === "string") : [];
-}
-
-function isMyNote(a: Source): boolean {
-  return Boolean((a.metadata as { mynote?: boolean } | null)?.mynote);
-}
-
-function summaryOf(a: Source): string {
-  return (a.metadata as { summary?: string } | null)?.summary ?? "";
-}
-
-function hasSummary(a: Source): boolean {
-  return Boolean(summaryOf(a).replace(/<[^>]*>/g, "").trim());
-}
-
-function articleLink(a: Source): string | null {
-  return a.url ?? (a.doi ? `https://doi.org/${a.doi}` : null);
-}
 
 /** Shape shown in the feed — curated or live-fetched (year may be missing). */
 interface FeedArticle {
@@ -203,6 +176,13 @@ export function LiteratureTabs({
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [noteTagFilter, setNoteTagFilter] = useState<string>("all");
+  // Local list controls shared by "Kaydedilenler" and "Notlarım".
+  const [listQuery, setListQuery] = useState("");
+  const [sort, setSort] = useState<SortId>("added");
+  const [view, setView] = useState<ViewId>("grid");
+  const [topicsExpanded, setTopicsExpanded] = useState(false);
+  const [savedTagsExpanded, setSavedTagsExpanded] = useState(false);
+  const [noteTagsExpanded, setNoteTagsExpanded] = useState(false);
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -246,50 +226,67 @@ export function LiteratureTabs({
     return [...set].sort((a, b) => a.localeCompare(b, "tr"));
   }, [saved]);
 
-  const topics = useMemo(() => {
-    const set = new Set<string>();
-    for (const a of savedList) set.add(topicOf(a));
-    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
-  }, [savedList]);
+  /** Distinct values with usage counts, most used first. */
+  function countItems(values: string[][]): { value: string; count: number }[] {
+    const m = new Map<string, number>();
+    for (const vs of values) for (const v of vs) m.set(v, (m.get(v) ?? 0) + 1);
+    return [...m.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((x, y) => y.count - x.count || x.value.localeCompare(y.value, "tr"));
+  }
 
-  // Tags present in the saved list (filter chips in "Kaydedilenler").
-  const savedTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const a of savedList) for (const t of tagsOf(a)) set.add(t);
-    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
-  }, [savedList]);
-
-  // Tags present in "Notlarım" (filter chips) + the filtered list itself.
-  const noteTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const a of notlarim) for (const t of tagsOf(a)) set.add(t);
-    return [...set].sort((a, b) => a.localeCompare(b, "tr"));
-  }, [notlarim]);
-
-  const notlarimFiltered = useMemo(
-    () =>
-      noteTagFilter === "all"
-        ? notlarim
-        : notlarim.filter((a) => tagsOf(a).includes(noteTagFilter)),
-    [notlarim, noteTagFilter],
+  const topicItems = useMemo(
+    () => countItems(savedList.map((a) => [topicOf(a)])),
+    [savedList],
   );
 
+  // Tags present in the saved list (filter chips in "Kaydedilenler").
+  const savedTagItems = useMemo(
+    () => countItems(savedList.map(tagsOf)),
+    [savedList],
+  );
+
+  // Tags present in "Notlarım" (filter chips) + the filtered list itself.
+  const noteTagItems = useMemo(
+    () => countItems(notlarim.map(tagsOf)),
+    [notlarim],
+  );
+
+  const notlarimFiltered = useMemo(() => {
+    let list = notlarim.filter((a) => matchesQuery(a, listQuery));
+    if (noteTagFilter !== "all") {
+      list = list.filter((a) => tagsOf(a).includes(noteTagFilter));
+    }
+    return sortArticles(list, sort);
+  }, [notlarim, noteTagFilter, listQuery, sort]);
+
+  const savedFilteredCount = useMemo(() => {
+    let n = 0;
+    for (const a of savedList) {
+      if (!matchesQuery(a, listQuery)) continue;
+      if (topicFilter !== "all" && topicOf(a) !== topicFilter) continue;
+      if (tagFilter !== "all" && !tagsOf(a).includes(tagFilter)) continue;
+      n++;
+    }
+    return n;
+  }, [savedList, listQuery, topicFilter, tagFilter]);
+
   const byTopic = useMemo(() => {
-    let filtered =
-      topicFilter === "all"
-        ? savedList
-        : savedList.filter((a) => topicOf(a) === topicFilter);
+    let filtered = savedList.filter((a) => matchesQuery(a, listQuery));
+    if (topicFilter !== "all") {
+      filtered = filtered.filter((a) => topicOf(a) === topicFilter);
+    }
     if (tagFilter !== "all") {
       filtered = filtered.filter((a) => tagsOf(a).includes(tagFilter));
     }
     const m = new Map<string, Source[]>();
-    for (const a of filtered) {
+    for (const a of sortArticles(filtered, sort)) {
       const t = topicOf(a);
       if (!m.has(t)) m.set(t, []);
       m.get(t)!.push(a);
     }
     return m;
-  }, [savedList, topicFilter, tagFilter]);
+  }, [savedList, topicFilter, tagFilter, listQuery, sort]);
 
   function handleSave(pmid: string) {
     setBusyPmid(pmid);
@@ -426,16 +423,16 @@ export function LiteratureTabs({
         {/* Keyword search — literature scan on any term the user types */}
         <form
           onSubmit={handleSearchSubmit}
-          className="ml-auto mb-1 flex items-center gap-2"
+          className="mb-1 flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto"
         >
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <input
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Anahtar Kelime Gir…"
-              aria-label="Anahtar kelime ile literatür tara"
-              className="w-52 rounded-full border border-[var(--border)] bg-[var(--surface-2)] py-2 pl-4 pr-9 text-xs font-medium outline-none transition-colors focus:border-[var(--brand-1)] focus:bg-[var(--surface)] sm:w-64"
+              placeholder="PubMed'de anahtar kelime ara…"
+              aria-label="Anahtar kelime ile PubMed'de literatür tara"
+              className="w-full rounded-full border border-[var(--border)] bg-[var(--surface-2)] py-2 pl-4 pr-9 text-xs font-medium outline-none transition-colors focus:border-[var(--brand-1)] focus:bg-[var(--surface)] sm:w-72"
             />
             <button
               type="submit"
@@ -537,74 +534,45 @@ export function LiteratureTabs({
       {/* ---------- Tab: Saved (topic filter + grouped by topic) ---------- */}
       {tab === "saved" &&
         (savedList.length > 0 ? (
-          <div className="space-y-5">
-            {/* Topic filter chips */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-xs font-semibold text-stone-500">
-                Konu:
-              </span>
-              <button
-                onClick={() => setTopicFilter("all")}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  topicFilter === "all" ? "btn-gradient" : "chip"
-                }`}
-              >
-                Tümü ({savedList.length})
-              </button>
-              {topics.map((t) => {
-                const n = savedList.filter((a) => topicOf(a) === t).length;
-                return (
-                  <button
-                    key={t}
-                    onClick={() => setTopicFilter(t)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      topicFilter === t ? "btn-gradient" : "chip chip-accent"
-                    }`}
-                  >
-                    {t} ({n})
-                  </button>
-                );
-              })}
-            </div>
+          <div className="space-y-4">
+            <LibraryToolbar
+              query={listQuery}
+              onQueryChange={setListQuery}
+              sort={sort}
+              onSortChange={setSort}
+              view={view}
+              onViewChange={setView}
+              shown={savedFilteredCount}
+              total={savedList.length}
+              showViewToggle={false}
+            />
 
-            {/* Tag filter chips */}
-            {savedTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-semibold text-stone-500">
-                  Etiket:
-                </span>
-                <button
-                  onClick={() => setTagFilter("all")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    tagFilter === "all" ? "btn-gradient" : "chip"
-                  }`}
-                >
-                  Tümü
-                </button>
-                {savedTags.map((t) => {
-                  const n = savedList.filter((a) =>
-                    tagsOf(a).includes(t),
-                  ).length;
-                  return (
-                    <button
-                      key={t}
-                      onClick={() =>
-                        setTagFilter((prev) => (prev === t ? "all" : t))
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        tagFilter === t ? "btn-gradient" : "chip chip-accent"
-                      }`}
-                    >
-                      #{t} ({n})
-                    </button>
-                  );
-                })}
-              </div>
+            <FilterChips
+              label="Konu:"
+              allLabel={`Tümü (${savedList.length})`}
+              items={topicItems}
+              active={topicFilter}
+              onChange={setTopicFilter}
+              expanded={topicsExpanded}
+              onToggleExpanded={() => setTopicsExpanded((v) => !v)}
+            />
+
+            {savedTagItems.length > 0 && (
+              <FilterChips
+                label="Etiket:"
+                allLabel="Tümü"
+                items={savedTagItems}
+                active={tagFilter}
+                onChange={setTagFilter}
+                prefix="#"
+                expanded={savedTagsExpanded}
+                onToggleExpanded={() => setSavedTagsExpanded((v) => !v)}
+              />
             )}
 
             {byTopic.size === 0 && (
               <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-                Bu filtrelerle eşleşen makale yok.
+                Bu arama / filtrelerle eşleşen makale yok.
               </p>
             )}
 
@@ -622,6 +590,7 @@ export function LiteratureTabs({
                   <div className="space-y-2">
                     {byTopic.get(topic)!.map((a) => {
                       const noteCount = noteCounts[a.id] ?? 0;
+                      const summary = hasSummary(a);
                       return (
                         <article
                           key={a.id}
@@ -651,13 +620,15 @@ export function LiteratureTabs({
                             <form action={deleteArticle}>
                               <input type="hidden" name="id" value={a.id} />
                               <button
+                                title="Makaleyi sil"
+                                aria-label="Makaleyi sil"
                                 onClick={(e) => {
                                   if (!window.confirm("Bu makale silinsin mi?"))
                                     e.preventDefault();
                                 }}
-                                className="shrink-0 text-xs text-stone-400 hover:text-rose-500"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-stone-400 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
                               >
-                                Sil
+                                🗑
                               </button>
                             </form>
                           </div>
@@ -686,7 +657,7 @@ export function LiteratureTabs({
                               href={`/library/${a.id}`}
                               className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
                             >
-                              ✎ Özet yaz
+                              {summary ? "✎ Özeti düzenle" : "✎ Özet yaz"}
                             </Link>
                             <Link
                               href={`/notes/new?source=${a.id}`}
@@ -718,122 +689,61 @@ export function LiteratureTabs({
       {tab === "annotated" &&
         (notlarim.length > 0 ? (
           <div className="space-y-4">
-            {/* Tag filter chips */}
-            {noteTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-semibold text-stone-500">
-                  Etiket:
-                </span>
-                <button
-                  onClick={() => setNoteTagFilter("all")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    noteTagFilter === "all" ? "btn-gradient" : "chip"
-                  }`}
-                >
-                  Tümü ({notlarim.length})
-                </button>
-                {noteTags.map((t) => {
-                  const n = notlarim.filter((a) =>
-                    tagsOf(a).includes(t),
-                  ).length;
-                  return (
-                    <button
-                      key={t}
-                      onClick={() =>
-                        setNoteTagFilter((prev) => (prev === t ? "all" : t))
-                      }
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        noteTagFilter === t
-                          ? "btn-gradient"
-                          : "chip chip-accent"
-                      }`}
-                    >
-                      #{t} ({n})
-                    </button>
-                  );
-                })}
-              </div>
+            <LibraryToolbar
+              query={listQuery}
+              onQueryChange={setListQuery}
+              sort={sort}
+              onSortChange={setSort}
+              view={view}
+              onViewChange={setView}
+              shown={notlarimFiltered.length}
+              total={notlarim.length}
+            />
+
+            {noteTagItems.length > 0 && (
+              <FilterChips
+                label="Etiket:"
+                allLabel={`Tümü (${notlarim.length})`}
+                items={noteTagItems}
+                active={noteTagFilter}
+                onChange={setNoteTagFilter}
+                prefix="#"
+                expanded={noteTagsExpanded}
+                onToggleExpanded={() => setNoteTagsExpanded((v) => !v)}
+              />
             )}
 
             {notlarimFiltered.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-                Bu etiketle eşleşen makale yok.
-              </p>
+              <div className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
+                <p>Bu arama / etiketle eşleşen makale yok.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setListQuery("");
+                    setNoteTagFilter("all");
+                  }}
+                  className="mt-2 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
+                >
+                  ✕ Filtreleri temizle
+                </button>
+              </div>
             ) : (
-              /* Rectangular cards laid out side by side, equal height */
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {notlarimFiltered.map((a) => {
-                  const noteCount = noteCounts[a.id] ?? 0;
-                  return (
-                    <article
-                      key={a.id}
-                      className="glass-card flex flex-col rounded-2xl p-4"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <ArticleTagsEditor
-                            articleId={a.id}
-                            current={tagsOf(a)}
-                            allTags={allTags}
-                          />
-                        </div>
-                        <form action={deleteArticle}>
-                          <input type="hidden" name="id" value={a.id} />
-                          <button
-                            onClick={(e) => {
-                              if (!window.confirm("Bu makale silinsin mi?"))
-                                e.preventDefault();
-                            }}
-                            className="shrink-0 text-xs text-stone-400 transition-colors hover:text-rose-500"
-                          >
-                            Sil
-                          </button>
-                        </form>
-                      </div>
-
-                      {/* No line clamp: the title's inline editor expands in
-                          place and a clamped box would hide its input. */}
-                      <h4 className="mt-2.5 text-sm font-semibold leading-snug">
-                        <ArticleTitleEditor
-                          articleId={a.id}
-                          title={a.title}
-                          href={articleLink(a)}
-                        />
-                      </h4>
-                      <p className="mt-1.5 line-clamp-2 text-xs text-stone-500">
-                        {a.authors.slice(0, 3).join(", ")}
-                        {a.year && ` · ${a.year}`}
-                        {noteCount > 0 && ` · ${noteCount} not`}
-                      </p>
-
-                      {/* Actions pinned to the bottom so cards line up */}
-                      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-[var(--border)] pt-3 text-xs">
-                        <Link
-                          href={`/library/${a.id}`}
-                          title="Özet yaz / düzenle"
-                          className="btn-gradient rounded-full px-3 py-1.5 font-semibold"
-                        >
-                          ✎ Özet yaz
-                        </Link>
-                        {hasSummary(a) && (
-                          <SummaryReadModal
-                            html={summaryOf(a)}
-                            title={a.title}
-                            label="📖 Oku"
-                            className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
-                          />
-                        )}
-                        <Link
-                          href={`/library/print/${a.id}`}
-                          title="A4 çıktı sayfasını aç"
-                          className="btn-ghost rounded-full px-3 py-1.5 font-semibold"
-                        >
-                          🖨 Çıktı al
-                        </Link>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div
+                className={
+                  view === "grid"
+                    ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                    : "space-y-2"
+                }
+              >
+                {notlarimFiltered.map((a) => (
+                  <MyNoteCard
+                    key={a.id}
+                    article={a}
+                    noteCount={noteCounts[a.id] ?? 0}
+                    allTags={allTags}
+                    layout={view}
+                  />
+                ))}
               </div>
             )}
           </div>
