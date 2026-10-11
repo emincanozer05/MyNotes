@@ -45,7 +45,11 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
   return (
     <>
       <div
-        onClick={() => setExpanded(true)}
+        onClick={() => {
+          setExpanded(true);
+          // Warm the source page so "Kaynağa git" lands instantly.
+          router.prefetch(passage.href.split("#")[0]);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter") setExpanded(true);
         }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,10 @@ import { TranslatedTitle } from "./TranslatedTitle";
 import { ArticleTopicEditor } from "./ArticleTopicEditor";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
+import { IntentLink } from "@/components/IntentLink";
 import { MyNoteCard } from "./MyNoteCard";
 import {
-  FilterChips,
+  FilterSelect,
   LibraryToolbar,
   type SortId,
   type ViewId,
@@ -36,6 +37,10 @@ import {
 } from "./articleMeta";
 
 type TabId = "feed" | "saved" | "annotated";
+
+function parseTab(value: string | undefined): TabId {
+  return value === "saved" || value === "annotated" ? value : "feed";
+}
 
 /** Shape shown in the feed — curated or live-fetched (year may be missing). */
 interface FeedArticle {
@@ -159,16 +164,19 @@ function FeedCard({
 }
 
 export function LiteratureTabs({
+  initialTab,
   saved,
   noteCounts,
   curated,
 }: {
+  /** `?tab=` from the URL, so "back" from an article lands on the same tab. */
+  initialTab?: string;
   saved: Source[];
   noteCounts: Record<string, number>;
   curated: CuratedArticle[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<TabId>("feed");
+  const [tab, setTabState] = useState<TabId>(() => parseTab(initialTab));
   const [showAdd, setShowAdd] = useState(false);
   const [pending, startTransition] = useTransition();
   const [busyPmid, setBusyPmid] = useState<string | null>(null);
@@ -180,9 +188,6 @@ export function LiteratureTabs({
   const [listQuery, setListQuery] = useState("");
   const [sort, setSort] = useState<SortId>("added");
   const [view, setView] = useState<ViewId>("grid");
-  const [topicsExpanded, setTopicsExpanded] = useState(false);
-  const [savedTagsExpanded, setSavedTagsExpanded] = useState(false);
-  const [noteTagsExpanded, setNoteTagsExpanded] = useState(false);
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -377,12 +382,25 @@ export function LiteratureTabs({
     void handleFetchArticles(null);
   }
 
+  // Keep the active tab in the URL (without a navigation) so returning from
+  // an article with "back" restores it instead of resetting to the feed.
+  function setTab(next: TabId) {
+    setTabState(next);
+    window.history.replaceState(
+      null,
+      "",
+      next === "feed" ? "/library" : `/library?tab=${next}`,
+    );
+  }
+
+  // The PubMed fetch (an external system) runs only once the feed tab is
+  // actually shown — opening "Notlarım" directly no longer waits on it.
+  const feedRequested = useRef(false);
   useEffect(() => {
-    // Kick off the initial PubMed fetch (an external system); only on mount —
-    // refreshing the page is what brings a new batch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (tab !== "feed" || feedRequested.current) return;
+    feedRequested.current = true;
     void handleFetchArticles();
-  }, []);
+  }, [tab]);
 
   const tabs: { id: TabId; label: string; icon: string; count?: number }[] = [
     { id: "feed", label: "Günlük Akış", icon: "📰" },
@@ -545,30 +563,25 @@ export function LiteratureTabs({
               shown={savedFilteredCount}
               total={savedList.length}
               showViewToggle={false}
-            />
-
-            <FilterChips
-              label="Konu:"
-              allLabel={`Tümü (${savedList.length})`}
-              items={topicItems}
-              active={topicFilter}
-              onChange={setTopicFilter}
-              expanded={topicsExpanded}
-              onToggleExpanded={() => setTopicsExpanded((v) => !v)}
-            />
-
-            {savedTagItems.length > 0 && (
-              <FilterChips
-                label="Etiket:"
-                allLabel="Tümü"
-                items={savedTagItems}
-                active={tagFilter}
-                onChange={setTagFilter}
-                prefix="#"
-                expanded={savedTagsExpanded}
-                onToggleExpanded={() => setSavedTagsExpanded((v) => !v)}
+            >
+              <FilterSelect
+                label="Konu:"
+                allLabel={`Tüm konular (${savedList.length})`}
+                items={topicItems}
+                active={topicFilter}
+                onChange={setTopicFilter}
               />
-            )}
+              {savedTagItems.length > 0 && (
+                <FilterSelect
+                  label="Etiket:"
+                  allLabel="Tüm etiketler"
+                  items={savedTagItems}
+                  active={tagFilter}
+                  onChange={setTagFilter}
+                  prefix="#"
+                />
+              )}
+            </LibraryToolbar>
 
             {byTopic.size === 0 && (
               <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
@@ -653,12 +666,12 @@ export function LiteratureTabs({
                                 DOI ↗
                               </a>
                             )}
-                            <Link
+                            <IntentLink
                               href={`/library/${a.id}`}
                               className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
                             >
                               {summary ? "✎ Özeti düzenle" : "✎ Özet yaz"}
-                            </Link>
+                            </IntentLink>
                             <Link
                               href={`/notes/new?source=${a.id}`}
                               className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
@@ -698,20 +711,18 @@ export function LiteratureTabs({
               onViewChange={setView}
               shown={notlarimFiltered.length}
               total={notlarim.length}
-            />
-
-            {noteTagItems.length > 0 && (
-              <FilterChips
-                label="Etiket:"
-                allLabel={`Tümü (${notlarim.length})`}
-                items={noteTagItems}
-                active={noteTagFilter}
-                onChange={setNoteTagFilter}
-                prefix="#"
-                expanded={noteTagsExpanded}
-                onToggleExpanded={() => setNoteTagsExpanded((v) => !v)}
-              />
-            )}
+            >
+              {noteTagItems.length > 0 && (
+                <FilterSelect
+                  label="Etiket:"
+                  allLabel={`Tüm etiketler (${notlarim.length})`}
+                  items={noteTagItems}
+                  active={noteTagFilter}
+                  onChange={setNoteTagFilter}
+                  prefix="#"
+                />
+              )}
+            </LibraryToolbar>
 
             {notlarimFiltered.length === 0 ? (
               <div className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">

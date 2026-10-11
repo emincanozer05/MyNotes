@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink } from "@/components/IntentLink";
 import type { Source } from "@/lib/types";
-import { deleteArticle } from "./actions";
+import { deleteArticle, getArticleSummary } from "./actions";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { SummaryReadModal } from "./SummaryReadModal";
@@ -64,35 +64,29 @@ function StatusPills({
 function Actions({ a, summary }: { a: Source; summary: boolean }) {
   return (
     <>
-      <Link
+      <IntentLink
         href={`/library/${a.id}`}
         title={summary ? "Özeti düzenle" : "Özet yaz"}
         className="btn-gradient rounded-full px-3 py-1.5 text-xs font-semibold"
       >
         {summary ? "✎ Özeti düzenle" : "✎ Özet yaz"}
-      </Link>
+      </IntentLink>
       {summary && (
         <SummaryReadModal
           html={summaryOf(a)}
+          loadHtml={() => getArticleSummary(a.id)}
           title={a.title}
           label="📖 Oku"
           className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
         />
       )}
-      <Link
-        href={`/notes/new?source=${a.id}`}
-        title="Bu makaleye bağlı yeni not al"
-        className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
-      >
-        + Not al
-      </Link>
-      <Link
+      <IntentLink
         href={`/library/print/${a.id}`}
         title="A4 çıktı sayfasını aç"
         className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
       >
         🖨 Çıktı al
-      </Link>
+      </IntentLink>
     </>
   );
 }

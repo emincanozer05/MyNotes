@@ -248,6 +248,22 @@ export async function addOwnArticle(formData: FormData) {
   return { error: null };
 }
 
+/**
+ * Full summary HTML (with images) for one article. The library list only
+ * carries an image-stripped copy, so the "Oku" modal fetches this on open.
+ */
+export async function getArticleSummary(id: string): Promise<string> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+  return (
+    ((data?.metadata as { summary?: string } | null)?.summary as string) ?? ""
+  );
+}
+
 /** Saves the rich-text (HTML) summary written for an article. */
 export async function saveArticleSummary(id: string, html: string) {
   const supabase = await createClient();

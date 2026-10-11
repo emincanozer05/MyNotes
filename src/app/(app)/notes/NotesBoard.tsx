@@ -129,6 +129,16 @@ export function NotesBoard({
       .sort((a, b) => a.name.localeCompare(b.name, "tr"));
   }, [categoryNotes, categoryPassages]);
 
+  // How many post-its in this category carry each tag (dropdown counts).
+  const tagCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const n of categoryNotes)
+      for (const t of n.tags) m.set(t.name, (m.get(t.name) ?? 0) + 1);
+    for (const it of categoryPassages)
+      for (const t of it.tags) m.set(t.name, (m.get(t.name) ?? 0) + 1);
+    return m;
+  }, [categoryNotes, categoryPassages]);
+
   // Apply the active tag / search filters within the category subset.
   const needle = q.trim().toLocaleLowerCase("tr");
   const shownNotes = categoryNotes.filter((n) => {
@@ -187,45 +197,69 @@ export function NotesBoard({
         <AddCategoryButton onAdded={handleAdded} />
       </div>
 
-      <input
-        value={q}
-        onChange={(e) => changeQuery(e.target.value)}
-        placeholder="Post-it'lerde ara…"
-        className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500"
-      />
-
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => switchTag("")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              !tag
-                ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white"
-                : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
-            }`}
-          >
-            Tümü
-          </button>
-          {allTags.map((t) => {
-            const active = tag === t.name;
-            return (
-              <button
-                key={t.name}
-                type="button"
-                onClick={() => switchTag(active ? "" : t.name)}
-                className="rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
+      {/* Search + tag filter on one row; tags live in a compact dropdown */}
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => changeQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") changeQuery("");
+          }}
+          placeholder="Post-it'lerde ara…"
+          aria-label="Post-it'lerde ara"
+          className="min-w-[200px] flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none transition-colors focus:border-[var(--brand-1)]"
+        />
+        {allTags.length > 0 && (
+          <label className="flex items-center gap-2 text-xs font-semibold text-stone-500">
+            <span className="hidden sm:inline">Etiket:</span>
+            <span className="relative flex items-center">
+              {/* Colour dot of the active tag (native options can't show it) */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-3 h-2.5 w-2.5 rounded-full"
                 style={{
-                  background: t.color ?? "#78716c",
-                  opacity: active ? 1 : 0.55,
+                  background: tag
+                    ? (allTags.find((t) => t.name === tag)?.color ?? "#78716c")
+                    : "transparent",
+                  border: tag ? "none" : "1px solid var(--border-strong)",
                 }}
+              />
+              <select
+                value={tag}
+                onChange={(e) => switchTag(e.target.value)}
+                aria-label="Etikete göre filtrele"
+                className={`max-w-[14rem] rounded-full border py-2 pl-7 pr-2 text-sm font-medium outline-none transition-colors focus:border-[var(--brand-1)] ${
+                  tag
+                    ? "border-[var(--brand-1)] bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
+                }`}
               >
-                #{t.name}
+                <option value="">Tüm etiketler ({allTags.length})</option>
+                {allTags.map((t) => (
+                  <option key={t.name} value={t.name}>
+                    #{t.name} ({tagCounts.get(t.name) ?? 0})
+                  </option>
+                ))}
+              </select>
+            </span>
+            {tag && (
+              <button
+                type="button"
+                onClick={() => switchTag("")}
+                aria-label="Etiket filtresini temizle"
+                title="Filtreyi temizle"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-base leading-none text-stone-400 transition-colors hover:bg-stone-500/10 hover:text-stone-600"
+              >
+                ×
               </button>
-            );
-          })}
-        </div>
-      )}
+            )}
+          </label>
+        )}
+        <span className="ml-auto text-xs text-stone-500" aria-live="polite">
+          {total} post-it
+        </span>
+      </div>
 
       {total > 0 ? (
         <div className="grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
