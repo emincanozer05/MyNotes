@@ -16,10 +16,29 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    redirect(encodeMessage("/login", "error", "Giriş başarısız: e-posta veya şifre hatalı."));
+    redirect(encodeMessage("/login", "error", describeLoginError(error)));
   }
 
   redirect("/");
+}
+
+// Surface the real cause instead of reporting every failure as a wrong password.
+function describeLoginError(error: { code?: string; status?: number; message: string }) {
+  switch (error.code) {
+    case "invalid_credentials":
+      return "Giriş başarısız: e-posta veya şifre hatalı.";
+    case "email_not_confirmed":
+      return "Giriş başarısız: e-posta adresiniz henüz doğrulanmamış. Gelen kutunuzdaki doğrulama bağlantısını onaylayın.";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "Çok fazla deneme yapıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.";
+    case "user_banned":
+      return "Bu hesap askıya alınmış.";
+  }
+  if (error.status === undefined || error.status === 0 || error.status >= 500) {
+    return `Giriş başarısız: kimlik doğrulama servisine ulaşılamadı (${error.message}).`;
+  }
+  return `Giriş başarısız: ${error.message}`;
 }
 
 export async function signup(formData: FormData) {
