@@ -18,8 +18,8 @@ export default async function AppLayout({
   return (
     <div className="flex flex-1">
       <Sidebar userEmail={user.email ?? ""} />
-      <div className="flex flex-1 flex-col">
-        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_86%,transparent)] px-6 py-2.5 backdrop-blur-md">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_86%,transparent)] py-2.5 pl-14 pr-4 backdrop-blur-md md:px-6">
           <div className="flex items-center gap-3">
             <BackButton />
             <span className="hidden text-xs font-medium text-[var(--muted)] sm:inline">
@@ -32,7 +32,7 @@ export default async function AppLayout({
             </Suspense>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto px-6 py-7">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-6 md:py-7">{children}</main>
         <ScrollToSearchText />
       </div>
     </div>

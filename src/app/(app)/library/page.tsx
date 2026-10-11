@@ -3,20 +3,37 @@ import type { Source } from "@/lib/types";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
 import { LiteratureTabs } from "./LiteratureTabs";
 
-export default async function LibraryPage() {
+export default async function LibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: articlesData }, { data: noteRefs }] = await Promise.all([
-    supabase
-      .from("sources")
-      .select("*")
-      .eq("kind", "article")
-      .order("created_at", { ascending: false }),
+  // library_articles() (migration 0011) returns the same rows with <img> tags
+  // stripped from summaries, so embedded base64 images never cross the
+  // network just to render the list. The "Oku" modal loads the full summary
+  // on demand.
+  const [articlesRes, { data: noteRefs }] = await Promise.all([
+    supabase.rpc("library_articles"),
     supabase
       .from("notes")
-      .select("source_id, title")
+      .select("source_id")
       .not("source_id", "is", null),
   ]);
+
+  // Without the 0011 migration the RPC doesn't exist — fall back to the raw
+  // (heavier) select.
+  const articlesData = articlesRes.error
+    ? (
+        await supabase
+          .from("sources")
+          .select("*")
+          .eq("kind", "article")
+          .order("created_at", { ascending: false })
+      ).data
+    : articlesRes.data;
 
   const articles = (articlesData ?? []) as Source[];
 
@@ -37,7 +54,7 @@ export default async function LibraryPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="animate-in">
-        <h1 className="text-4xl font-extrabold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           <span className="gradient-text">Literatür</span>
         </h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
@@ -47,6 +64,7 @@ export default async function LibraryPage() {
       </div>
 
       <LiteratureTabs
+        initialTab={tab}
         saved={articles}
         noteCounts={noteCounts}
         curated={curated}

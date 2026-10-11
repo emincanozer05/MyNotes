@@ -23,6 +23,7 @@ export function LibraryToolbar({
   shown,
   total,
   showViewToggle = true,
+  children,
 }: {
   query: string;
   onQueryChange: (q: string) => void;
@@ -33,6 +34,8 @@ export function LibraryToolbar({
   shown: number;
   total: number;
   showViewToggle?: boolean;
+  /** Extra filters (dropdowns) placed after the view toggle. */
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -111,6 +114,8 @@ export function LibraryToolbar({
         </div>
       )}
 
+      {children}
+
       <span className="ml-auto text-xs text-stone-500" aria-live="polite">
         {shown === total ? `${total} makale` : `${shown} / ${total} makale`}
       </span>
@@ -119,19 +124,16 @@ export function LibraryToolbar({
 }
 
 /**
- * Pill filter row ("Etiket:" / "Konu:"). Collapses to the first few entries
- * with a "+N daha" toggle so long tag lists don't push the cards off screen.
+ * Compact dropdown filter (tags / topics) that sits inside the toolbar row
+ * instead of a long chip strip, keeping the cards above the fold.
  */
-export function FilterChips({
+export function FilterSelect({
   label,
   allLabel,
   items,
   active,
   onChange,
   prefix = "",
-  expanded,
-  onToggleExpanded,
-  limit = 8,
 }: {
   label: string;
   allLabel: string;
@@ -139,55 +141,42 @@ export function FilterChips({
   active: string;
   onChange: (value: string) => void;
   prefix?: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
-  limit?: number;
 }) {
-  // Keep the active chip visible even when it would be collapsed away.
-  const collapsed = !expanded && items.length > limit;
-  let visible = collapsed ? items.slice(0, limit) : items;
-  if (collapsed && active !== "all" && !visible.some((i) => i.value === active)) {
-    const current = items.find((i) => i.value === active);
-    if (current) visible = [...visible, current];
-  }
-  const hidden = items.length - visible.length;
-
+  const isActive = active !== "all";
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-xs font-semibold text-stone-500">{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange("all")}
-        aria-pressed={active === "all"}
-        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-          active === "all" ? "btn-gradient" : "chip"
-        }`}
-      >
-        {allLabel}
-      </button>
-      {visible.map((i) => (
-        <button
-          key={i.value}
-          type="button"
-          onClick={() => onChange(active === i.value ? "all" : i.value)}
-          aria-pressed={active === i.value}
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            active === i.value ? "btn-gradient" : "chip chip-accent"
+    <label className="flex items-center gap-1.5 text-xs font-semibold text-stone-500">
+      <span className="hidden sm:inline">{label}</span>
+      <span className="relative">
+        <select
+          value={active}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={label}
+          className={`max-w-[13rem] rounded-full border py-1.5 pl-3 pr-2 text-xs font-medium outline-none transition-colors focus:border-[var(--brand-1)] ${
+            isActive
+              ? "border-[var(--brand-1)] bg-[var(--accent-soft)] text-[var(--accent-text)]"
+              : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)]"
           }`}
         >
-          {prefix}
-          {i.value} ({i.count})
-        </button>
-      ))}
-      {items.length > limit && (
+          <option value="all">{allLabel}</option>
+          {items.map((i) => (
+            <option key={i.value} value={i.value}>
+              {prefix}
+              {i.value} ({i.count})
+            </option>
+          ))}
+        </select>
+      </span>
+      {isActive && (
         <button
           type="button"
-          onClick={onToggleExpanded}
-          className="rounded-full px-2.5 py-1 text-xs font-semibold text-stone-500 hover:text-amber-600 dark:hover:text-amber-400"
+          onClick={() => onChange("all")}
+          aria-label={`${label} filtresini temizle`}
+          title="Filtreyi temizle"
+          className="flex h-5 w-5 items-center justify-center rounded-full text-sm leading-none text-stone-400 transition-colors hover:bg-stone-500/10 hover:text-stone-600"
         >
-          {expanded ? "Daha az göster ↑" : `+${hidden} daha ↓`}
+          ×
         </button>
       )}
-    </div>
+    </label>
   );
 }

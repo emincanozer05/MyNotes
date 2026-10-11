@@ -31,10 +31,20 @@ export default async function ArticleDetailPage({
   const article = articleData as Source;
   const summary = (article.metadata as { summary?: string } | null)?.summary ?? "";
   const link = article.url ?? (article.doi ? `https://doi.org/${article.doi}` : null);
+  // Return to the Literatür tab this article is listed under.
+  const listedInNotes =
+    Boolean((article.metadata as { mynote?: boolean } | null)?.mynote) ||
+    Boolean(summary.replace(/<[^>]*>/g, "").trim()) ||
+    (noteCount ?? 0) > 0;
+  const backHref = `/library?tab=${listedInNotes ? "annotated" : "saved"}`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href="/library" className="text-sm text-stone-500 hover:text-amber-600">
+      <Link
+        href={backHref}
+        prefetch
+        className="text-sm text-stone-500 hover:text-amber-600"
+      >
         ← Literatür
       </Link>
 

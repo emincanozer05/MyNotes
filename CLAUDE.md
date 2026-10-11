@@ -56,6 +56,15 @@ npm run lint    # eslint
 4. ✅ Aşama 4 — Bilgi grafiği (concept map) + Spaced repetition flashcard (SM-2)
 5. ✅ Aşama 5 — Feynman modu (Claude API, `claude-opus-4-8`), Kitap rafı, Ses notu & transkript (Web Speech API), Bilgi Derinliği paneli
 6. ✅ Aşama 6 — Dinamik tasarım (aurora arka plan + animasyonlar); kaynak referansı opsiyonel + Post-it not panosu; Literatür 3 bölüm (RCT getir / konu bazlı liste / A4 yazdırma); Hesaplayıcılar kaldırıldı; Kitap Rafı zengin metin özet editörü (font/boyut/renk/görsel). Makale konusu ve kitap özeti `sources.metadata` jsonb alanında tutulur; not kaynağı için `0002` migration.
+7. ✅ Aşama 7 — "Bilgi Derinliği" yerine **Network Haritası** (`/network`, eski
+   `/insights` yönlendirilir): kişi profilleri `contacts` tablosunda (`0012`),
+   profil örnek JSON şemasıyla birebir (`personal`, `contact`, `professional`,
+   `relationship`, `network_development`) `profile` jsonb'de; foto istemcide
+   küçültülüp data URL olarak saklanır. Grafik `d3-force` ile (sürükle/zoom/
+   hover/süzülme); kenarlar `relationship.mutual_contacts` isimlerinden
+   türetilir, ağda olmayan ortak tanıdık yeni kişi olarak eklenir. Literatür
+   listesi `library_articles()` RPC'si (`0011`) ile görselsiz özet çeker;
+   etiket filtreleri (Literatür + Post-it) dropdown; dar ekranda açılır menü.
 
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki

@@ -54,6 +54,9 @@ export function PostitCard({ note }: { note: PostitData }) {
 
   function open() {
     setExpanded(true);
+    // Warm the source page while the note is being read, so "Kaynağa git"
+    // lands instantly.
+    if (note.sourceHref) router.prefetch(note.sourceHref);
   }
 
   return (
