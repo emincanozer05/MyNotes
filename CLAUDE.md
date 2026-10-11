@@ -66,6 +66,11 @@ npm run lint    # eslint
    listesi `library_articles()` RPC'si (`0011`) ile görselsiz özet çeker;
    etiket filtreleri (Literatür + Post-it) dropdown; dar ekranda açılır menü.
 
+`0008`/`0009` uygulanmamış ama `0010` uygulanmış veritabanları için `0013`
+aynı şemayı CHECK kısıtları olmadan, idempotent olarak kurar (0008'i 0010'dan
+sonra çalıştırmak özel kategorileri bozar — onun yerine 0013 kullanılır).
+Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS
