@@ -33,11 +33,14 @@ kullanılmaz; kütüphaneniz tüm cihazlarınızda senkronizedir.
    npm run dev
    ```
 
-5. <http://localhost:3000> adresinde "Kayıt Ol" ile hesabınızı oluşturun.
+5. Supabase'de **Authentication → Users → Add user** ile tek hesabınızı
+   oluşturun (e-postayı doğrulanmış işaretleyin) ve `.env.local` içine
+   `OWNER_EMAIL` / `OWNER_PASSWORD` olarak yazın. Site açıldığında bu hesapla
+   otomatik giriş yapılır; giriş/kayıt ekranı yoktur.
 
-> Not: Supabase varsayılan olarak e-posta doğrulaması ister. Geliştirme
-> sırasında kapatmak için: **Authentication → Providers → Email →
-> "Confirm email"** seçeneğini devre dışı bırakın.
+> Uyarı: Otomatik giriş nedeniyle siteye ulaşan herkes notlarınızı görür ve
+> düzenler. Yalnızca erişimi kısıtlanmış (ör. parola korumalı) bir alan adında
+> yayınlayın.
 
 ## Modüller
 

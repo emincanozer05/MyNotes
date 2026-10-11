@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { normalizeTag } from "@/lib/wiki";
 import { normalizeCategory, type CategorySlug } from "@/lib/categories";
@@ -9,7 +8,7 @@ import { normalizeCategory, type CategorySlug } from "@/lib/categories";
 async function requireUser() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) redirect("/login");
+  if (!user) throw new Error("Oturum bulunamadı.");
   return { supabase, user };
 }
 
