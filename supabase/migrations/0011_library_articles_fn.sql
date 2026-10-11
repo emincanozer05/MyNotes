@@ -42,7 +42,9 @@ as $$
     s.url,
     null::text as abstract, -- listede gösterilmez; detay sayfası tam satırı çeker
     s.cover_url,
-    s.category,
+    -- 0008 uygulanmamış kurulumlarda sources.category kolonu yoktur; satırın
+    -- jsonb hâlinden okumak iki durumda da çalışır.
+    coalesce(to_jsonb(s)->>'category', 'spor') as category,
     case
       when s.metadata ? 'summary' then
         (s.metadata - 'notes') || jsonb_build_object(
