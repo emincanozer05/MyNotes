@@ -1,11 +1,9 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { BackButton } from "@/components/BackButton";
 import { HeaderSearch } from "@/components/HeaderSearch";
 import { ScrollToSearchText } from "@/components/ScrollToSearchText";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
-import { logout } from "@/app/login/actions";
 
 export default async function AppLayout({
   children,
@@ -15,7 +13,7 @@ export default async function AppLayout({
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
 
-  if (!user) redirect("/login");
+  if (!user) throw new Error("Oturum bulunamadı: otomatik giriş başarısız oldu.");
 
   return (
     <div className="flex flex-1">
@@ -33,11 +31,6 @@ export default async function AppLayout({
               <HeaderSearch />
             </Suspense>
           </div>
-          <form action={logout}>
-            <button className="rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-500">
-              Çıkış yap
-            </button>
-          </form>
         </header>
         <main className="flex-1 overflow-y-auto px-6 py-7">{children}</main>
         <ScrollToSearchText />

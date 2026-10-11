@@ -15,7 +15,7 @@ import { normalizeCategory, type CategorySlug } from "@/lib/categories";
 async function requireUser() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
-  if (!user) redirect("/login");
+  if (!user) throw new Error("Oturum bulunamadı.");
   return { supabase, user };
 }
 

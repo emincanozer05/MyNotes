@@ -57,13 +57,12 @@ npm run lint    # eslint
 5. ✅ Aşama 5 — Feynman modu (Claude API, `claude-opus-4-8`), Kitap rafı, Ses notu & transkript (Web Speech API), Bilgi Derinliği paneli
 6. ✅ Aşama 6 — Dinamik tasarım (aurora arka plan + animasyonlar); kaynak referansı opsiyonel + Post-it not panosu; Literatür 3 bölüm (RCT getir / konu bazlı liste / A4 yazdırma); Hesaplayıcılar kaldırıldı; Kitap Rafı zengin metin özet editörü (font/boyut/renk/görsel). Makale konusu ve kitap özeti `sources.metadata` jsonb alanında tutulur; not kaynağı için `0002` migration.
 
-Şifre sıfırlama akışı: `/forgot-password` (bağlantı isteği) →
-`/auth/callback` (`token_hash`+`type` ya da PKCE `code` doğrulaması) →
-`/reset-password` (yeni şifre; kayıt sonrası oturum kapatılır). Supabase
-panelinde Authentication → URL Configuration altında `<site>/auth/callback`
-adresi Redirect URLs listesine eklenmelidir. Üretimde e-posta bağlantısının
-alan adı `NEXT_PUBLIC_SITE_URL` ile sabitlenir; tanımsızsa istek host'u
-kullanılır.
+Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
+ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
+`OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS
+`auth.uid()` ile çalışmaya devam eder). Değişkenler tanımsızsa ya da giriş
+başarısızsa proxy açıklayıcı 503 döner. Hesap Supabase'de (Authentication →
+Users) önceden oluşturulmuş ve e-postası doğrulanmış olmalıdır.
 
 Feynman modu `ANTHROPIC_API_KEY` ister; anahtar yoksa route açıklayıcı 503 döner.
 
