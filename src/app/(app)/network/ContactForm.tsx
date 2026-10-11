@@ -253,8 +253,12 @@ export function ContactForm({
 
   return (
     <Modal open={open} onClose={onClose} maxWidth="max-w-3xl" labelledBy={titleId}>
-      <form onSubmit={submit} className="space-y-5">
-        <div className="flex items-start justify-between gap-3">
+      {/* Fixed header + footer; only the fields scroll, inside the dialog */}
+      <form
+        onSubmit={submit}
+        className="-m-6 flex max-h-[calc(100dvh-2rem)] flex-col"
+      >
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] px-6 pb-4 pt-6">
           <div>
             <h2 id={titleId} className="text-lg font-bold">
               {contactId ? "Kişiyi düzenle" : "Yeni kişi"}
@@ -294,6 +298,7 @@ export function ContactForm({
           />
         </div>
 
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-6 pb-6 pt-1">
         <Section n={1} title="Kişisel Bilgiler">
           <div className="flex items-center gap-4 sm:col-span-2">
             <button
@@ -585,13 +590,15 @@ export function ContactForm({
           </Field>
         </Section>
 
-        {error && (
-          <p className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-            {error}
-          </p>
-        )}
+        </div>
 
-        <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-2 rounded-b-2xl border-t border-[var(--border)] bg-[var(--surface)] px-6 py-3">
+        <div className="flex shrink-0 items-center justify-end gap-2 rounded-b-2xl border-t border-[var(--border)] bg-[var(--surface)] px-6 py-3">
+          {/* Errors sit next to the buttons so they're visible at any scroll */}
+          {error && (
+            <p className="mr-auto text-xs font-medium text-rose-600 dark:text-rose-400">
+              {error}
+            </p>
+          )}
           <button
             type="button"
             onClick={onClose}

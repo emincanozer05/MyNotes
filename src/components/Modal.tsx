@@ -59,7 +59,7 @@ export function Modal({
       aria-labelledby={labelledBy}
     >
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="fixed inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       />
       <div
