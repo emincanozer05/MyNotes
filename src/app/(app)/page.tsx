@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { extractTaggedPassages } from "@/lib/wiki";
 
 const MODULES = [
-  { title: "Literatür", detail: "RCT makalelerini getir, konu başlığına göre kütüphaneni oluştur", href: "/library", grad: "from-rose-500 to-orange-500", icon: "❧" },
-  { title: "Post-it Notlar", detail: "Spor, Tarih, Bilim ve Felsefe kategorilerinde renkli post-it'ler", href: "/notes", grad: "from-amber-500 to-yellow-500", icon: "✎" },
-  { title: "Kitap Rafı", detail: "Kategorilere ayrılmış kapaklı dijital kütüphane, zengin metin özetleri", href: "/bookshelf", grad: "from-emerald-500 to-teal-500", icon: "▥" },
-  { title: "Bilgi Derinliği", detail: "Hangi konularda yüzeysel kaldığını gör", href: "/insights", grad: "from-indigo-500 to-blue-500", icon: "◔" },
+  { title: "Literatür", detail: "Günlük PubMed akışı, kaydettiğin makaleler ve özetlerin", href: "/library", icon: "☰" },
+  { title: "Post-it Notlar", detail: "Kategorilere ayrılmış notlar ve etiketlediğin pasajlar", href: "/notes", icon: "✎" },
+  { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane ve zengin metin özetleri", href: "/bookshelf", icon: "▥" },
+  { title: "Kurslar ve Eğitimler", detail: "S&C kursların, ilerleme durumu ve notların", href: "/courses", icon: "❖" },
+  { title: "Network Haritası", detail: "Kişisel ve profesyonel ağını interaktif grafikte yönet", href: "/network", icon: "◎" },
 ];
 
 export default async function DashboardPage() {
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
     { count: noteCount },
     { count: bookCount },
     boardRes,
+    { count: contactCount },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "other"),
@@ -27,6 +29,8 @@ export default async function DashboardPage() {
     // <img> tags stripped in the database, so embedded base64 images never
     // cross the network just to count highlighted passages.
     supabase.rpc("board_sources"),
+    // Network Haritası (migration 0012); count is null without the table.
+    supabase.from("contacts").select("*", { count: "exact", head: true }),
   ]);
 
   // Fallback for a DB without the 0009 migration: raw metadata (heavier).
@@ -54,16 +58,17 @@ export default async function DashboardPage() {
   const postitCount = (noteCount ?? 0) + passageCount;
 
   const stats = [
-    { label: "Makale", value: articleCount ?? 0, href: "/library", grad: "from-rose-500 to-orange-500" },
-    { label: "Kurs", value: courseCount ?? 0, href: "/courses", grad: "from-amber-500 to-yellow-500" },
-    { label: "Post-it", value: postitCount, href: "/notes", grad: "from-violet-500 to-fuchsia-500" },
-    { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf", grad: "from-emerald-500 to-teal-500" },
+    { label: "Makale", value: articleCount ?? 0, href: "/library" },
+    { label: "Post-it", value: postitCount, href: "/notes" },
+    { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf" },
+    { label: "Kurs", value: courseCount ?? 0, href: "/courses" },
+    { label: "Kişi", value: contactCount ?? 0, href: "/network" },
   ];
 
   return (
     <div className="mx-auto max-w-5xl space-y-10">
       <div className="animate-in">
-        <h1 className="text-4xl font-extrabold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           <span className="gradient-text">Panel</span>
         </h1>
         <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
@@ -71,23 +76,24 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
           <Link
             key={s.label}
             href={s.href}
-            className="glass-card card-lift group relative overflow-hidden rounded-2xl p-5"
+            className="glass-card card-lift group rounded-2xl p-5"
           >
-            {/* Hairline of the stat's own colour along the top edge */}
-            <span
-              aria-hidden
-              className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${s.grad}`}
-            />
-            <p className={`bg-gradient-to-br ${s.grad} bg-clip-text text-4xl font-black text-transparent`}>
+            <p className="text-3xl font-bold tabular-nums tracking-tight">
               {s.value}
             </p>
-            <p className="mt-1 text-sm font-medium text-[var(--muted)]">
+            <p className="mt-1 flex items-center justify-between text-sm font-medium text-[var(--muted)]">
               {s.label}
+              <span
+                aria-hidden
+                className="opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                →
+              </span>
             </p>
           </Link>
         ))}
@@ -102,9 +108,7 @@ export default async function DashboardPage() {
               href={m.href}
               className="glass-card card-lift group flex flex-col rounded-2xl p-5"
             >
-              <span
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-lg text-white shadow-[var(--shadow-1)]`}
-              >
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-lg text-[var(--accent-text)]">
                 {m.icon}
               </span>
               <p className="mt-3 flex items-center gap-1.5 font-bold">

@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // "Bilgi Derinliği" was replaced by the Network Haritası; keep old links working.
+  async redirects() {
+    return [{ source: "/insights", destination: "/network", permanent: false }];
+  },
   experimental: {
     // Client router cache: revisiting a section within 30s reuses the cached
     // RSC payload instead of a full server round-trip, so switching between

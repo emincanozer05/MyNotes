@@ -29,7 +29,7 @@ export default async function BackupPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <h1 className="text-4xl font-extrabold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           <span className="gradient-text">Yedekleme</span>
         </h1>
         <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">

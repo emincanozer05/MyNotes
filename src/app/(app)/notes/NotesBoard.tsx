@@ -163,11 +163,11 @@ export function NotesBoard({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             <span className="gradient-text">Post-it Notlar</span>
           </h1>
           <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            {categoryLabel(category, categories)} panosu — notların ve
+            {`${categoryLabel(category, categories)} panosu — `}notların ve
             etiketlediğin cümlelerin renkli post-it&apos;ler olur.
           </p>
         </div>

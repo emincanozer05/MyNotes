@@ -54,7 +54,7 @@ export default async function LibraryPage({
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="animate-in">
-        <h1 className="text-4xl font-extrabold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           <span className="gradient-text">Literatür</span>
         </h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
