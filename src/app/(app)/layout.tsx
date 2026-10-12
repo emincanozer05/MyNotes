@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { BackButton } from "@/components/BackButton";
 import { HeaderSearch } from "@/components/HeaderSearch";
 import { ScrollToSearchText } from "@/components/ScrollToSearchText";
+import { ExplainSelection } from "@/components/ExplainSelection";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -34,6 +35,7 @@ export default async function AppLayout({
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-6 md:px-6 md:py-7">{children}</main>
         <ScrollToSearchText />
+        <ExplainSelection />
       </div>
     </div>
   );
