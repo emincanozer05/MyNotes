@@ -243,11 +243,16 @@ export async function savePdfPostit(input: {
   articleId: string;
   text: string;
   page: number;
+  /** Tag name(s); the post-it is filed under them on the board. */
+  tags: string;
+  /** Highlight created for the same selection, so "Kaynağa git" can land on it. */
+  highlightId?: string;
   comment?: string;
 }): Promise<{ id?: string; error?: string | null }> {
   const { supabase } = await requireUser();
   const quote = input.text.replace(/\s+/g, " ").trim();
   if (!quote) return { error: "Boş metin kaydedilemez." };
+  if (parseTagInput(input.tags ?? "").length === 0) return { error: "Etiket gerekli." };
 
   const { data: src } = await supabase
     .from("sources")
@@ -260,8 +265,12 @@ export async function savePdfPostit(input: {
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const comment = (input.comment ?? "").trim();
+  const page = Math.max(1, Math.floor(input.page));
+  const hl = /^[\w-]{1,64}$/.test(input.highlightId ?? "")
+    ? ` data-pdf-hl="${input.highlightId}"`
+    : "";
   const content =
-    `<blockquote>${esc(quote)}</blockquote>` + (comment ? `<p>${esc(comment)}</p>` : "");
+    `<blockquote data-pdf-page="${page}"${hl}>${esc(quote)}</blockquote>` + (comment ? `<p>${esc(comment)}</p>` : "");
   const metadata = (src.metadata ?? {}) as { category?: string };
 
   return upsertNote({
@@ -271,7 +280,8 @@ export async function savePdfPostit(input: {
     source_title: src.title,
     source_author: (src.authors as string[] | null)?.[0] ?? "",
     source_year: src.year,
-    source_page: String(Math.max(1, Math.floor(input.page))),
+    source_page: String(page),
+    tags: input.tags,
     category: metadata.category ?? (src.category as string | undefined),
   });
 }

@@ -204,3 +204,15 @@ export function pdfHighlightsOf(
       Array.isArray(h.rects),
   );
 }
+
+/**
+ * Deep link into the in-app viewer for a post-it that was saved from a PDF
+ * (its blockquote carries `data-pdf-page` / `data-pdf-hl`), or null otherwise.
+ */
+export function pdfDeepLink(articleId: string, content: string): string | null {
+  const m = /<blockquote[^>]*\sdata-pdf-page="(\d+)"(?:[^>]*\sdata-pdf-hl="([\w-]+)")?/.exec(content);
+  if (!m) return null;
+  const q = new URLSearchParams({ page: m[1] });
+  if (m[2]) q.set("hl", m[2]);
+  return `/library/${articleId}/pdf?${q}`;
+}
