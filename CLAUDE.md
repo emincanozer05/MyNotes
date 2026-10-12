@@ -73,6 +73,13 @@ npm run lint    # eslint
    monte edilir), sözleşme `src/lib/explain.ts`. Form alanları, butonlar ve
    `data-no-explain` işaretli öğeler hariç tutulur. Önbellek yalnızca bellekte
    (sekme başına + sunucu örneği başına); DB'ye dokunmaz. `ANTHROPIC_API_KEY` ister.
+9. ✅ Literatür "Kendi makaleni ekle" formuna PDF yükleme: dosya tarayıcıdan
+   doğrudan özel `article-pdfs` bucket'ına (`0014`, `<uid>/…` RLS) yüklenir;
+   0014 uygulanmamışsa `voice-notes` bucket'ına (`<uid>/article-pdfs/`) düşer.
+   İşaretçi `sources.metadata.pdf` (`bucket`, `path`, `name`, `size`) içinde;
+   açma imzalı URL ile (`getArticlePdfUrl`), makale silinince PDF de silinir.
+   PDF içindeki DOI/başlık (XMP, Info, link anotasyonları) formu doldurur
+   (`src/lib/articlePdf.ts`).
 
 `0008`/`0009` uygulanmamış ama `0010` uygulanmış veritabanları için `0013`
 aynı şemayı CHECK kısıtları olmadan, idempotent olarak kurar (0008'i 0010'dan

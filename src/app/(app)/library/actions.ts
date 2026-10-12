@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
+import { PDF_BUCKETS, isOwnPdfPath, pdfOf, type ArticlePdf, type PdfBucket } from "@/lib/articlePdf";
 
 /** Saves one of the curated RCT articles to the user's library (idempotent). */
 export async function saveCuratedArticle(pmid: string) {
@@ -221,6 +222,22 @@ export async function addOwnArticle(formData: FormData) {
   const tags = parseTags(String(formData.get("tags") ?? ""));
   const abstract = String(formData.get("abstract") ?? "").trim() || null;
 
+  // Optional PDF, already uploaded by the browser into the user's own folder.
+  let pdf: ArticlePdf | null = null;
+  const pdfPath = String(formData.get("pdf_path") ?? "");
+  if (pdfPath) {
+    const bucket = String(formData.get("pdf_bucket") ?? "") as PdfBucket;
+    if (!PDF_BUCKETS.includes(bucket) || !isOwnPdfPath(user.id, pdfPath)) {
+      return { error: "Geçersiz PDF dosyası." };
+    }
+    pdf = {
+      bucket,
+      path: pdfPath,
+      name: String(formData.get("pdf_name") ?? "makale.pdf").slice(0, 200),
+      size: Number(formData.get("pdf_size")) || 0,
+    };
+  }
+
   const { error } = await supabase.from("sources").insert({
     user_id: user.id,
     kind: "article",
@@ -232,7 +249,7 @@ export async function addOwnArticle(formData: FormData) {
     url: doi ? `https://doi.org/${doi}` : null,
     abstract,
     // mynote: own-added articles land in the "Notlarım" tab (not "Kaydedilenler").
-    metadata: { topic, tags, manual: true, mynote: true },
+    metadata: { topic, tags, manual: true, mynote: true, ...(pdf ? { pdf } : {}) },
   });
 
   if (error) {
@@ -296,7 +313,36 @@ export async function deleteArticle(formData: FormData) {
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
   if (id) {
-    await supabase.from("sources").delete().eq("id", id).eq("kind", "article");
+    const { data } = await supabase
+      .from("sources")
+      .delete()
+      .eq("id", id)
+      .eq("kind", "article")
+      .select("metadata")
+      .maybeSingle();
+    // Remove the attached PDF too, so storage doesn't keep orphans.
+    const pdf = pdfOf(data?.metadata as Record<string, unknown> | null);
+    if (pdf) await supabase.storage.from(pdf.bucket).remove([pdf.path]);
   }
   revalidatePath("/library");
+}
+
+/** Short-lived signed URL for an article's PDF (the bucket is private). */
+export async function getArticlePdfUrl(id: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .maybeSingle();
+  const pdf = pdfOf(data?.metadata as Record<string, unknown> | null);
+  if (!pdf) return { url: null, error: "Bu makaleye PDF eklenmemiş." };
+
+  const { data: signed, error } = await supabase.storage
+    .from(pdf.bucket)
+    .createSignedUrl(pdf.path, 60 * 60);
+  if (error || !signed) {
+    return { url: null, error: `PDF açılamadı: ${error?.message ?? "bilinmeyen hata"}` };
+  }
+  return { url: signed.signedUrl, error: null };
 }
