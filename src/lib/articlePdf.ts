@@ -171,3 +171,36 @@ export async function extractPdfMeta(file: File): Promise<{ doi?: string; title?
   }
   return { doi, title };
 }
+
+// ---- In-app viewer highlights ----------------------------------------------
+
+export const PDF_HIGHLIGHT_COLORS = ["#fde047", "#86efac", "#7dd3fc", "#f9a8d4", "#fdba74"] as const;
+
+/** One rectangle of a highlight, as fractions (0–1) of the page box so it stays aligned at any zoom. */
+export type PdfRect = { x: number; y: number; w: number; h: number };
+
+export type PdfHighlight = {
+  id: string;
+  /** 1-based page number. */
+  page: number;
+  text: string;
+  color: string;
+  rects: PdfRect[];
+};
+
+/** Highlights stored on an article in `sources.metadata.pdfHighlights` (tolerates bad metadata). */
+export function pdfHighlightsOf(
+  metadata: Record<string, unknown> | null | undefined,
+): PdfHighlight[] {
+  const raw = metadata?.pdfHighlights;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (h): h is PdfHighlight =>
+      !!h &&
+      typeof h.id === "string" &&
+      typeof h.page === "number" &&
+      typeof h.text === "string" &&
+      typeof h.color === "string" &&
+      Array.isArray(h.rects),
+  );
+}

@@ -234,3 +234,44 @@ export async function deletePassageHighlight(formData: FormData) {
   revalidatePath("/notes");
   redirect("/notes");
 }
+
+/**
+ * Saves text selected in the in-app PDF viewer as a post-it linked to its
+ * article (with the page number), so it shows on the board and links back.
+ */
+export async function savePdfPostit(input: {
+  articleId: string;
+  text: string;
+  page: number;
+  comment?: string;
+}): Promise<{ id?: string; error?: string | null }> {
+  const { supabase } = await requireUser();
+  const quote = input.text.replace(/\s+/g, " ").trim();
+  if (!quote) return { error: "Boş metin kaydedilemez." };
+
+  const { data: src } = await supabase
+    .from("sources")
+    .select("id, title, authors, year, category, metadata")
+    .eq("id", input.articleId)
+    .eq("kind", "article")
+    .maybeSingle();
+  if (!src) return { error: "Makale bulunamadı." };
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const comment = (input.comment ?? "").trim();
+  const content =
+    `<blockquote>${esc(quote)}</blockquote>` + (comment ? `<p>${esc(comment)}</p>` : "");
+  const metadata = (src.metadata ?? {}) as { category?: string };
+
+  return upsertNote({
+    title: quote.slice(0, 60),
+    content,
+    source_id: src.id,
+    source_title: src.title,
+    source_author: (src.authors as string[] | null)?.[0] ?? "",
+    source_year: src.year,
+    source_page: String(Math.max(1, Math.floor(input.page))),
+    category: metadata.category ?? (src.category as string | undefined),
+  });
+}
