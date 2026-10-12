@@ -1,9 +1,6 @@
-"use client";
+import Link from "next/link";
 
-import { useState } from "react";
-import { getArticlePdfUrl } from "./actions";
-
-/** Opens an article's private PDF in a new tab via a short-lived signed URL. */
+/** Opens an article's uploaded PDF in the in-app reader (highlights + post-its). */
 export function PdfOpenButton({
   articleId,
   label = "📄 PDF",
@@ -13,39 +10,13 @@ export function PdfOpenButton({
   label?: string;
   className?: string;
 }) {
-  const [busy, setBusy] = useState(false);
-
-  async function open() {
-    // Open the tab synchronously (inside the click) so popup blockers allow
-    // it, then point it at the signed URL once the server returns it.
-    const tab = window.open("", "_blank");
-    setBusy(true);
-    try {
-      const res = await getArticlePdfUrl(articleId);
-      if (res.url) {
-        if (tab) tab.location.href = res.url;
-        else window.location.href = res.url;
-      } else {
-        tab?.close();
-        window.alert(res.error ?? "PDF açılamadı.");
-      }
-    } catch {
-      tab?.close();
-      window.alert("Sunucuya ulaşılamadı.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <button
-      type="button"
-      onClick={open}
-      disabled={busy}
-      title="Yüklenen PDF'i yeni sekmede aç"
-      className={`${className} disabled:opacity-50`}
+    <Link
+      href={`/library/${articleId}/pdf`}
+      title="PDF'i site içinde aç (fosforla, Post-it'e kaydet)"
+      className={className}
     >
-      {busy ? "Açılıyor…" : label}
-    </button>
+      {label}
+    </Link>
   );
 }

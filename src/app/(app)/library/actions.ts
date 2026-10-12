@@ -3,7 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
-import { PDF_BUCKETS, isOwnPdfPath, pdfOf, type ArticlePdf, type PdfBucket } from "@/lib/articlePdf";
+import {
+  PDF_BUCKETS,
+  PDF_HIGHLIGHT_COLORS,
+  isOwnPdfPath,
+  pdfHighlightsOf,
+  pdfOf,
+  type ArticlePdf,
+  type PdfBucket,
+  type PdfHighlight,
+} from "@/lib/articlePdf";
 
 /** Saves one of the curated RCT articles to the user's library (idempotent). */
 export async function saveCuratedArticle(pmid: string) {
@@ -345,4 +354,65 @@ export async function getArticlePdfUrl(id: string) {
     return { url: null, error: `PDF açılamadı: ${error?.message ?? "bilinmeyen hata"}` };
   }
   return { url: signed.signedUrl, error: null };
+}
+
+/** Metadata + title of an article the PDF viewer works on. */
+async function loadArticleMetadata(id: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .eq("kind", "article")
+    .maybeSingle();
+  return {
+    supabase,
+    metadata: data ? ((data.metadata ?? {}) as Record<string, unknown>) : null,
+  };
+}
+
+/** Stores a text highlight made in the in-app PDF viewer. */
+export async function addPdfHighlight(
+  articleId: string,
+  highlight: PdfHighlight,
+): Promise<{ error: string | null }> {
+  const { supabase, metadata } = await loadArticleMetadata(articleId);
+  if (!metadata) return { error: "Makale bulunamadı." };
+  if (
+    !highlight.text.trim() ||
+    highlight.rects.length === 0 ||
+    highlight.rects.length > 400 ||
+    !PDF_HIGHLIGHT_COLORS.includes(highlight.color as (typeof PDF_HIGHLIGHT_COLORS)[number])
+  ) {
+    return { error: "Geçersiz vurgu." };
+  }
+  const clean: PdfHighlight = {
+    id: highlight.id.slice(0, 64),
+    page: Math.max(1, Math.floor(highlight.page)),
+    text: highlight.text.slice(0, 5000),
+    color: highlight.color,
+    rects: highlight.rects.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
+  };
+  const next = [...pdfHighlightsOf(metadata).filter((h) => h.id !== clean.id), clean];
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata: { ...metadata, pdfHighlights: next } })
+    .eq("id", articleId)
+    .eq("kind", "article");
+  return { error: error?.message ?? null };
+}
+
+export async function deletePdfHighlight(
+  articleId: string,
+  highlightId: string,
+): Promise<{ error: string | null }> {
+  const { supabase, metadata } = await loadArticleMetadata(articleId);
+  if (!metadata) return { error: "Makale bulunamadı." };
+  const next = pdfHighlightsOf(metadata).filter((h) => h.id !== highlightId);
+  const { error } = await supabase
+    .from("sources")
+    .update({ metadata: { ...metadata, pdfHighlights: next } })
+    .eq("id", articleId)
+    .eq("kind", "article");
+  return { error: error?.message ?? null };
 }
