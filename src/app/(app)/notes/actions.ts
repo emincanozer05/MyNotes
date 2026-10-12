@@ -285,3 +285,68 @@ export async function savePdfPostit(input: {
     category: metadata.category ?? (src.category as string | undefined),
   });
 }
+
+/** The post-it (if any) that was saved from the given PDF highlight. */
+async function findPdfPostit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  articleId: string,
+  highlightId: string,
+) {
+  if (!/^[\w-]{1,64}$/.test(highlightId)) return null;
+  const { data } = await supabase
+    .from("notes")
+    .select("id, title, content, category, source_id, source_title, source_author, source_year, source_page, note_tags(tags(name))")
+    .eq("source_id", articleId)
+    .like("content", `%data-pdf-hl="${highlightId}"%`)
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+/** Tag names of the post-it linked to a PDF highlight (empty when none). */
+export async function getPdfPostitTags(
+  articleId: string,
+  highlightId: string,
+): Promise<{ tags: string[] }> {
+  const { supabase } = await requireUser();
+  const note = await findPdfPostit(supabase, articleId, highlightId);
+  const rows = (note?.note_tags ?? []) as unknown as { tags: { name: string } | null }[];
+  return { tags: rows.map((r) => r.tags?.name).filter((n): n is string => Boolean(n)) };
+}
+
+/**
+ * Re-files a PDF highlight's post-it under a different tag. Creates the
+ * post-it when the highlight never had one.
+ */
+export async function retagPdfPostit(input: {
+  articleId: string;
+  highlightId: string;
+  text: string;
+  page: number;
+  tags: string;
+}): Promise<{ id?: string; error?: string | null }> {
+  const { supabase } = await requireUser();
+  if (parseTagInput(input.tags ?? "").length === 0) return { error: "Etiket gerekli." };
+  const note = await findPdfPostit(supabase, input.articleId, input.highlightId);
+  if (!note) {
+    return savePdfPostit({
+      articleId: input.articleId,
+      text: input.text,
+      page: input.page,
+      tags: input.tags,
+      highlightId: input.highlightId,
+    });
+  }
+  return upsertNote({
+    id: note.id,
+    title: note.title,
+    content: note.content ?? "",
+    category: note.category,
+    source_id: note.source_id,
+    source_title: note.source_title ?? "",
+    source_author: note.source_author ?? "",
+    source_year: note.source_year,
+    source_page: note.source_page,
+    tags: input.tags,
+  });
+}
