@@ -208,7 +208,10 @@ export function RichTextEditor({
   // Monotonic id so a slow response never overwrites a newer translation.
   const engSeq = useRef(0);
 
-  const translateNow = useCallback(async () => {
+  // "en" = read-only practice view; "tr" = preview that can replace the note.
+  const [engTarget, setEngTarget] = useState<"en" | "tr">("en");
+
+  const translateNow = useCallback(async (target: "en" | "tr") => {
     const root = ref.current;
     const seq = ++engSeq.current;
     if (!root) return;
@@ -234,7 +237,7 @@ export function RichTextEditor({
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: nodes.map((n) => n.data), target: "en" }),
+        body: JSON.stringify({ texts: nodes.map((n) => n.data), target }),
       });
       const data = (await res.json()) as {
         translations?: string[];
@@ -262,12 +265,21 @@ export function RichTextEditor({
     }
   }, []);
 
-  function toggleEng() {
-    const next = !engOpen;
-    setEngOpen(next);
+  function closeEng() {
+    setEngOpen(false);
     setEngErr(null);
-    if (next) void translateNow();
-    else engSeq.current++; // cancel a translation still in flight
+    engSeq.current++; // cancel a translation still in flight
+  }
+
+  function toggleLang(target: "en" | "tr") {
+    if (engOpen && engTarget === target) {
+      closeEng();
+      return;
+    }
+    setEngTarget(target);
+    setEngOpen(true);
+    setEngErr(null);
+    void translateNow(target);
   }
 
   // ---- Content persistence (imperative, mount-only) --------------------
@@ -314,6 +326,19 @@ export function RichTextEditor({
     onChangeRef.current?.(html);
     setSaveState("saving");
     scheduleSave();
+  }
+
+  /** Replaces the note body with the previewed Turkish translation and saves. */
+  function applyTranslation() {
+    const root = ref.current;
+    if (!root || engBusy || engErr || !engHtml.trim()) return;
+    root.innerHTML = engHtml;
+    root.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+      img.dataset.init = "1";
+    });
+    handleInput();
+    void doSave();
+    closeEng();
   }
 
   // Flush the pending save when leaving (e.g. switching title tabs).
@@ -976,20 +1001,55 @@ export function RichTextEditor({
           <span className="text-[11px] text-stone-400">
             {engBusy
               ? "Çevriliyor…"
-              : engErr ?? "İngilizce görünüm — düzenlemek için kapat"}
+              : engErr ??
+                (engTarget === "tr"
+                  ? "Türkçe önizleme — kaydedene kadar not değişmez"
+                  : "İngilizce görünüm — düzenlemek için kapat")}
           </span>
+        )}
+        {engOpen && engTarget === "tr" && (
+          <>
+            <button
+              type="button"
+              onClick={applyTranslation}
+              disabled={engBusy || Boolean(engErr)}
+              title="Notun içeriğini bu Türkçe çeviriyle değiştir"
+              className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-40"
+            >
+              ✓ Türkçeyi kaydet
+            </button>
+            <button
+              type="button"
+              onClick={closeEng}
+              className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold text-stone-500 hover:bg-stone-500/10"
+            >
+              Vazgeç
+            </button>
+          </>
         )}
         <button
           type="button"
-          onClick={toggleEng}
+          onClick={() => toggleLang("tr")}
+          title="İngilizce metni Türkçeye çevir, önizle ve onaylarsan notu Türkçe olarak kaydet"
+          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+            engOpen && engTarget === "tr"
+              ? "border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+              : "border-[var(--border)] text-stone-500 hover:bg-stone-500/10"
+          }`}
+        >
+          🇹🇷 Türkçeye çevir
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleLang("en")}
           title="Metni aynı yerleşimle İngilizce göster (dil pratiği)"
           className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-            engOpen
+            engOpen && engTarget === "en"
               ? "border-sky-500/50 bg-sky-500/10 text-sky-700 dark:text-sky-300"
               : "border-[var(--border)] text-stone-500 hover:bg-stone-500/10"
           }`}
         >
-          🇬🇧 Eng {engOpen ? "▴" : "▾"}
+          🇬🇧 Eng {engOpen && engTarget === "en" ? "▴" : "▾"}
         </button>
       </div>
 
