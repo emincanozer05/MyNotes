@@ -231,7 +231,7 @@ export function PdfViewer({
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: source, target: "tr" }),
+        body: JSON.stringify({ text: source, target: "tr", quality: true }),
       });
       const data = (await res.json()) as {
         translated?: string;

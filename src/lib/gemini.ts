@@ -11,3 +11,11 @@ export function geminiKey(): string | undefined {
 export function geminiModel(): string {
   return process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
 }
+
+/** Translation default: a light model with a roomier free quota. Quotas are per
+ *  model, so this also keeps translations from eating Açıkla's allowance. */
+export const GEMINI_TRANSLATE_DEFAULT_MODEL = "gemini-2.5-flash-lite";
+
+export function geminiTranslateModel(): string {
+  return process.env.GEMINI_TRANSLATE_MODEL || GEMINI_TRANSLATE_DEFAULT_MODEL;
+}

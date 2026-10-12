@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { geminiKey, geminiModel } from "@/lib/gemini";
+import { geminiKey, geminiTranslateModel } from "@/lib/gemini";
 
 /**
  * POST /api/translate
@@ -13,8 +13,11 @@ import { geminiKey, geminiModel } from "@/lib/gemini";
  *   and formatting, only the words swapped to the target language.
  *
  * Providers are tried in order and the first one that answers wins:
- *   0. Google Gemini (GEMINI_API_KEY / GOOGLE_API_KEY, model via GEMINI_MODEL) —
- *      context-aware, so sentences keep their meaning. Skipped without a key.
+ *   0. Google Gemini (GEMINI_API_KEY / GOOGLE_API_KEY, model via
+ *      GEMINI_TRANSLATE_MODEL, default gemini-2.5-flash-lite) — context-aware, so
+ *      sentences keep their meaning. First for batch mode and `quality: true`;
+ *      only a fallback for the frequent hover tooltips. Skipped without a key
+ *      and for a minute after a 429.
  *   1. Google's key-free endpoint (fast, free) — but it answers 429 to
  *      datacenter IPs, which is what silently broke title translations.
  *   2. MyMemory's key-free API — modest limits, good enough for titles.
@@ -86,6 +89,10 @@ async function myMemoryTranslate(
   }
 }
 
+/** After a 429 Gemini is skipped for a minute so a spent quota isn't hammered. */
+let geminiCooldownUntil = 0;
+const GEMINI_COOLDOWN_MS = 60_000;
+
 /** Google Gemini — context-aware batch translation with strict 1:1 alignment.
  *  Null when no key is configured or the call fails, so the caller falls back. */
 async function geminiTranslate(
@@ -99,8 +106,12 @@ async function geminiTranslate(
     return null;
   }
   if (texts.length === 0) return null;
+  if (Date.now() < geminiCooldownUntil) {
+    trace.geminiFail = "API limiti doldu (429)";
+    return null;
+  }
   const language = LANGUAGE_NAMES[target] ?? target;
-  const model = geminiModel();
+  const model = geminiTranslateModel();
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -136,6 +147,7 @@ async function geminiTranslate(
     );
     if (!res.ok) {
       console.warn(`[translate] Gemini HTTP ${res.status}`);
+      if (res.status === 429) geminiCooldownUntil = Date.now() + GEMINI_COOLDOWN_MS;
       trace.geminiFail =
         res.status === 429
           ? "API limiti doldu (429)"
@@ -205,18 +217,28 @@ async function claudeTranslate(
   }
 }
 
-/** One text through the provider chain; null only when every provider fails.
- *  `useGemini` is off when Gemini already failed for the surrounding batch, so
- *  a failing key doesn't multiply into one more call per item. */
+/**
+ * One text through the provider chain; null only when every provider fails.
+ *  - "quality": Gemini first (user-initiated translations such as PDF passages).
+ *  - "fast": key-free services first, Gemini only as a fallback (hover tooltips
+ *    fire often and must not burn the Gemini quota).
+ *  - "nogemini": Gemini already failed for the surrounding batch.
+ */
+type OneMode = "quality" | "fast" | "nogemini";
+
 async function translateOne(
   text: string,
   target: string,
   trace: Trace,
-  useGemini = true,
+  mode: OneMode = "fast",
 ): Promise<string | null> {
-  if (useGemini) {
-    const gemini = await geminiTranslate([text.slice(0, 5000)], target, trace);
-    if (gemini) return gemini[0];
+  const viaGemini = async () => {
+    const out = await geminiTranslate([text.slice(0, 5000)], target, trace);
+    return out ? out[0] : null;
+  };
+  if (mode === "quality") {
+    const g = await viaGemini();
+    if (g !== null) return g;
   }
   const google = await googleTranslate(text.slice(0, 5000), target);
   if (google !== null) {
@@ -227,6 +249,10 @@ async function translateOne(
   if (mymemory !== null) {
     trace.providers.add("mymemory");
     return mymemory;
+  }
+  if (mode === "fast") {
+    const g = await viaGemini();
+    if (g !== null) return g;
   }
   const claude = await claudeTranslate([text], target);
   if (claude) trace.providers.add("anthropic");
@@ -262,7 +288,7 @@ async function translateAligned(
 
   const out: string[] = [];
   for (const t of texts) {
-    const one = await translateOne(t, target, trace, false);
+    const one = await translateOne(t, target, trace, "nogemini");
     out.push(one?.trim() || t);
   }
   return out;
@@ -291,6 +317,8 @@ export async function POST(request: Request) {
     text?: string;
     texts?: string[];
     target?: string;
+    /** Single-text mode: true = user-initiated, use Gemini first. */
+    quality?: boolean;
   } | null;
   const target = body?.target || "tr";
   const trace: Trace = { providers: new Set(), geminiFail: null };
@@ -334,7 +362,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Metin gerekli." }, { status: 400 });
   }
 
-  const translated = await translateOne(text, target, trace);
+  const translated = await translateOne(text, target, trace, body?.quality ? "quality" : "fast");
   if (translated === null) {
     return NextResponse.json({ error: "Çeviri alınamadı." }, { status: 502 });
   }

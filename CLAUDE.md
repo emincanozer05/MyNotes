@@ -90,10 +90,13 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
 
 10. ✅ Çeviri (`/api/translate`: Literatür başlıkları, not editörü "Türkçeye çevir"/
    "Eng", PDF görüntüleyici "Türkçe"): `GEMINI_API_KEY` (veya `GOOGLE_API_KEY`)
-   tanımlıysa önce Google Gemini ile (`GEMINI_MODEL`, varsayılan
-   `gemini-2.5-flash`), anahtar yoksa ya da çağrı başarısızsa sırayla Google
-   gtx → MyMemory → Anthropic ile çevrilir. Ortak anahtar/model okuma
-   `src/lib/gemini.ts`'te (Açıkla ile paylaşılır).
+   tanımlıysa önce Google Gemini ile (çeviri modeli `GEMINI_TRANSLATE_MODEL`,
+   varsayılan `gemini-2.5-flash-lite`; Açıkla'nın `GEMINI_MODEL`'inden ayrı, çünkü
+   kota model başına), anahtar yoksa ya da çağrı başarısızsa sırayla Google
+   gtx → MyMemory → Anthropic ile çevrilir. Sık tetiklenen Literatür başlık
+   tooltip'i Gemini'yi yalnızca yedek olarak kullanır (`quality` bayrağı yok);
+   PDF "Türkçe" ve editör çevirisi Gemini'yi önce dener. 429'da Gemini 1 dk
+   atlanır. Ortak anahtar/model okuma `src/lib/gemini.ts`'te.
 
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
