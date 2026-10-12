@@ -10,6 +10,9 @@ import {
 } from "@/lib/articlePdf";
 import { addPdfHighlight, deletePdfHighlight, getArticlePdfUrl } from "../../actions";
 import { savePdfPostit } from "../../../notes/actions";
+import { createOrGetTag, deleteTag, type UserTag } from "../../../tagsActions";
+import { TAG_COLOR_SWATCHES } from "@/lib/color";
+import { categoryLabel } from "@/lib/categories";
 
 type PdfJs = typeof import("pdfjs-dist");
 
@@ -39,14 +42,16 @@ export function PdfViewer({
   articleId,
   title,
   initialHighlights,
-  tagSuggestions,
+  tagCategory,
+  initialTags,
   initialPage,
   initialHighlightId,
 }: {
   articleId: string;
   title: string;
   initialHighlights: PdfHighlight[];
-  tagSuggestions: { name: string; color: string | null }[];
+  tagCategory: string;
+  initialTags: UserTag[];
   /** Deep link from a post-it's "Kaynağa git": page (and highlight) to land on. */
   initialPage: number | null;
   initialHighlightId: string | null;
@@ -60,7 +65,11 @@ export function PdfViewer({
   const [panelOpen, setPanelOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [tagging, setTagging] = useState(false);
-  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<UserTag[]>(initialTags);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState<string>(TAG_COLOR_SWATCHES[0]);
+  const [tagBusy, setTagBusy] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(initialHighlightId);
   const [pageSize, setPageSize] = useState({ w: 612, h: 792 });
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -180,11 +189,41 @@ export function PdfViewer({
     if (tags?.trim()) void postit(h.text, h.page, tags, h.id);
   }
 
+  async function createTagAndSave() {
+    const name = newTagName.trim();
+    if (!name || tagBusy) return;
+    setTagBusy(true);
+    setTagError(null);
+    try {
+      const res = await createOrGetTag(name, newTagColor, tagCategory);
+      if (!res.tag) {
+        setTagError(res.error ?? "Etiket oluşturulamadı.");
+        return;
+      }
+      const created = res.tag;
+      setTags((prev) =>
+        prev.some((t) => t.id === created.id)
+          ? prev
+          : [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "tr")),
+      );
+      await saveTaggedPostit(created.name);
+    } finally {
+      setTagBusy(false);
+    }
+  }
+
+  async function removeTag(tagId: string) {
+    if (!window.confirm("Bu etiket tamamen silinsin mi? Tüm notlardan kaldırılır.")) return;
+    await deleteTag(tagId);
+    setTags((prev) => prev.filter((t) => t.id !== tagId));
+  }
+
   function clearSelection() {
     window.getSelection()?.removeAllRanges();
     setPending(null);
     setTagging(false);
-    setTagInput("");
+    setNewTagName("");
+    setTagError(null);
   }
 
   async function highlight(color: string) {
@@ -213,10 +252,10 @@ export function PdfViewer({
   }
 
   /** Highlights the pending selection and files it as a tagged post-it. */
-  async function saveTaggedPostit() {
-    if (!pending || !tagInput.trim()) return;
+  async function saveTaggedPostit(tagName: string) {
+    if (!pending || !tagName.trim()) return;
     const p = pending;
-    const tags = tagInput;
+    const tags = tagName;
     const h: PdfHighlight = {
       id: crypto.randomUUID(),
       page: p.page,
@@ -452,7 +491,11 @@ export function PdfViewer({
             if (!(e.target as Element).closest("input")) e.preventDefault();
           }}
           className="glass-card fixed z-40 flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-1.5 rounded-2xl px-2.5 py-1.5 shadow-lg"
-          style={{ top: pending.top, left: pending.left }}
+          style={{
+            // The tag panel is tall; keep it fully on screen.
+            top: tagging ? Math.max(8, Math.min(pending.top, window.innerHeight - 380)) : pending.top,
+            left: pending.left,
+          }}
         >
           {!tagging ? (
             <>
@@ -477,42 +520,93 @@ export function PdfViewer({
               </button>
             </>
           ) : (
-            <form
-              className="flex flex-wrap items-center gap-1.5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void saveTaggedPostit();
-              }}
-            >
-              <input
-                autoFocus
-                list="pdf-tag-suggestions"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder="etiket (ör. squat)"
-                className="w-40 rounded-full border border-[var(--border)] bg-transparent px-3 py-1 text-xs outline-none"
-              />
-              <datalist id="pdf-tag-suggestions">
-                {tagSuggestions.map((t) => (
-                  <option key={t.name} value={t.name} />
+            <div className="w-72 max-w-[calc(100vw-2rem)] p-1.5">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                {categoryLabel(tagCategory)} etiketleri
+              </p>
+              {tags.length > 0 && (
+                <div className="mb-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-1.5 pt-1.5">
+                  {tags.map((t) => (
+                    <span key={t.id} className="relative inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => void saveTaggedPostit(t.name)}
+                        title="Bu etiketle Post-it'e kaydet"
+                        className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
+                        style={{ background: t.color ?? "#78716c" }}
+                      >
+                        {t.name}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeTag(t.id)}
+                        title="Etiketi sil"
+                        aria-label={`${t.name} etiketini sil`}
+                        className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white hover:bg-rose-600"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="mb-1.5 flex flex-wrap gap-1 border-t border-[var(--border)] pt-2">
+                {TAG_COLOR_SWATCHES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    onClick={() => setNewTagColor(c)}
+                    className={`h-5 w-5 rounded-full ${newTagColor === c ? "ring-2 ring-stone-500 ring-offset-1" : ""}`}
+                    style={{ background: c }}
+                  />
                 ))}
-              </datalist>
-              <button
-                type="submit"
-                disabled={!tagInput.trim()}
-                className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white disabled:opacity-40"
-              >
-                Kaydet
-              </button>
-              <button
-                type="button"
-                onClick={() => setTagging(false)}
-                className="px-1 text-xs text-stone-500"
-                aria-label="Geri"
-              >
-                ✕
-              </button>
-            </form>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="color"
+                    value={newTagColor}
+                    onChange={(e) => setNewTagColor(e.target.value)}
+                    className="h-7 w-7 shrink-0 cursor-pointer border-0 bg-transparent p-0"
+                    title="Özel renk"
+                  />
+                  <input
+                    autoFocus
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void createTagAndSave();
+                      }
+                    }}
+                    placeholder="Yeni etiket adı…"
+                    className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={tagBusy || !newTagName.trim()}
+                  onClick={() => void createTagAndSave()}
+                  className="w-full rounded-md bg-stone-900 px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
+                >
+                  {tagBusy ? "Oluşturuluyor…" : "Etiket oluştur"}
+                </button>
+                {tagError && (
+                  <p className="text-[11px] leading-snug text-rose-600 dark:text-rose-400">
+                    {tagError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setTagging(false)}
+                  className="w-full text-[11px] text-stone-500 hover:underline"
+                >
+                  ← Geri
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCategory } from "@/lib/categories";
 import { pdfHighlightsOf, pdfOf } from "@/lib/articlePdf";
+import type { UserTag } from "../../../tagsActions";
 import { PdfViewer } from "./PdfViewer";
 
 export default async function ArticlePdfPage({
@@ -31,7 +32,7 @@ export default async function ArticlePdfPage({
   );
   const { data: tagRows } = await supabase
     .from("tags")
-    .select("name, color")
+    .select("id, name, color")
     .eq("category", category)
     .order("name");
 
@@ -47,7 +48,8 @@ export default async function ArticlePdfPage({
         articleId={data.id}
         title={data.title}
         initialHighlights={pdfHighlightsOf(metadata)}
-        tagSuggestions={(tagRows ?? []) as { name: string; color: string | null }[]}
+        tagCategory={category}
+        initialTags={(tagRows ?? []) as UserTag[]}
         initialPage={Number(page) > 0 ? Math.floor(Number(page)) : null}
         initialHighlightId={hl ?? null}
       />
