@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/tagsActions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel, normalizeCategory } from "@/lib/categories";
+import { translateInfoLabel } from "@/lib/translateInfo";
 import { applyGroupTranslation, groupTextNodes, joinGroupText } from "@/lib/translateGroups";
 
 type Accent = "amber" | "lime";
@@ -206,6 +207,8 @@ export function RichTextEditor({
   const [engHtml, setEngHtml] = useState("");
   const [engBusy, setEngBusy] = useState(false);
   const [engErr, setEngErr] = useState<string | null>(null);
+  // Which service produced the shown translation (e.g. "Gemini ile çevrildi").
+  const [engInfo, setEngInfo] = useState("");
   // Monotonic id so a slow response never overwrites a newer translation.
   const engSeq = useRef(0);
 
@@ -246,8 +249,11 @@ export function RichTextEditor({
       const data = (await res.json()) as {
         translations?: string[];
         error?: string;
+        provider?: string;
+        fallbackReason?: string | null;
       };
       if (seq !== engSeq.current) return;
+      setEngInfo(translateInfoLabel(data.provider, data.fallbackReason));
       if (!res.ok || !Array.isArray(data.translations)) {
         setEngErr(data.error ?? "Çeviri alınamadı.");
         return;
@@ -1001,9 +1007,10 @@ export function RichTextEditor({
             {engBusy
               ? "Çevriliyor…"
               : engErr ??
-                (engTarget === "tr"
+                ((engTarget === "tr"
                   ? "Türkçe önizleme — kaydedene kadar not değişmez"
-                  : "İngilizce görünüm — düzenlemek için kapat")}
+                  : "İngilizce görünüm — düzenlemek için kapat") +
+                  (engInfo ? ` · ${engInfo}` : ""))}
           </span>
         )}
         {engOpen && engTarget === "tr" && (

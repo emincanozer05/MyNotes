@@ -12,6 +12,7 @@ import { addPdfHighlight, deletePdfHighlight, getArticlePdfUrl } from "../../act
 import { getPdfPostitTags, retagPdfPostit, savePdfPostit } from "../../../notes/actions";
 import type { UserTag } from "../../../tagsActions";
 import { normalizePdfSelection } from "@/lib/pdfText";
+import { translateInfoLabel } from "@/lib/translateInfo";
 import { TagPicker } from "./TagPicker";
 
 type PdfJs = typeof import("pdfjs-dist");
@@ -73,6 +74,8 @@ export function PdfViewer({
     text: string;
     err: string | null;
     accepted: boolean;
+    /** Which service translated, e.g. "Gemini ile çevrildi". */
+    info: string;
   } | null>(null);
   const [tags, setTags] = useState<UserTag[]>(initialTags);
   const [hoverId, setHoverId] = useState<string | null>(null);
@@ -218,11 +221,11 @@ export function PdfViewer({
   async function translatePending() {
     if (!pending) return;
     const source = pending.text;
-    setTr({ source, busy: true, text: "", err: null, accepted: false });
+    setTr({ source, busy: true, text: "", err: null, accepted: false, info: "" });
     // A late answer only lands if the user is still waiting on this very text.
-    const settle = (next: { text: string; err: string | null }) =>
+    const settle = (next: { text: string; err: string | null; info?: string }) =>
       setTr((cur) =>
-        cur && cur.source === source && cur.busy ? { ...cur, busy: false, ...next } : cur,
+        cur && cur.source === source && cur.busy ? { ...cur, busy: false, info: "", ...next } : cur,
       );
     try {
       const res = await fetch("/api/translate", {
@@ -230,12 +233,21 @@ export function PdfViewer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: source, target: "tr" }),
       });
-      const data = (await res.json()) as { translated?: string; error?: string };
+      const data = (await res.json()) as {
+        translated?: string;
+        error?: string;
+        provider?: string;
+        fallbackReason?: string | null;
+      };
       if (!res.ok || !data.translated) {
         settle({ text: "", err: data.error ?? "Çeviri alınamadı." });
         return;
       }
-      settle({ text: data.translated, err: null });
+      settle({
+        text: data.translated,
+        err: null,
+        info: translateInfoLabel(data.provider, data.fallbackReason),
+      });
     } catch {
       settle({ text: "", err: "Çeviri servisine ulaşılamadı." });
     }
@@ -615,6 +627,9 @@ export function PdfViewer({
                       <p className="max-h-40 w-72 max-w-full overflow-y-auto whitespace-pre-wrap">
                         {trView.text}
                       </p>
+                      {trView.info && (
+                        <p className="w-72 max-w-full text-[10px] text-stone-500">{trView.info}</p>
+                      )}
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"

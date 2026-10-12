@@ -23,6 +23,12 @@ import { geminiKey, geminiModel } from "@/lib/gemini";
  * External calls are made server-side per project conventions.
  */
 
+/** Per-request record of who answered (and why Gemini didn't), returned to the client. */
+interface Trace {
+  providers: Set<string>;
+  geminiFail: string | null;
+}
+
 const MAX_ITEMS = 400;
 const MAX_ITEM_CHARS = 3000;
 const BATCH_CHARS = 3800;
@@ -85,9 +91,14 @@ async function myMemoryTranslate(
 async function geminiTranslate(
   texts: string[],
   target: string,
+  trace: Trace,
 ): Promise<string[] | null> {
   const key = geminiKey();
-  if (!key || texts.length === 0) return null;
+  if (!key) {
+    trace.geminiFail = "GEMINI_API_KEY tanımlı değil";
+    return null;
+  }
+  if (texts.length === 0) return null;
   const language = LANGUAGE_NAMES[target] ?? target;
   const model = geminiModel();
   try {
@@ -125,6 +136,12 @@ async function geminiTranslate(
     );
     if (!res.ok) {
       console.warn(`[translate] Gemini HTTP ${res.status}`);
+      trace.geminiFail =
+        res.status === 429
+          ? "API limiti doldu (429)"
+          : res.status === 400 || res.status === 401 || res.status === 403
+            ? `anahtar geçersiz ya da izin yok (${res.status})`
+            : `HTTP ${res.status}`;
       return null;
     }
     const data = (await res.json()) as {
@@ -134,10 +151,15 @@ async function geminiTranslate(
       .map((p) => p.text ?? "")
       .join("");
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed) || parsed.length !== texts.length) return null;
+    if (!Array.isArray(parsed) || parsed.length !== texts.length) {
+      trace.geminiFail = "yanıt beklenen biçimde değil";
+      return null;
+    }
+    trace.providers.add("gemini");
     return parsed.map((t, i) => (typeof t === "string" && t.trim() ? t : texts[i]));
   } catch (e) {
     console.warn("[translate] Gemini failed:", e instanceof Error ? e.message : e);
+    trace.geminiFail = "servise ulaşılamadı";
     return null;
   }
 }
@@ -183,44 +205,77 @@ async function claudeTranslate(
   }
 }
 
-/** One text through the provider chain; null only when every provider fails. */
+/** One text through the provider chain; null only when every provider fails.
+ *  `useGemini` is off when Gemini already failed for the surrounding batch, so
+ *  a failing key doesn't multiply into one more call per item. */
 async function translateOne(
   text: string,
   target: string,
+  trace: Trace,
+  useGemini = true,
 ): Promise<string | null> {
-  const gemini = await geminiTranslate([text.slice(0, 5000)], target);
-  if (gemini) return gemini[0];
+  if (useGemini) {
+    const gemini = await geminiTranslate([text.slice(0, 5000)], target, trace);
+    if (gemini) return gemini[0];
+  }
   const google = await googleTranslate(text.slice(0, 5000), target);
-  if (google !== null) return google;
+  if (google !== null) {
+    trace.providers.add("google");
+    return google;
+  }
   const mymemory = await myMemoryTranslate(text, target);
-  if (mymemory !== null) return mymemory;
+  if (mymemory !== null) {
+    trace.providers.add("mymemory");
+    return mymemory;
+  }
   const claude = await claudeTranslate([text], target);
+  if (claude) trace.providers.add("anthropic");
   return claude?.[0] ?? null;
 }
 
 /** Translates a batch keeping 1:1 alignment: Gemini first, then newline-joined
  *  Google, then Claude (also aligned), then per-item calls. */
-async function translateAligned(texts: string[], target: string): Promise<string[]> {
-  const viaGemini = await geminiTranslate(texts, target);
+async function translateAligned(
+  texts: string[],
+  target: string,
+  trace: Trace,
+): Promise<string[]> {
+  const viaGemini = await geminiTranslate(texts, target, trace);
   if (viaGemini) return viaGemini.map((p) => p.trim());
 
   const joined = texts.join("\n");
   const res = await googleTranslate(joined, target);
   if (res !== null) {
     const parts = res.split("\n");
-    if (parts.length === texts.length) return parts.map((p) => p.trim());
+    if (parts.length === texts.length) {
+      trace.providers.add("google");
+      return parts.map((p) => p.trim());
+    }
   }
 
   // One Claude call keeps the whole batch aligned without N round trips.
   const viaClaude = await claudeTranslate(texts, target);
-  if (viaClaude) return viaClaude.map((p) => p.trim());
+  if (viaClaude) {
+    trace.providers.add("anthropic");
+    return viaClaude.map((p) => p.trim());
+  }
 
   const out: string[] = [];
   for (const t of texts) {
-    const one = await translateOne(t, target);
+    const one = await translateOne(t, target, trace, false);
     out.push(one?.trim() || t);
   }
   return out;
+}
+
+/** Response fields describing who translated; "none" when nothing answered. */
+function traceFields(trace: Trace) {
+  const list = [...trace.providers];
+  const provider = list.length === 0 ? "none" : list.length === 1 ? list[0] : "mixed";
+  return {
+    provider,
+    fallbackReason: provider === "gemini" ? null : trace.geminiFail,
+  };
 }
 
 export async function POST(request: Request) {
@@ -238,6 +293,7 @@ export async function POST(request: Request) {
     target?: string;
   } | null;
   const target = body?.target || "tr";
+  const trace: Trace = { providers: new Set(), geminiFail: null };
 
   // ---- Batch mode (formatted in-place translation) ----------------------
   if (Array.isArray(body?.texts)) {
@@ -252,7 +308,7 @@ export async function POST(request: Request) {
     let batchLen = 0;
     const flush = async () => {
       if (batch.length === 0) return;
-      translations.push(...(await translateAligned(batch, target)));
+      translations.push(...(await translateAligned(batch, target, trace)));
       batch = [];
       batchLen = 0;
     };
@@ -269,7 +325,7 @@ export async function POST(request: Request) {
     }
     await flush();
 
-    return NextResponse.json({ translations });
+    return NextResponse.json({ translations, ...traceFields(trace) });
   }
 
   // ---- Single-text mode --------------------------------------------------
@@ -278,9 +334,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Metin gerekli." }, { status: 400 });
   }
 
-  const translated = await translateOne(text, target);
+  const translated = await translateOne(text, target, trace);
   if (translated === null) {
     return NextResponse.json({ error: "Çeviri alınamadı." }, { status: 502 });
   }
-  return NextResponse.json({ translated: translated || text });
+  return NextResponse.json({ translated: translated || text, ...traceFields(trace) });
 }
