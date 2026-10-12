@@ -5,6 +5,8 @@ import type { Source } from "@/lib/types";
 import { ArticleEditor } from "./ArticleEditor";
 import { TranslatedTitle } from "../TranslatedTitle";
 import { SummaryReadModal } from "../SummaryReadModal";
+import { PdfOpenButton } from "../PdfOpenButton";
+import { pdfOf } from "@/lib/articlePdf";
 
 export default async function ArticleDetailPage({
   params,
@@ -68,6 +70,13 @@ export default async function ArticleDetailPage({
             >
               Makaleye git ↗
             </a>
+          )}
+          {pdfOf(article.metadata) && (
+            <PdfOpenButton
+              articleId={article.id}
+              label="📄 PDF'i aç"
+              className="rounded-full border border-[var(--border)] px-3 py-1 font-medium hover:bg-stone-500/10"
+            />
           )}
           <Link
             href={`/notes/new?source=${article.id}`}

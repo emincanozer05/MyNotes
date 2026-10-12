@@ -6,6 +6,8 @@ import { deleteArticle, getArticleSummary } from "./actions";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { SummaryReadModal } from "./SummaryReadModal";
+import { PdfOpenButton } from "./PdfOpenButton";
+import { pdfOf } from "@/lib/articlePdf";
 import {
   articleLink,
   hasSummary,
@@ -80,6 +82,7 @@ function Actions({ a, summary }: { a: Source; summary: boolean }) {
           className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
         />
       )}
+      {pdfOf(a.metadata) && <PdfOpenButton articleId={a.id} />}
       <IntentLink
         href={`/library/print/${a.id}`}
         title="A4 çıktı sayfasını aç"
