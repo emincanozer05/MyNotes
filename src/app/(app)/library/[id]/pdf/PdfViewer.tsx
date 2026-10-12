@@ -64,6 +64,15 @@ export function PdfViewer({
   const [panelOpen, setPanelOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [tagging, setTagging] = useState(false);
+  // Turkish translation of the pending selection; `source` ties it to the
+  // selected text so a new selection never shows a stale translation.
+  const [tr, setTr] = useState<{
+    source: string;
+    busy: boolean;
+    text: string;
+    err: string | null;
+    accepted: boolean;
+  } | null>(null);
   const [tags, setTags] = useState<UserTag[]>(initialTags);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{
@@ -189,6 +198,8 @@ export function PdfViewer({
     };
   }, []);
 
+  const trView = tr && pending && tr.source === pending.text ? tr : null;
+
   // Panel post-it: asks for the tag(s) first.
   function askTagFor(h: PdfHighlight) {
     const tags = window.prompt("Post-it etiketi (boşlukla ayır):");
@@ -199,6 +210,34 @@ export function PdfViewer({
     window.getSelection()?.removeAllRanges();
     setPending(null);
     setTagging(false);
+    setTr(null);
+  }
+
+  /** Translates the selected passage to Turkish for a preview (nothing is saved yet). */
+  async function translatePending() {
+    if (!pending) return;
+    const source = pending.text;
+    setTr({ source, busy: true, text: "", err: null, accepted: false });
+    // A late answer only lands if the user is still waiting on this very text.
+    const settle = (next: { text: string; err: string | null }) =>
+      setTr((cur) =>
+        cur && cur.source === source && cur.busy ? { ...cur, busy: false, ...next } : cur,
+      );
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: source, target: "tr" }),
+      });
+      const data = (await res.json()) as { translated?: string; error?: string };
+      if (!res.ok || !data.translated) {
+        settle({ text: "", err: data.error ?? "Çeviri alınamadı." });
+        return;
+      }
+      settle({ text: data.translated, err: null });
+    } catch {
+      settle({ text: "", err: "Çeviri servisine ulaşılamadı." });
+    }
   }
 
   async function highlight(color: string) {
@@ -231,6 +270,8 @@ export function PdfViewer({
     if (!pending || !tagName.trim()) return;
     const p = pending;
     const tags = tagName;
+    // The post-it holds the approved Turkish text; the highlight keeps the original.
+    const noteText = trView?.accepted && trView.text.trim() ? trView.text : p.text;
     const h: PdfHighlight = {
       id: crypto.randomUUID(),
       page: p.page,
@@ -243,10 +284,10 @@ export function PdfViewer({
     const saved = await addPdfHighlight(articleId, h);
     if (saved.error) {
       setHighlights((prev) => prev.filter((x) => x.id !== h.id));
-      await postit(p.text, p.page, tags);
+      await postit(noteText, p.page, tags);
       return;
     }
-    await postit(p.text, p.page, tags, h.id);
+    await postit(noteText, p.page, tags, h.id);
   }
 
   async function removeHighlight(id: string) {
@@ -554,6 +595,48 @@ export function PdfViewer({
               >
                 📌 Post-it
               </button>
+              <button
+                type="button"
+                onClick={() => void translatePending()}
+                title="Seçili İngilizce metni Türkçeye çevir, önizle ve Türkçe post-it olarak kaydet"
+                className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
+              >
+                🇹🇷 Türkçe
+              </button>
+              {trView && (
+                <div className="basis-full space-y-1.5 border-t border-stone-400/30 pt-1.5 text-xs">
+                  {trView.busy ? (
+                    <p className="text-stone-500">Çevriliyor…</p>
+                  ) : trView.err ? (
+                    <p className="text-rose-600">{trView.err}</p>
+                  ) : (
+                    <>
+                      <p className="max-h-40 w-72 max-w-full overflow-y-auto whitespace-pre-wrap">
+                        {trView.text}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTr({ ...trView, accepted: true });
+                            setTagging(true);
+                          }}
+                          className="rounded-full bg-emerald-600 px-2.5 py-1 font-semibold text-white hover:bg-emerald-700"
+                        >
+                          📌 Türkçe Post-it
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTr(null)}
+                          className="rounded-full px-2.5 py-1 font-semibold text-stone-500 hover:bg-stone-500/10"
+                        >
+                          Vazgeç
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <TagPicker
