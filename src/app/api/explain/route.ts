@@ -42,7 +42,9 @@ function pickProvider(): Provider {
 }
 
 function geminiKey(): string | undefined {
-  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || undefined;
+  // Pasted values often carry stray whitespace or wrapping quotes.
+  const raw = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+  return raw.trim().replace(/^["']|["']$/g, "") || undefined;
 }
 
 const SYSTEM_PROMPT = `You explain passages that a reader has selected on a personal study platform for strength & conditioning and sports science (research articles, book summaries and the reader's own notes). Write every explanation in Turkish. The response is latency-sensitive: begin your visible answer immediately.
@@ -393,4 +395,25 @@ export async function POST(request: Request) {
     }),
     { headers },
   );
+}
+
+/**
+ * GET /api/explain — configuration check (no secrets): which provider would
+ * answer and whether the server can see the keys. Helps debug env setup.
+ */
+export async function GET() {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return badRequest("Oturum bulunamadı.", 401);
+  const key = geminiKey();
+  return NextResponse.json({
+    provider: pickProvider(),
+    geminiKeyPresent: Boolean(key),
+    geminiKeyLength: key?.length ?? 0,
+    geminiModel: process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL,
+    anthropicKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY),
+    explainProviderEnv: process.env.EXPLAIN_PROVIDER ?? null,
+    vercelEnv: process.env.VERCEL_ENV ?? null,
+    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+  });
 }
