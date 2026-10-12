@@ -72,7 +72,9 @@ npm run lint    # eslint
    üretir). Bileşen `src/components/ExplainSelection.tsx` (app layout'ta tek kez
    monte edilir), sözleşme `src/lib/explain.ts`. Form alanları, butonlar ve
    `data-no-explain` işaretli öğeler hariç tutulur. Önbellek yalnızca bellekte
-   (sekme başına + sunucu örneği başına); DB'ye dokunmaz. `ANTHROPIC_API_KEY` ister.
+   (sekme başına + sunucu örneği başına); DB'ye dokunmaz. `GEMINI_API_KEY` (Google Gemini, `GEMINI_MODEL` ile model seçilir, varsayılan
+   `gemini-2.5-flash`) tanımlıysa Gemini ile, değilse `ANTHROPIC_API_KEY` ile
+   çalışır; `EXPLAIN_PROVIDER=gemini|anthropic` ile zorlanabilir.
 9. ✅ Literatür "Kendi makaleni ekle" formuna PDF yükleme: dosya tarayıcıdan
    doğrudan özel `article-pdfs` bucket'ına (`0014`, `<uid>/…` RLS) yüklenir;
    0014 uygulanmamışsa `voice-notes` bucket'ına (`<uid>/article-pdfs/`) düşer.

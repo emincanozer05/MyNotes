@@ -27,6 +27,23 @@ import {
  */
 
 const MODEL = "claude-opus-5-5";
+const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
+
+type Provider = "gemini" | "anthropic";
+
+/**
+ * Which model family answers. `EXPLAIN_PROVIDER` forces one; otherwise Gemini
+ * is used when a Gemini key is configured, falling back to Anthropic.
+ */
+function pickProvider(): Provider {
+  const forced = process.env.EXPLAIN_PROVIDER?.toLowerCase();
+  if (forced === "gemini" || forced === "anthropic") return forced;
+  return geminiKey() ? "gemini" : "anthropic";
+}
+
+function geminiKey(): string | undefined {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || undefined;
+}
 
 const SYSTEM_PROMPT = `You explain passages that a reader has selected on a personal study platform for strength & conditioning and sports science (research articles, book summaries and the reader's own notes). Write every explanation in Turkish. The response is latency-sensitive: begin your visible answer immediately.
 
@@ -130,6 +147,94 @@ function buildUserMessage(req: ExplainRequest): string {
   return parts.join("\n\n");
 }
 
+class GeminiError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Streams an explanation from the Gemini REST API (SSE), yielding text chunks.
+ * Returns the finish reason; throws GeminiError on HTTP / safety failures.
+ */
+async function* geminiStream(
+  req: ExplainRequest,
+  signal: AbortSignal,
+): AsyncGenerator<string, string> {
+  const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() ?? "" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: "user", parts: [{ text: buildUserMessage(req) }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 2048,
+          // 2.5 Flash "thinks" by default, which only adds latency here.
+          ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        },
+      }),
+      signal,
+    },
+  );
+  if (!res.ok || !res.body) throw new GeminiError(`HTTP ${res.status}`, res.status);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finish = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buffer.indexOf("\n")) >= 0) {
+      const raw = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (!raw.startsWith("data:")) continue;
+      let chunk: {
+        candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+        promptFeedback?: { blockReason?: string };
+      };
+      try {
+        chunk = JSON.parse(raw.slice(5).trim());
+      } catch {
+        continue;
+      }
+      if (chunk.promptFeedback?.blockReason) return "SAFETY";
+      const cand = chunk.candidates?.[0];
+      for (const part of cand?.content?.parts ?? []) {
+        if (part.text) yield part.text;
+      }
+      if (cand?.finishReason) finish = cand.finishReason;
+    }
+  }
+  return finish;
+}
+
+function geminiErrorMessage(error: unknown): string {
+  if (error instanceof GeminiError) {
+    if (error.status === 400 || error.status === 401 || error.status === 403) {
+      return "Gemini API anahtarı geçersiz ya da erişim izni yok.";
+    }
+    if (error.status === 429) return "API limiti aşıldı, biraz sonra tekrar deneyin.";
+    if (error.status && error.status >= 500) {
+      return "Yapay zekâ servisi şu an yanıt vermiyor. Biraz sonra tekrar deneyin.";
+    }
+    return `Açıklama oluşturulamadı (${error.status ?? "API"}).`;
+  }
+  if (error instanceof TypeError) {
+    return "Yapay zekâ servisine ulaşılamadı. Biraz sonra tekrar deneyin.";
+  }
+  return "Açıklama oluşturulurken beklenmeyen bir hata oluştu.";
+}
+
 function apiErrorMessage(error: unknown): string {
   if (error instanceof Anthropic.AuthenticationError) return "Anthropic API anahtarı geçersiz.";
   if (error instanceof Anthropic.RateLimitError) {
@@ -154,9 +259,10 @@ export async function POST(request: Request) {
   const parsed = parseBody(await request.json().catch(() => null));
   if (typeof parsed === "string") return badRequest(parsed);
 
+  const provider = pickProvider();
   const key = createHash("sha256")
     .update(
-      JSON.stringify([parsed.mode, parsed.text, parsed.paragraph, parsed.heading, parsed.previous]),
+      JSON.stringify([provider, parsed.mode, parsed.text, parsed.paragraph, parsed.heading, parsed.previous]),
     )
     .digest("hex");
 
@@ -182,15 +288,21 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (provider === "gemini" && !geminiKey()) {
     return badRequest(
-      "Açıkla özelliği için ANTHROPIC_API_KEY gerekli. Sunucu ortamına Anthropic API anahtarınızı ekleyin.",
+      "Açıkla özelliği için GEMINI_API_KEY gerekli. Sunucu ortamına Google Gemini API anahtarınızı ekleyin.",
+      503,
+    );
+  }
+  if (provider === "anthropic" && !process.env.ANTHROPIC_API_KEY) {
+    return badRequest(
+      "Açıkla özelliği için GEMINI_API_KEY (Google Gemini) ya da ANTHROPIC_API_KEY gerekli. Sunucu ortamına birini ekleyin.",
       503,
     );
   }
 
-  const client = new Anthropic();
-  let stream: ReturnType<typeof client.beta.messages.stream> | null = null;
+  const client = provider === "anthropic" ? new Anthropic() : null;
+  let stream: ReturnType<Anthropic["beta"]["messages"]["stream"]> | null = null;
 
   return new Response(
     new ReadableStream({
@@ -203,6 +315,36 @@ export async function POST(request: Request) {
           }
         };
         let full = "";
+        if (provider === "gemini") {
+          try {
+            const gen = geminiStream(parsed, request.signal);
+            let step = await gen.next();
+            while (!step.done) {
+              full += step.value;
+              send({ t: "delta", v: step.value });
+              step = await gen.next();
+            }
+            const finish = step.value;
+            if (finish === "SAFETY" || finish === "PROHIBITED_CONTENT" || finish === "BLOCKLIST") {
+              send({ t: "error", v: "Bu metin için açıklama oluşturulamadı." });
+            } else if (!full.trim()) {
+              send({ t: "error", v: "Boş yanıt alındı. Tekrar deneyin." });
+            } else {
+              if (finish === "STOP") cacheSet(key, full);
+              send({ t: "done" });
+            }
+          } catch (error) {
+            if (!request.signal.aborted) send({ t: "error", v: geminiErrorMessage(error) });
+          } finally {
+            try {
+              controller.close();
+            } catch {
+              // Already closed.
+            }
+          }
+          return;
+        }
+        if (!client) return;
         try {
           stream = client.beta.messages.stream(
             {
