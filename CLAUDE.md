@@ -65,6 +65,14 @@ npm run lint    # eslint
    türetilir, ağda olmayan ortak tanıdık yeni kişi olarak eklenir. Literatür
    listesi `library_articles()` RPC'si (`0011`) ile görselsiz özet çeker;
    etiket filtreleri (Literatür + Post-it) dropdown; dar ekranda açılır menü.
+8. ✅ Aşama 8 — **Açıkla** (RemNote AI Explain benzeri): herhangi bir okunabilir
+   metin seçilince yanında "Açıkla" butonu çıkar; seçim + paragraf + en yakın
+   başlık `POST /api/explain`'e gider, açıklama NDJSON akışıyla seçimin yanındaki
+   popup'a yazılır ("Daha Basit Açıkla" / "Detaylandır" aynı bağlamla yeniden
+   üretir). Bileşen `src/components/ExplainSelection.tsx` (app layout'ta tek kez
+   monte edilir), sözleşme `src/lib/explain.ts`. Form alanları, butonlar ve
+   `data-no-explain` işaretli öğeler hariç tutulur. Önbellek yalnızca bellekte
+   (sekme başına + sunucu örneği başına); DB'ye dokunmaz. `ANTHROPIC_API_KEY` ister.
 
 `0008`/`0009` uygulanmamış ama `0010` uygulanmış veritabanları için `0013`
 aynı şemayı CHECK kısıtları olmadan, idempotent olarak kurar (0008'i 0010'dan
