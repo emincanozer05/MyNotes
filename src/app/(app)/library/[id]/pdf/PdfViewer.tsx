@@ -9,10 +9,9 @@ import {
   type PdfRect,
 } from "@/lib/articlePdf";
 import { addPdfHighlight, deletePdfHighlight, getArticlePdfUrl } from "../../actions";
-import { savePdfPostit } from "../../../notes/actions";
-import { createOrGetTag, deleteTag, type UserTag } from "../../../tagsActions";
-import { TAG_COLOR_SWATCHES } from "@/lib/color";
-import { categoryLabel } from "@/lib/categories";
+import { getPdfPostitTags, retagPdfPostit, savePdfPostit } from "../../../notes/actions";
+import type { UserTag } from "../../../tagsActions";
+import { TagPicker } from "./TagPicker";
 
 type PdfJs = typeof import("pdfjs-dist");
 
@@ -66,15 +65,20 @@ export function PdfViewer({
   const [toast, setToast] = useState<string | null>(null);
   const [tagging, setTagging] = useState(false);
   const [tags, setTags] = useState<UserTag[]>(initialTags);
-  const [newTagName, setNewTagName] = useState("");
-  const [newTagColor, setNewTagColor] = useState<string>(TAG_COLOR_SWATCHES[0]);
-  const [tagBusy, setTagBusy] = useState(false);
-  const [tagError, setTagError] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{
+    id: string;
+    top: number;
+    left: number;
+    mode: "main" | "tag";
+  } | null>(null);
+  const [menuTags, setMenuTags] = useState<string[] | null>(null);
   const [flashId, setFlashId] = useState<string | null>(initialHighlightId);
   const [pageSize, setPageSize] = useState({ w: 612, h: 792 });
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = useCallback((msg: string) => {
@@ -119,6 +123,7 @@ export function PdfViewer({
     function onSelectionEnd() {
       // Typing a tag in the toolbar must not discard the pending selection.
       if (toolbarRef.current?.contains(document.activeElement)) return;
+      if (menuRef.current?.contains(document.activeElement)) return;
       const sel = window.getSelection();
       const root = containerRef.current;
       if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !root) {
@@ -170,6 +175,7 @@ export function PdfViewer({
     }
     function onUp(e: Event) {
       if (toolbarRef.current?.contains(e.target as Node)) return;
+      if (menuRef.current?.contains(e.target as Node)) return;
       // Let the browser finalise the selection first.
       setTimeout(onSelectionEnd, 10);
     }
@@ -189,41 +195,10 @@ export function PdfViewer({
     if (tags?.trim()) void postit(h.text, h.page, tags, h.id);
   }
 
-  async function createTagAndSave() {
-    const name = newTagName.trim();
-    if (!name || tagBusy) return;
-    setTagBusy(true);
-    setTagError(null);
-    try {
-      const res = await createOrGetTag(name, newTagColor, tagCategory);
-      if (!res.tag) {
-        setTagError(res.error ?? "Etiket oluşturulamadı.");
-        return;
-      }
-      const created = res.tag;
-      setTags((prev) =>
-        prev.some((t) => t.id === created.id)
-          ? prev
-          : [...prev, created].sort((a, b) => a.name.localeCompare(b.name, "tr")),
-      );
-      await saveTaggedPostit(created.name);
-    } finally {
-      setTagBusy(false);
-    }
-  }
-
-  async function removeTag(tagId: string) {
-    if (!window.confirm("Bu etiket tamamen silinsin mi? Tüm notlardan kaldırılır.")) return;
-    await deleteTag(tagId);
-    setTags((prev) => prev.filter((t) => t.id !== tagId));
-  }
-
   function clearSelection() {
     window.getSelection()?.removeAllRanges();
     setPending(null);
     setTagging(false);
-    setNewTagName("");
-    setTagError(null);
   }
 
   async function highlight(color: string) {
@@ -282,6 +257,64 @@ export function PdfViewer({
       setHighlights(prev);
       flash(`Silinemedi: ${res.error}`);
     }
+  }
+
+  function openMenu(id: string, x: number, y: number) {
+    setMenu({
+      id,
+      top: Math.max(8, Math.min(y + 8, window.innerHeight - 200)),
+      left: Math.max(8, Math.min(x, window.innerWidth - 300)),
+      mode: "main",
+    });
+    setMenuTags(null);
+    const h = highlights.find((x) => x.id === id);
+    if (h) void getPdfPostitTags(articleId, id).then((r) => setMenuTags(r.tags));
+  }
+
+  // Close the highlight menu on Escape, outside press or scroll.
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    function onDown(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) close();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") close();
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [menu]);
+
+  async function recolor(id: string, color: string) {
+    const h = highlights.find((x) => x.id === id);
+    if (!h || h.color === color) return;
+    setHighlights((cur) => cur.map((x) => (x.id === id ? { ...x, color } : x)));
+    const res = await addPdfHighlight(articleId, { ...h, color });
+    if (res.error) {
+      setHighlights((cur) => cur.map((x) => (x.id === id ? h : x)));
+      flash(`Renk değiştirilemedi: ${res.error}`);
+    }
+  }
+
+  async function retag(id: string, tagName: string) {
+    const h = highlights.find((x) => x.id === id);
+    setMenu(null);
+    if (!h) return;
+    flash("Etiket değiştiriliyor…");
+    const res = await retagPdfPostit({
+      articleId,
+      highlightId: id,
+      text: h.text,
+      page: h.page,
+      tags: tagName,
+    });
+    flash(res.error ? `Değiştirilemedi: ${res.error}` : `Etiket: ${tagName} 🏷`);
   }
 
   const scrollToSpot = useCallback((page: number, y: number) => {
@@ -398,6 +431,9 @@ export function PdfViewer({
                 scale={scale}
                 size={pageSize}
                 flashId={flashId}
+                hoverId={hoverId}
+                onHover={setHoverId}
+                onPickHighlight={openMenu}
                 highlights={highlights.filter((h) => h.page === i + 1)}
               />
             ))}
@@ -520,96 +556,82 @@ export function PdfViewer({
               </button>
             </>
           ) : (
-            <div className="w-72 max-w-[calc(100vw-2rem)] p-1.5">
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                {categoryLabel(tagCategory)} etiketleri
-              </p>
-              {tags.length > 0 && (
-                <div className="mb-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-1.5 pt-1.5">
-                  {tags.map((t) => (
-                    <span key={t.id} className="relative inline-flex">
-                      <button
-                        type="button"
-                        onClick={() => void saveTaggedPostit(t.name)}
-                        title="Bu etiketle Post-it'e kaydet"
-                        className="rounded-full px-2 py-0.5 text-xs font-medium text-white shadow-sm"
-                        style={{ background: t.color ?? "#78716c" }}
-                      >
-                        {t.name}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void removeTag(t.id)}
-                        title="Etiketi sil"
-                        aria-label={`${t.name} etiketini sil`}
-                        className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white hover:bg-rose-600"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="mb-1.5 flex flex-wrap gap-1 border-t border-[var(--border)] pt-2">
-                {TAG_COLOR_SWATCHES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    title={c}
-                    onClick={() => setNewTagColor(c)}
-                    className={`h-5 w-5 rounded-full ${newTagColor === c ? "ring-2 ring-stone-500 ring-offset-1" : ""}`}
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="color"
-                    value={newTagColor}
-                    onChange={(e) => setNewTagColor(e.target.value)}
-                    className="h-7 w-7 shrink-0 cursor-pointer border-0 bg-transparent p-0"
-                    title="Özel renk"
-                  />
-                  <input
-                    autoFocus
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void createTagAndSave();
-                      }
-                    }}
-                    placeholder="Yeni etiket adı…"
-                    className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-transparent px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <button
-                  type="button"
-                  disabled={tagBusy || !newTagName.trim()}
-                  onClick={() => void createTagAndSave()}
-                  className="w-full rounded-md bg-stone-900 px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
-                >
-                  {tagBusy ? "Oluşturuluyor…" : "Etiket oluştur"}
-                </button>
-                {tagError && (
-                  <p className="text-[11px] leading-snug text-rose-600 dark:text-rose-400">
-                    {tagError}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setTagging(false)}
-                  className="w-full text-[11px] text-stone-500 hover:underline"
-                >
-                  ← Geri
-                </button>
-              </div>
-            </div>
+            <TagPicker
+              tags={tags}
+              setTags={setTags}
+              category={tagCategory}
+              onPick={saveTaggedPostit}
+              onBack={() => setTagging(false)}
+            />
           )}
         </div>
       )}
+
+      {menu &&
+        (() => {
+          const h = highlights.find((x) => x.id === menu.id);
+          if (!h) return null;
+          return (
+            <div
+              ref={menuRef}
+              data-no-explain
+              className="glass-card fixed z-40 rounded-2xl p-2 shadow-xl"
+              style={{ top: menu.top, left: menu.left }}
+            >
+              {menu.mode === "tag" ? (
+                <TagPicker
+                  tags={tags}
+                  setTags={setTags}
+                  category={tagCategory}
+                  onPick={(name) => retag(h.id, name)}
+                  onBack={() => setMenu({ ...menu, mode: "main" })}
+                />
+              ) : (
+                <div className="w-64 space-y-2 p-1 text-xs">
+                  <p className="line-clamp-2 italic text-stone-500">
+                    s. {h.page} · “{h.text}”
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    {PDF_HIGHLIGHT_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        title="Fosfor rengini değiştir"
+                        aria-label="Fosfor rengini değiştir"
+                        onClick={() => void recolor(h.id, c)}
+                        className={`h-5 w-5 rounded-full border border-black/20 ${h.color === c ? "ring-2 ring-stone-500 ring-offset-1" : ""}`}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-stone-500">
+                    Etiket:{" "}
+                    {menuTags === null ? "…" : menuTags.length ? menuTags.map((t) => `#${t}`).join(" ") : "yok"}
+                  </p>
+                  <div className="flex gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setMenu({ ...menu, mode: "tag" })}
+                      className="flex-1 rounded-md bg-stone-900 px-2 py-1.5 font-semibold text-white dark:bg-stone-100 dark:text-stone-900"
+                    >
+                      🏷 Etiketi değiştir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenu(null);
+                        if (window.confirm("Bu vurgu silinsin mi?")) void removeHighlight(h.id);
+                      }}
+                      className="rounded-md border border-rose-400/60 px-3 py-1.5 font-semibold text-rose-600 hover:bg-rose-500/10"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-stone-900 px-4 py-2 text-xs font-medium text-white shadow-lg">
@@ -628,6 +650,9 @@ function PdfPage({
   scale,
   size: base,
   flashId,
+  hoverId,
+  onHover,
+  onPickHighlight,
   highlights,
 }: {
   doc: PDFDocumentProxy;
@@ -636,6 +661,9 @@ function PdfPage({
   scale: number;
   size: { w: number; h: number };
   flashId: string | null;
+  hoverId: string | null;
+  onHover: (id: string | null) => void;
+  onPickHighlight: (id: string, x: number, y: number) => void;
   highlights: PdfHighlight[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -701,9 +729,32 @@ function PdfPage({
     };
   }, [visible, doc, pdfjs, pageNumber, scale]);
 
+  /** Topmost highlight under the pointer (the overlay itself ignores events). */
+  function hitAt(e: React.MouseEvent): PdfHighlight | null {
+    const box = e.currentTarget.getBoundingClientRect();
+    const fx = (e.clientX - box.left) / box.width;
+    const fy = (e.clientY - box.top) / box.height;
+    for (let i = highlights.length - 1; i >= 0; i--) {
+      if (highlights[i].rects.some((r) => fx >= r.x && fx <= r.x + r.w && fy >= r.y && fy <= r.y + r.h)) {
+        return highlights[i];
+      }
+    }
+    return null;
+  }
+
   return (
     <div
       ref={wrapRef}
+      onMouseMove={(e) => {
+        if (e.buttons) return; // dragging a selection
+        const id = hitAt(e)?.id ?? null;
+        if (id !== hoverId) onHover(id);
+      }}
+      onMouseLeave={() => hoverId && onHover(null)}
+      onClick={(e) => {
+        const h = hitAt(e);
+        if (h && window.getSelection()?.isCollapsed) onPickHighlight(h.id, e.clientX, e.clientY);
+      }}
       data-pdf-page={pageNumber}
       className="relative shrink-0 bg-white shadow-md"
       style={{ width: size.w, height: size.h }}
@@ -724,13 +775,18 @@ function PdfPage({
                 height: `${r.h * 100}%`,
                 background: h.color,
                 mixBlendMode: "multiply",
-                opacity: 0.7,
+                opacity: hoverId === h.id ? 1 : 0.7,
+                outline: hoverId === h.id ? "2px solid rgba(217,119,6,0.9)" : "none",
+                transition: "opacity 120ms",
               }}
             />
           )),
         )}
       </div>
-      <div ref={textRef} className="textLayer absolute inset-0" />
+      <div
+        ref={textRef}
+        className={`textLayer absolute inset-0 ${hoverId && highlights.some((h) => h.id === hoverId) ? "[&_span]:!cursor-pointer" : ""}`}
+      />
       <span className="pointer-events-none absolute bottom-1 right-2 text-[10px] text-stone-400">
         {pageNumber}
       </span>
