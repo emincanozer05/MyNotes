@@ -57,7 +57,7 @@ export default async function PrintArticlePage({
       <div className="a4-sheet">
         <header className="border-b-2 border-stone-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-            NoteFlow — Makale Not Föyü
+            NOTE — Makale Not Föyü
           </p>
           <h1 className="mt-2 text-xl font-bold leading-snug">
             {article.title}
@@ -138,7 +138,7 @@ export default async function PrintArticlePage({
         )}
 
         <footer className="mt-8 border-t border-stone-300 pt-2 text-xs text-stone-400">
-          {new Date().toLocaleDateString("tr-TR")} · NoteFlow
+          {new Date().toLocaleDateString("tr-TR")} · NOTE
         </footer>
       </div>
     </div>

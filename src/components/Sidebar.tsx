@@ -63,16 +63,10 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             href="/"
             className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-1)] text-sm font-black text-white">
-              N
-            </span>
-            <span className="flex flex-col leading-none">
-              <span className="text-lg font-extrabold tracking-tight">
-                NoteFlow
-              </span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-                S&amp;C Hub
-              </span>
+            {/* Wordmark logo (same as the app icon), drawn as text so it
+                follows the light/dark theme. */}
+            <span className="pl-1 text-xl font-normal leading-none tracking-[0.32em]">
+              NOTE
             </span>
           </Link>
           <button
