@@ -9,6 +9,7 @@ import {
 } from "@/app/(app)/tagsActions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel, normalizeCategory } from "@/lib/categories";
+import { applyGroupTranslation, groupTextNodes, joinGroupText } from "@/lib/translateGroups";
 
 type Accent = "amber" | "lime";
 
@@ -231,13 +232,16 @@ export function RichTextEditor({
       return;
     }
 
+    // Fragments of one sentence (pasted PDF lines) are translated together.
+    const groups = groupTextNodes(nodes);
+
     setEngBusy(true);
     setEngErr(null);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: nodes.map((n) => n.data), target }),
+        body: JSON.stringify({ texts: groups.map(joinGroupText), target }),
       });
       const data = (await res.json()) as {
         translations?: string[];
@@ -248,14 +252,9 @@ export function RichTextEditor({
         setEngErr(data.error ?? "Çeviri alınamadı.");
         return;
       }
-      nodes.forEach((n, i) => {
+      groups.forEach((group, i) => {
         const t = data.translations![i];
-        if (typeof t === "string" && t.trim()) {
-          // Keep the node's original edge whitespace so words don't fuse.
-          const lead = n.data.match(/^\s*/)?.[0] ?? "";
-          const trail = n.data.match(/\s*$/)?.[0] ?? "";
-          n.data = lead + t.trim() + trail;
-        }
+        if (typeof t === "string" && t.trim()) applyGroupTranslation(group, t);
       });
       setEngHtml(clone.innerHTML);
     } catch {
