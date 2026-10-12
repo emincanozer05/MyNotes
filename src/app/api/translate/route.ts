@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { geminiKey, geminiModel } from "@/lib/gemini";
 
 /**
  * POST /api/translate
@@ -12,6 +13,8 @@ import { createClient } from "@/lib/supabase/server";
  *   and formatting, only the words swapped to the target language.
  *
  * Providers are tried in order and the first one that answers wins:
+ *   0. Google Gemini (GEMINI_API_KEY / GOOGLE_API_KEY, model via GEMINI_MODEL) —
+ *      context-aware, so sentences keep their meaning. Skipped without a key.
  *   1. Google's key-free endpoint (fast, free) — but it answers 429 to
  *      datacenter IPs, which is what silently broke title translations.
  *   2. MyMemory's key-free API — modest limits, good enough for titles.
@@ -77,6 +80,68 @@ async function myMemoryTranslate(
   }
 }
 
+/** Google Gemini — context-aware batch translation with strict 1:1 alignment.
+ *  Null when no key is configured or the call fails, so the caller falls back. */
+async function geminiTranslate(
+  texts: string[],
+  target: string,
+): Promise<string[] | null> {
+  const key = geminiKey();
+  if (!key || texts.length === 0) return null;
+  const language = LANGUAGE_NAMES[target] ?? target;
+  const model = geminiModel();
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  `You are a translation engine for a strength & conditioning / sports-science study platform. ` +
+                  `Translate every item of the JSON array you receive into natural, fluent ${language}. ` +
+                  "Translate by meaning, not word by word: each item is a full sentence or passage, so keep its logic intact. " +
+                  "Keep established scientific terminology and abbreviations (e.g. RPE, 1RM, RIR) as they are used in the field. " +
+                  "Rejoin words split by end-of-line hyphens. Do not add commentary, notes or quotes. " +
+                  "Return a JSON array of strings with exactly the same number of items, in the same order.",
+              },
+            ],
+          },
+          contents: [{ role: "user", parts: [{ text: JSON.stringify(texts) }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+            responseSchema: { type: "ARRAY", items: { type: "STRING" } },
+            // 2.5 Flash "thinks" by default, which only adds latency here.
+            ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+          },
+        }),
+        signal: AbortSignal.timeout(45_000),
+      },
+    );
+    if (!res.ok) {
+      console.warn(`[translate] Gemini HTTP ${res.status}`);
+      return null;
+    }
+    const data = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const raw = (data.candidates?.[0]?.content?.parts ?? [])
+      .map((p) => p.text ?? "")
+      .join("");
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length !== texts.length) return null;
+    return parsed.map((t, i) => (typeof t === "string" && t.trim() ? t : texts[i]));
+  } catch (e) {
+    console.warn("[translate] Gemini failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
 /** Anthropic API — batch translation with strict 1:1 alignment, used as the
  *  dependable fallback when the key-free endpoints refuse. */
 async function claudeTranslate(
@@ -123,6 +188,8 @@ async function translateOne(
   text: string,
   target: string,
 ): Promise<string | null> {
+  const gemini = await geminiTranslate([text.slice(0, 5000)], target);
+  if (gemini) return gemini[0];
   const google = await googleTranslate(text.slice(0, 5000), target);
   if (google !== null) return google;
   const mymemory = await myMemoryTranslate(text, target);
@@ -131,9 +198,12 @@ async function translateOne(
   return claude?.[0] ?? null;
 }
 
-/** Translates a batch keeping 1:1 alignment via newline separators; falls
- *  back to Claude (also aligned) and then to per-item calls. */
+/** Translates a batch keeping 1:1 alignment: Gemini first, then newline-joined
+ *  Google, then Claude (also aligned), then per-item calls. */
 async function translateAligned(texts: string[], target: string): Promise<string[]> {
+  const viaGemini = await geminiTranslate(texts, target);
+  if (viaGemini) return viaGemini.map((p) => p.trim());
+
   const joined = texts.join("\n");
   const res = await googleTranslate(joined, target);
   if (res !== null) {

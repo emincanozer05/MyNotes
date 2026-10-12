@@ -13,6 +13,7 @@ import {
   type ExplainMode,
   type ExplainRequest,
 } from "@/lib/explain";
+import { geminiKey, geminiModel } from "@/lib/gemini";
 
 /**
  * POST /api/explain — "Açıkla" for selected text (RemNote-style AI Explain).
@@ -27,7 +28,6 @@ import {
  */
 
 const MODEL = "claude-opus-5-5";
-const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
 
 type Provider = "gemini" | "anthropic";
 
@@ -39,12 +39,6 @@ function pickProvider(): Provider {
   const forced = process.env.EXPLAIN_PROVIDER?.toLowerCase();
   if (forced === "gemini" || forced === "anthropic") return forced;
   return geminiKey() ? "gemini" : "anthropic";
-}
-
-function geminiKey(): string | undefined {
-  // Pasted values often carry stray whitespace or wrapping quotes.
-  const raw = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-  return raw.trim().replace(/^["']|["']$/g, "") || undefined;
 }
 
 const SYSTEM_PROMPT = `You explain passages that a reader has selected on a personal study platform for strength & conditioning and sports science (research articles, book summaries and the reader's own notes). Write every explanation in Turkish. The response is latency-sensitive: begin your visible answer immediately.
@@ -166,7 +160,7 @@ async function* geminiStream(
   req: ExplainRequest,
   signal: AbortSignal,
 ): AsyncGenerator<string, string> {
-  const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const model = geminiModel();
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
     {
@@ -410,7 +404,7 @@ export async function GET() {
     provider: pickProvider(),
     geminiKeyPresent: Boolean(key),
     geminiKeyLength: key?.length ?? 0,
-    geminiModel: process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL,
+    geminiModel: geminiModel(),
     anthropicKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY),
     explainProviderEnv: process.env.EXPLAIN_PROVIDER ?? null,
     vercelEnv: process.env.VERCEL_ENV ?? null,

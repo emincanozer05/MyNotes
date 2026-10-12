@@ -88,6 +88,13 @@ aynı şemayı CHECK kısıtları olmadan, idempotent olarak kurar (0008'i 0010'
 sonra çalıştırmak özel kategorileri bozar — onun yerine 0013 kullanılır).
 Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
 
+10. ✅ Çeviri (`/api/translate`: Literatür başlıkları, not editörü "Türkçeye çevir"/
+   "Eng", PDF görüntüleyici "Türkçe"): `GEMINI_API_KEY` (veya `GOOGLE_API_KEY`)
+   tanımlıysa önce Google Gemini ile (`GEMINI_MODEL`, varsayılan
+   `gemini-2.5-flash`), anahtar yoksa ya da çağrı başarısızsa sırayla Google
+   gtx → MyMemory → Anthropic ile çevrilir. Ortak anahtar/model okuma
+   `src/lib/gemini.ts`'te (Açıkla ile paylaşılır).
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS
