@@ -39,10 +39,17 @@ export function PdfViewer({
   articleId,
   title,
   initialHighlights,
+  tagSuggestions,
+  initialPage,
+  initialHighlightId,
 }: {
   articleId: string;
   title: string;
   initialHighlights: PdfHighlight[];
+  tagSuggestions: { name: string; color: string | null }[];
+  /** Deep link from a post-it's "Kaynağa git": page (and highlight) to land on. */
+  initialPage: number | null;
+  initialHighlightId: string | null;
 }) {
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [pdfjs, setPdfjs] = useState<PdfJs | null>(null);
@@ -52,8 +59,13 @@ export function PdfViewer({
   const [pending, setPending] = useState<Pending | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tagging, setTagging] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [flashId, setFlashId] = useState<string | null>(initialHighlightId);
+  const [pageSize, setPageSize] = useState({ w: 612, h: 792 });
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = useCallback((msg: string) => {
@@ -75,7 +87,9 @@ export function PdfViewer({
         const pdf = await loading.promise;
         if (cancelled) return;
         const first = await pdf.getPage(1);
-        const w = first.getViewport({ scale: 1 }).width;
+        const vp = first.getViewport({ scale: 1 });
+        const w = vp.width;
+        setPageSize({ w: vp.width, h: vp.height });
         const avail = (containerRef.current?.clientWidth ?? 800) - 8;
         setScale(Math.max(0.5, Math.min(2, avail / w)));
         setDownloadUrl(res.url);
@@ -94,6 +108,8 @@ export function PdfViewer({
   // Turn a finished text selection into a pending action (floating toolbar).
   useEffect(() => {
     function onSelectionEnd() {
+      // Typing a tag in the toolbar must not discard the pending selection.
+      if (toolbarRef.current?.contains(document.activeElement)) return;
       const sel = window.getSelection();
       const root = containerRef.current;
       if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !root) {
@@ -143,7 +159,8 @@ export function PdfViewer({
       const left = Math.min(Math.max(8, bounds.left), window.innerWidth - 340);
       setPending({ page: Number(pageEl.dataset.pdfPage), text, rects, top, left });
     }
-    function onUp() {
+    function onUp(e: Event) {
+      if (toolbarRef.current?.contains(e.target as Node)) return;
       // Let the browser finalise the selection first.
       setTimeout(onSelectionEnd, 10);
     }
@@ -157,9 +174,17 @@ export function PdfViewer({
     };
   }, []);
 
+  // Panel post-it: asks for the tag(s) first.
+  function askTagFor(h: PdfHighlight) {
+    const tags = window.prompt("Post-it etiketi (boşlukla ayır):");
+    if (tags?.trim()) void postit(h.text, h.page, tags, h.id);
+  }
+
   function clearSelection() {
     window.getSelection()?.removeAllRanges();
     setPending(null);
+    setTagging(false);
+    setTagInput("");
   }
 
   async function highlight(color: string) {
@@ -180,10 +205,34 @@ export function PdfViewer({
     }
   }
 
-  async function postit(text: string, page: number) {
+  /** Saves a post-it under the given tag(s); `highlightId` links it to a highlight. */
+  async function postit(text: string, page: number, tags: string, highlightId?: string) {
     flash("Post-it kaydediliyor…");
-    const res = await savePdfPostit({ articleId, text, page });
+    const res = await savePdfPostit({ articleId, text, page, tags, highlightId });
     flash(res.error ? `Kaydedilemedi: ${res.error}` : "Post-it panosuna kaydedildi 📌");
+  }
+
+  /** Highlights the pending selection and files it as a tagged post-it. */
+  async function saveTaggedPostit() {
+    if (!pending || !tagInput.trim()) return;
+    const p = pending;
+    const tags = tagInput;
+    const h: PdfHighlight = {
+      id: crypto.randomUUID(),
+      page: p.page,
+      text: p.text,
+      color: PDF_HIGHLIGHT_COLORS[0],
+      rects: p.rects,
+    };
+    clearSelection();
+    setHighlights((prev) => [...prev, h]);
+    const saved = await addPdfHighlight(articleId, h);
+    if (saved.error) {
+      setHighlights((prev) => prev.filter((x) => x.id !== h.id));
+      await postit(p.text, p.page, tags);
+      return;
+    }
+    await postit(p.text, p.page, tags, h.id);
   }
 
   async function removeHighlight(id: string) {
@@ -196,18 +245,39 @@ export function PdfViewer({
     }
   }
 
-  function goToHighlight(h: PdfHighlight) {
-    const el = containerRef.current?.querySelector<HTMLElement>(
-      `[data-pdf-page="${h.page}"]`,
-    );
+  const scrollToSpot = useCallback((page: number, y: number) => {
+    const el = containerRef.current?.querySelector<HTMLElement>(`[data-pdf-page="${page}"]`);
     if (!el) return;
-    const pageBox = el.getBoundingClientRect();
-    const y = h.rects[0]?.y ?? 0;
-    el.closest("main")?.scrollBy({
-      top: pageBox.top - 120 + y * pageBox.height,
-      behavior: "smooth",
-    });
+    const box = el.getBoundingClientRect();
+    el.closest("main")?.scrollBy({ top: box.top - 120 + y * box.height });
+  }, []);
+
+  function goToHighlight(h: PdfHighlight) {
+    scrollToSpot(h.page, h.rects[0]?.y ?? 0);
   }
+
+  // Deep link: land on the page/highlight. Pages above may still be sizing
+  // themselves as they render, so re-aim a few times until layout settles.
+  useEffect(() => {
+    if (!doc || scale <= 0 || !initialPage) return;
+    const target = initialHighlightId
+      ? initialHighlights.find((h) => h.id === initialHighlightId)
+      : undefined;
+    const page = target?.page ?? Math.min(initialPage, doc.numPages);
+    const y = target?.rects[0]?.y ?? 0;
+    let tries = 0;
+    const timer = setInterval(() => {
+      scrollToSpot(page, y);
+      if (++tries >= 8) clearInterval(timer);
+    }, 250);
+    const clear = setTimeout(() => setFlashId(null), 4500);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(clear);
+    };
+    // Run once per loaded document, not on every highlight change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc, scale > 0]);
 
   const sorted = [...highlights].sort(
     (a, b) => a.page - b.page || (a.rects[0]?.y ?? 0) - (b.rects[0]?.y ?? 0),
@@ -287,7 +357,8 @@ export function PdfViewer({
                 pdfjs={pdfjs}
                 pageNumber={i + 1}
                 scale={scale}
-                estimate={612}
+                size={pageSize}
+                flashId={flashId}
                 highlights={highlights.filter((h) => h.page === i + 1)}
               />
             ))}
@@ -322,7 +393,7 @@ export function PdfViewer({
                     <span className="mt-1 line-clamp-4 block">{h.text}</span>
                   </button>
                   <div className="mt-1.5 flex gap-3 text-[11px] font-semibold">
-                    <button type="button" onClick={() => postit(h.text, h.page)}>
+                    <button type="button" onClick={() => askTagFor(h)}>
                       📌 Post-it
                     </button>
                     <button
@@ -354,7 +425,7 @@ export function PdfViewer({
                 {h.text}
               </button>
               <div className="mt-1.5 flex gap-3 font-semibold">
-                <button type="button" onClick={() => postit(h.text, h.page)}>
+                <button type="button" onClick={() => askTagFor(h)}>
                   📌 Post-it
                 </button>
                 <button
@@ -374,36 +445,75 @@ export function PdfViewer({
 
       {pending && (
         <div
+          ref={toolbarRef}
           data-no-explain
-          // Keep the text selected while the buttons are pressed.
-          onMouseDown={(e) => e.preventDefault()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="glass-card fixed z-40 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-lg"
+          // Keep the text selected while buttons are pressed (inputs stay usable).
+          onMouseDown={(e) => {
+            if (!(e.target as Element).closest("input")) e.preventDefault();
+          }}
+          className="glass-card fixed z-40 flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-1.5 rounded-2xl px-2.5 py-1.5 shadow-lg"
           style={{ top: pending.top, left: pending.left }}
         >
-          {PDF_HIGHLIGHT_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              title="Fosforla"
-              aria-label="Fosforla"
-              onClick={() => highlight(c)}
-              className="h-6 w-6 rounded-full border border-black/20 transition-transform hover:scale-110"
-              style={{ background: c }}
-            />
-          ))}
-          <span className="mx-1 h-5 w-px bg-stone-400/40" />
-          <button
-            type="button"
-            onClick={() => {
-              const p = pending;
-              clearSelection();
-              void postit(p.text, p.page);
-            }}
-            className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
-          >
-            📌 Post-it
-          </button>
+          {!tagging ? (
+            <>
+              {PDF_HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  title="Fosforla"
+                  aria-label="Fosforla"
+                  onClick={() => highlight(c)}
+                  className="h-6 w-6 rounded-full border border-black/20 transition-transform hover:scale-110"
+                  style={{ background: c }}
+                />
+              ))}
+              <span className="mx-1 h-5 w-px bg-stone-400/40" />
+              <button
+                type="button"
+                onClick={() => setTagging(true)}
+                className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
+              >
+                📌 Post-it
+              </button>
+            </>
+          ) : (
+            <form
+              className="flex flex-wrap items-center gap-1.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveTaggedPostit();
+              }}
+            >
+              <input
+                autoFocus
+                list="pdf-tag-suggestions"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="etiket (ör. squat)"
+                className="w-40 rounded-full border border-[var(--border)] bg-transparent px-3 py-1 text-xs outline-none"
+              />
+              <datalist id="pdf-tag-suggestions">
+                {tagSuggestions.map((t) => (
+                  <option key={t.name} value={t.name} />
+                ))}
+              </datalist>
+              <button
+                type="submit"
+                disabled={!tagInput.trim()}
+                className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white disabled:opacity-40"
+              >
+                Kaydet
+              </button>
+              <button
+                type="button"
+                onClick={() => setTagging(false)}
+                className="px-1 text-xs text-stone-500"
+                aria-label="Geri"
+              >
+                ✕
+              </button>
+            </form>
+          )}
         </div>
       )}
 
@@ -422,21 +532,23 @@ function PdfPage({
   pdfjs,
   pageNumber,
   scale,
-  estimate,
+  size: base,
+  flashId,
   highlights,
 }: {
   doc: PDFDocumentProxy;
   pdfjs: PdfJs;
   pageNumber: number;
   scale: number;
-  estimate: number;
+  size: { w: number; h: number };
+  flashId: string | null;
   highlights: PdfHighlight[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const [size, setSize] = useState({ w: estimate * scale, h: estimate * scale * 1.414 });
+  const [size, setSize] = useState({ w: base.w * scale, h: base.h * scale });
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -509,7 +621,8 @@ function PdfPage({
           h.rects.map((r, i) => (
             <span
               key={`${h.id}-${i}`}
-              className="absolute"
+              data-hl-id={h.id}
+              className={`absolute ${flashId === h.id ? "tag-mark-flash" : ""}`}
               style={{
                 left: `${r.x * 100}%`,
                 top: `${r.y * 100}%`,

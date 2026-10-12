@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { pastelize } from "@/lib/color";
 import { extractTaggedPassages } from "@/lib/wiki";
 import { normalizeCategory } from "@/lib/categories";
+import { pdfDeepLink } from "@/lib/articlePdf";
 import { getCategories } from "../categoriesActions";
 import type { PostitData } from "./PostitCard";
 import { NotesBoard, type PassageItem } from "./NotesBoard";
@@ -127,7 +128,12 @@ export default async function NotesPage({
       source_title: n.source_title ?? "",
       source_author: n.source_author ?? "",
       source_year: n.source_year,
-      sourceHref: n.source_id && kind ? sourceHref(kind, n.source_id) : null,
+      // Post-its saved from the PDF reader jump straight to that spot in it.
+      sourceHref:
+        n.source_id && kind
+          ? (kind === "article" ? pdfDeepLink(n.source_id, n.content ?? "") : null) ??
+            sourceHref(kind, n.source_id)
+          : null,
       tags: tags.map((t) => ({ name: t.name })),
       cls: clsFor(n.id),
       tilt: tiltFor(n.id),
