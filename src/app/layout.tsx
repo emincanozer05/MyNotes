@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -29,9 +29,19 @@ const gravity = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "NoteFlow",
+  title: "NOTE",
+  applicationName: "NOTE",
+  // Home-screen install on iOS (Android reads app/manifest.ts).
+  appleWebApp: { capable: true, title: "NOTE", statusBarStyle: "default" },
   description:
     "Literatür takibi, bilimsel not alma ve kategorili bilgi yönetimi platformu",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#171716" },
+  ],
 };
 
 export default function RootLayout({
