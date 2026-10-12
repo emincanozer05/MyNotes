@@ -32,12 +32,16 @@ export const metadata: Metadata = {
   title: "NOTE",
   applicationName: "NOTE",
   // Home-screen install on iOS (Android reads app/manifest.ts).
-  appleWebApp: { capable: true, title: "NOTE", statusBarStyle: "default" },
+  // "black-translucent": the page draws under the iOS status bar, so the
+  // bar takes the app header's colour instead of a white strip.
+  appleWebApp: { capable: true, title: "NOTE", statusBarStyle: "black-translucent" },
   description:
     "Literatür takibi, bilimsel not alma ve kategorili bilgi yönetimi platformu",
 };
 
 export const viewport: Viewport = {
+  // Lay out under the status bar / notch; headers pad by safe-area-inset-top.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
     { media: "(prefers-color-scheme: dark)", color: "#171716" },

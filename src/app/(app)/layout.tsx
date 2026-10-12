@@ -20,7 +20,7 @@ export default async function AppLayout({
     <div className="flex flex-1">
       <Sidebar userEmail={user.email ?? ""} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_86%,transparent)] py-2.5 pl-14 pr-4 backdrop-blur-md md:px-6">
+        <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_86%,transparent)] pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] pl-14 pr-4 backdrop-blur-md md:px-6">
           <div className="flex items-center gap-3">
             <BackButton />
             <span className="hidden text-xs font-medium text-[var(--muted)] sm:inline">

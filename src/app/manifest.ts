@@ -9,8 +9,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    // Same as the app's (dark) background, so the splash screen, status bar
+    // and icon all match.
+    background_color: "#171716",
+    theme_color: "#171716",
     lang: "tr",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

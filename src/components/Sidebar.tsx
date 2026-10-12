@@ -41,7 +41,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menüyü aç"
-        className="no-print fixed left-3 top-2 z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] md:hidden"
+        className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] md:hidden"
       >
         ☰
       </button>
@@ -58,7 +58,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
           open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-5">
+        <div className="flex items-center justify-between px-4 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
           <Link
             href="/"
             className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
