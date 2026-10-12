@@ -11,6 +11,7 @@ import {
 import { addPdfHighlight, deletePdfHighlight, getArticlePdfUrl } from "../../actions";
 import { getPdfPostitTags, retagPdfPostit, savePdfPostit } from "../../../notes/actions";
 import type { UserTag } from "../../../tagsActions";
+import { normalizePdfSelection } from "@/lib/pdfText";
 import { TagPicker } from "./TagPicker";
 
 type PdfJs = typeof import("pdfjs-dist");
@@ -149,7 +150,7 @@ export function PdfViewer({
         setPending(null);
         return;
       }
-      const text = sel.toString().replace(/\s+/g, " ").trim();
+      const text = normalizePdfSelection(sel.toString());
       if (!text) {
         setPending(null);
         return;
@@ -771,6 +772,7 @@ function PdfPage({
     let cancelled = false;
     let renderTask: { cancel: () => void; promise: Promise<unknown> } | null = null;
     let textLayer: { cancel: () => void } | null = null;
+    const listeners = new AbortController();
     (async () => {
       const page = await doc.getPage(pageNumber);
       if (cancelled) return;
@@ -804,9 +806,39 @@ function PdfPage({
       } catch {
         /* cancelled by a newer render */
       }
+      if (cancelled) return;
+
+      // Selection guard (what pdf.js's own viewer adds): while a selection is
+      // active, a block covers the whole text layer so dragging across the gaps
+      // between lines and paragraphs never drops the selection.
+      const end = document.createElement("div");
+      end.className = "endOfContent";
+      textDiv.append(end);
+      const reset = () => {
+        textDiv.append(end);
+        textDiv.classList.remove("selecting");
+      };
+      const { signal } = listeners;
+      textDiv.addEventListener("mousedown", () => textDiv.classList.add("selecting"), { signal });
+      document.addEventListener("pointerup", reset, { signal });
+      window.addEventListener("blur", reset, { signal });
+      document.addEventListener(
+        "selectionchange",
+        () => {
+          const sel = document.getSelection();
+          let hit = false;
+          for (let i = 0; sel && i < sel.rangeCount; i++) {
+            if (sel.getRangeAt(i).intersectsNode(textDiv)) hit = true;
+          }
+          if (hit) textDiv.classList.add("selecting");
+          else reset();
+        },
+        { signal },
+      );
     })();
     return () => {
       cancelled = true;
+      listeners.abort();
       renderTask?.cancel();
       textLayer?.cancel();
     };
