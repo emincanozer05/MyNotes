@@ -588,47 +588,50 @@ export function PdfViewer({
           }}
         >
           {!tagging ? (
-            <>
-              {PDF_HIGHLIGHT_COLORS.map((c) => (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {PDF_HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title="Fosforla"
+                    aria-label="Fosforla"
+                    onClick={() => highlight(c)}
+                    className="h-6 w-6 rounded-full border border-black/20 transition-transform hover:scale-110"
+                    style={{ background: c }}
+                  />
+                ))}
+                <span className="mx-1 h-5 w-px bg-stone-400/40" />
                 <button
-                  key={c}
                   type="button"
-                  title="Fosforla"
-                  aria-label="Fosforla"
-                  onClick={() => highlight(c)}
-                  className="h-6 w-6 rounded-full border border-black/20 transition-transform hover:scale-110"
-                  style={{ background: c }}
-                />
-              ))}
-              <span className="mx-1 h-5 w-px bg-stone-400/40" />
-              <button
-                type="button"
-                onClick={() => setTagging(true)}
-                className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
-              >
-                📌 Post-it
-              </button>
-              <button
-                type="button"
-                onClick={() => void translatePending()}
-                title="Seçili İngilizce metni Türkçeye çevir, önizle ve Türkçe post-it olarak kaydet"
-                className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
-              >
-                🇹🇷 Türkçe
-              </button>
+                  onClick={() => setTagging(true)}
+                  className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
+                >
+                  📌 Post-it
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void translatePending()}
+                  title="Seçili İngilizce metni Türkçeye çevir, önizle ve Türkçe post-it olarak kaydet"
+                  className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
+                >
+                  🇹🇷 Türkçe
+                </button>
+              </div>
+              {/* w-0 + min-w-full: the preview fills the button row's width but never widens it. */}
               {trView && (
-                <div className="basis-full space-y-1.5 border-t border-stone-400/30 pt-1.5 text-xs">
+                <div className="w-0 min-w-full space-y-1.5 border-t border-stone-400/30 pt-1.5 text-xs">
                   {trView.busy ? (
                     <p className="text-stone-500">Çevriliyor…</p>
                   ) : trView.err ? (
                     <p className="text-rose-600">{trView.err}</p>
                   ) : (
                     <>
-                      <p className="max-h-40 w-72 max-w-full overflow-y-auto whitespace-pre-wrap">
+                      <p className="max-h-40 overflow-y-auto whitespace-pre-wrap">
                         {trView.text}
                       </p>
                       {trView.info && (
-                        <p className="w-72 max-w-full text-[10px] text-stone-500">{trView.info}</p>
+                        <p className="text-[10px] text-stone-500">{trView.info}</p>
                       )}
                       <div className="flex items-center gap-1.5">
                         <button
@@ -653,7 +656,7 @@ export function PdfViewer({
                   )}
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <TagPicker
               tags={tags}
