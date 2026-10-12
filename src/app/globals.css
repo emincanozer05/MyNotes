@@ -107,6 +107,35 @@ h2 {
     transform: none;
   }
 }
+/* "Açıkla" selection button: springs in with a one-off soft ring. */
+.explain-pop {
+  transform-origin: center bottom;
+  animation:
+    explain-pop 0.34s cubic-bezier(0.22, 1.2, 0.36, 1) both,
+    explain-ring 0.8s ease-out 0.12s;
+}
+@keyframes explain-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.07);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes explain-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

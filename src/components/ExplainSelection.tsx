@@ -573,7 +573,7 @@ export function ExplainSelection({ endpoint = "/api/explain" }: { endpoint?: str
             void explain(snap, "default");
           }}
           style={{ position: "fixed", top: 0, left: 0, visibility: "hidden" }}
-          className="no-print z-[110] rounded-md bg-[var(--foreground)] px-2.5 py-1 text-xs font-medium text-[var(--surface)] shadow-[var(--shadow-2)] hover:opacity-90"
+          className="explain-pop no-print z-[110] rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow-[var(--shadow-2)] transition-colors hover:bg-blue-700"
         >
           Açıkla
         </button>
