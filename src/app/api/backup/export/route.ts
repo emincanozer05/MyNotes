@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { listGlossary } from "@/lib/glossaryStore";
 
 /** Tables that hold the user's data (RLS scopes every query to the user). */
 const TABLES = [
@@ -11,7 +12,6 @@ const TABLES = [
   "flashcards",
   "voice_notes",
   "contacts",
-  "glossary_entries",
 ] as const;
 
 /**
@@ -33,6 +33,8 @@ export async function GET() {
     const { data } = await supabase.from(t).select("*");
     tables[t] = data ?? [];
   }
+  // Glossary may live in the table (0015) or in a storage snapshot.
+  tables.glossary_entries = await listGlossary(supabase, user.id).catch(() => []);
 
   const payload = {
     app: "noteflow",

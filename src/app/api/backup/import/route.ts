@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { importGlossary } from "@/lib/glossaryStore";
 
 // Foreign-key-safe insert order + the conflict target used to upsert (restore
 // without creating duplicates). user_id is always forced to the current user
@@ -14,7 +15,6 @@ const IMPORT_ORDER: { table: string; conflict: string }[] = [
   { table: "flashcards", conflict: "id" },
   { table: "voice_notes", conflict: "id" },
   { table: "contacts", conflict: "id" },
-  { table: "glossary_entries", conflict: "id" },
 ];
 
 /** POST /api/backup/import — restores rows from an exported backup JSON. */
@@ -54,6 +54,14 @@ export async function POST(request: Request) {
       .from(table)
       .upsert(withUser, { onConflict: conflict });
     result[table] = error ? `hata: ${error.message}` : rows.length;
+  }
+
+  // Glossary goes through its store (table or storage snapshot fallback).
+  const glossaryRows = Array.isArray(tables.glossary_entries) ? tables.glossary_entries : [];
+  try {
+    result.glossary_entries = await importGlossary(supabase, user.id, glossaryRows);
+  } catch (e) {
+    result.glossary_entries = `hata: ${e instanceof Error ? e.message : "bilinmeyen"}`;
   }
 
   revalidatePath("/backup");
