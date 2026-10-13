@@ -189,6 +189,39 @@ export function RichTextEditor({
     void getUserTags(tagCategory).then(setTags);
   }, [tagCategory]);
 
+  // Selections made without a mouse (touch handles, Shift+arrows) never fire
+  // `mouseup`; follow `selectionchange` (debounced, ignored mid-drag) so the
+  // toolbar opens for them and always reflects the current selection.
+  const selectionUpRef = useRef<() => void>(() => {});
+  const lastSelTextRef = useRef("");
+  useEffect(() => {
+    let pointerDown = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onDown = () => {
+      pointerDown = true;
+    };
+    const onUp = () => {
+      pointerDown = false;
+    };
+    const onChange = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!pointerDown) selectionUpRef.current();
+      }, 350);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("pointerup", onUp, true);
+    document.addEventListener("pointercancel", onUp, true);
+    document.addEventListener("selectionchange", onChange);
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
+      document.removeEventListener("pointercancel", onUp, true);
+      document.removeEventListener("selectionchange", onChange);
+    };
+  }, []);
+
   // Close the floating tag UI on outside clicks.
   useEffect(() => {
     if (!floating) return;
@@ -570,18 +603,42 @@ export function RichTextEditor({
     return { top, left };
   }
 
-  function handleSelectionUp() {
+  /**
+   * The current selection's text when it lies inside this editor (else null).
+   * `Selection.toString()` keeps the line breaks between paragraphs/list items
+   * (unlike `Range.toString()`); non-breaking spaces and runs of blank lines
+   * are normalised so exactly the visible selected text is kept.
+   */
+  function editorSelectionText(): { text: string; range: Range } | null {
     const sel = window.getSelection();
-    const text = sel?.toString().trim() ?? "";
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed || text.length < 2) return;
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
     const range = sel.getRangeAt(0);
-    if (!ref.current?.contains(range.commonAncestorContainer)) return;
-    const rect = range.getBoundingClientRect();
-    pendingRangeRef.current = range.cloneRange();
-    setPickerOpen(false);
-    setGlossaryState({ kind: "idle" });
-    setFloating({ kind: "select", ...panelPosition(rect), text });
+    if (!ref.current?.contains(range.commonAncestorContainer)) return null;
+    const text = sel
+      .toString()
+      .replace(/\u00a0/g, " ")
+      .replace(/\r\n?/g, "\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    return text.length < 2 ? null : { text, range };
   }
+
+  function handleSelectionUp() {
+    const current = editorSelectionText();
+    if (!current) return;
+    const rect = current.range.getBoundingClientRect();
+    pendingRangeRef.current = current.range.cloneRange();
+    setPickerOpen(false);
+    // A new selection gets a fresh "Sözlüğe Kaydet"; re-reporting the same
+    // selection (e.g. after a format tweak) keeps the "saved" state.
+    if (lastSelTextRef.current !== current.text) setGlossaryState({ kind: "idle" });
+    lastSelTextRef.current = current.text;
+    setFloating({ kind: "select", ...panelPosition(rect), text: current.text });
+  }
+  useEffect(() => {
+    selectionUpRef.current = handleSelectionUp;
+  });
 
   /**
    * Saves the selected text to the "Ne, nedir?" glossary as a definition with
@@ -589,10 +646,13 @@ export function RichTextEditor({
    */
   async function saveSelectionToGlossary() {
     if (floating?.kind !== "select" || glossaryState.kind === "saving") return;
+    // Prefer the live selection: on touch screens / with the keyboard it can be
+    // adjusted after the toolbar opened, so the snapshot may be stale.
+    const text = editorSelectionText()?.text ?? floating.text;
     setGlossaryState({ kind: "saving" });
     try {
       const res = await addGlossaryEntry({
-        definition: floating.text,
+        definition: text,
         sourcePath: window.location.pathname,
       });
       setGlossaryState(

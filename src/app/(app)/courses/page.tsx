@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LinkPendingOverlay } from "@/components/LinkPending";
 import { createClient } from "@/lib/supabase/server";
 import { deleteCourse } from "./actions";
 import { AddCourseModal } from "./AddCourseModal";
@@ -85,7 +86,11 @@ export default async function CoursesPage() {
                   </ConfirmSubmit>
                 </form>
 
-                <Link href={`/courses/${c.id}`} className="block">
+                <Link
+                  href={`/courses/${c.id}`}
+                  className="relative block transition-transform active:scale-[0.98]"
+                >
+                  <LinkPendingOverlay className="" />
                   {c.cover_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
