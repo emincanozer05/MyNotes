@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { LinkPendingOverlay } from "@/components/LinkPending";
 import {
   CATEGORIES,
   categoryLabel,
@@ -128,7 +129,11 @@ export function BookshelfBoard({
                   </ConfirmSubmit>
                 </form>
 
-                <Link href={`/bookshelf/${b.id}`} className="block">
+                <Link
+                  href={`/bookshelf/${b.id}`}
+                  className="relative block transition-transform active:scale-[0.97]"
+                >
+                  <LinkPendingOverlay />
                   {b.cover_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
