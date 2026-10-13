@@ -11,6 +11,7 @@ const TABLES = [
   "flashcards",
   "voice_notes",
   "contacts",
+  "glossary_entries",
 ] as const;
 
 /**

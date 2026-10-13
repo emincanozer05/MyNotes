@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/library", label: "Literatür", icon: "☰" },
   { href: "/notes", label: "Post-it Notlar", icon: "✎" },
   { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
+  { href: "/glossary", label: "Ne, nedir?", icon: "?" },
   { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "❖" },
   { href: "/network", label: "Network Haritası", icon: "◎" },
   { href: "/backup", label: "Yedekleme", icon: "⤓" },
