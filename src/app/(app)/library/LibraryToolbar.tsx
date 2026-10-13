@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
+
 export type SortId = "added" | "year" | "title";
 export type ViewId = "grid" | "list";
 
@@ -42,9 +44,9 @@ export function LibraryToolbar({
       <div className="relative min-w-[200px] flex-1 sm:max-w-sm">
         <span
           aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-stone-400"
+          className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-xs text-stone-400"
         >
-          🔎
+          <Icon name="search" className="h-3.5 w-3.5" />
         </span>
         <input
           type="search"
@@ -93,8 +95,8 @@ export function LibraryToolbar({
         >
           {(
             [
-              { id: "grid", label: "▦ Kart" },
-              { id: "list", label: "☰ Liste" },
+              { id: "grid", label: "Kart", icon: "grid" },
+              { id: "list", label: "Liste", icon: "list" },
             ] as const
           ).map((v) => (
             <button
@@ -102,12 +104,13 @@ export function LibraryToolbar({
               type="button"
               onClick={() => onViewChange(v.id)}
               aria-pressed={view === v.id}
-              className={`px-3 py-1.5 transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
                 view === v.id
                   ? "bg-[var(--accent-soft)] text-[var(--accent-text)]"
                   : "bg-[var(--surface-2)] text-stone-500 hover:text-[var(--foreground)]"
               }`}
             >
+              <Icon name={v.icon} className="h-3.5 w-3.5" />
               {v.label}
             </button>
           ))}

@@ -1,19 +1,25 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
+import { CloseIcon } from "@/components/CloseIcon";
 
 /** "Özeti oku" — opens the saved summary in a centered, blurred-backdrop modal. */
 export function SummaryReadModal({
   html,
   title,
-  label = "📖 Özeti oku",
+  label = (
+    <>
+      <Icon name="book" /> Özeti oku
+    </>
+  ),
   className = "btn-ghost rounded-full px-4 py-2 text-sm font-semibold",
   loadHtml,
 }: {
   html: string;
   title?: string;
-  label?: string;
+  label?: React.ReactNode;
   /** Trigger button styling — callers size it to their surrounding row. */
   className?: string;
   /**
@@ -59,7 +65,7 @@ export function SummaryReadModal({
             aria-label="Kapat"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-stone-400 transition-colors hover:bg-stone-500/10 hover:text-stone-600"
           >
-            ×
+            <CloseIcon size={16} />
           </button>
         </div>
         <div

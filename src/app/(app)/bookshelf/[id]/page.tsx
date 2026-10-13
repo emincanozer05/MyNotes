@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -71,7 +72,7 @@ export default async function BookDetailPage({
         href={`/bookshelf?category=${category}`}
         className="text-sm text-stone-500 hover:text-amber-600"
       >
-        ← Kitap Rafı
+        <Icon name="arrow-left" /> Kitap Rafı
       </Link>
 
       <div className="glass-card flex gap-5 rounded-2xl p-5">
@@ -133,19 +134,14 @@ export default async function BookDetailPage({
         </div>
       </div>
 
-      <div>
-        <h2 className="mb-2 text-lg font-bold">Kitap Notları</h2>
-        <p className="mb-3 text-sm text-stone-500">
-          Her başlık için ayrı bir not tut — yazı tipini, boyutunu ve rengini
-          ayarlayabilir, görsel ekleyebilirsin. Sağ üstten A4 çıktısı alabilirsin.
-        </p>
-        <TitledNotes
-          sourceId={book.id}
-          initialNotes={seedNotes(book.metadata)}
-          printHref={`/print/${book.id}`}
-          tagCategory={category}
-        />
-      </div>
+      <TitledNotes
+        heading="Kitap Notları"
+        description="Her başlık için ayrı bir not tut — yazı tipini, boyutunu ve rengini ayarlayabilir, görsel ekleyebilirsin."
+        sourceId={book.id}
+        initialNotes={seedNotes(book.metadata)}
+        printHref={`/print/${book.id}`}
+        tagCategory={category}
+      />
     </div>
   );
 }

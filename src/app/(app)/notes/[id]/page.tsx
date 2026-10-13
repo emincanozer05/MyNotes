@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -108,7 +109,7 @@ export default async function NoteDetailPage({
         )}
         <p className="mt-4 border-t border-stone-100 dark:border-stone-900 pt-2 text-xs text-stone-400">
           İpucu: <Link href={`/notes/${id}/edit`} className="underline">Düzenle</Link>&apos;de
-          bir pasaj seçince 🏷 Etiket ekle düğmesi çıkar; etiketlediğin
+          bir pasaj seçince <Icon name="tag" /> Etiket ekle düğmesi çıkar; etiketlediğin
           metinlere göre post-it&apos;in rengi de yumuşak bir tona döner.
         </p>
       </div>
@@ -118,7 +119,7 @@ export default async function NoteDetailPage({
       {(outLinks?.length || backLinks?.length) ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-4">
-            <h2 className="text-sm font-semibold">Bağlantılar →</h2>
+            <h2 className="text-sm font-semibold">Bağlantılar <Icon name="arrow-right" /></h2>
             <ul className="mt-2 space-y-1">
               {(outLinks ?? []).map((l) => (
                 <li key={l.to_note}>
@@ -136,7 +137,7 @@ export default async function NoteDetailPage({
             </ul>
           </div>
           <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-4">
-            <h2 className="text-sm font-semibold">← Buraya bağlananlar</h2>
+            <h2 className="text-sm font-semibold"><Icon name="arrow-left" /> Buraya bağlananlar</h2>
             <ul className="mt-2 space-y-1">
               {(backLinks ?? []).map((l) => (
                 <li key={l.from_note}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
@@ -110,7 +111,7 @@ export function TranslatedTitle({
             className="pointer-events-none fixed z-[120] block w-72 max-w-[85vw] rounded-xl border border-amber-500/40 bg-[var(--surface)] p-3 text-xs font-normal not-italic leading-relaxed text-stone-700 shadow-2xl dark:text-stone-200"
           >
             <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              🇹🇷 Türkçe çeviri
+              <Icon name="languages" /> Türkçe çeviri
             </span>
             {loading && !translated ? "Çevriliyor…" : (translated ?? "—")}
           </span>,

@@ -18,6 +18,7 @@ import { ArticleTopicEditor } from "./ArticleTopicEditor";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { IntentLink } from "@/components/IntentLink";
+import { Icon, type IconName } from "@/components/Icon";
 import { MyNoteCard } from "./MyNoteCard";
 import {
   FilterSelect,
@@ -122,7 +123,8 @@ function FeedCard({
             onClick={() => setExpanded((v) => !v)}
             className="mt-1 w-fit text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
           >
-            {expanded ? "Daralt ↑" : "Devamını oku ↓"}
+            {expanded ? "Daralt" : "Devamını oku"}{" "}
+            <Icon name={expanded ? "chevron-up" : "chevron-down"} />
           </button>
         </>
       )}
@@ -134,7 +136,7 @@ function FeedCard({
           rel="noopener noreferrer"
           className="text-xs font-medium text-stone-500 hover:text-amber-600 dark:hover:text-amber-400"
         >
-          {article.doi ? "DOI ↗" : "PubMed ↗"}
+          {article.doi ? "DOI" : "PubMed"} <Icon name="external" />
         </a>
         {isSaved ? (
           <button
@@ -142,7 +144,13 @@ function FeedCard({
             disabled={busy}
             className="btn-ghost rounded-full px-4 py-1.5 text-xs font-semibold text-[var(--muted)] hover:!border-rose-500/40 hover:text-rose-600 disabled:opacity-50"
           >
-            {busy ? "…" : "↩ Geri al"}
+            {busy ? (
+              "…"
+            ) : (
+              <>
+                <Icon name="undo" /> Geri al
+              </>
+            )}
           </button>
         ) : (
           <button
@@ -150,7 +158,13 @@ function FeedCard({
             disabled={busy}
             className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold disabled:opacity-50"
           >
-            {busy ? "Kaydediliyor…" : "★ Kaydet"}
+            {busy ? (
+              "Kaydediliyor…"
+            ) : (
+              <>
+                <Icon name="star" /> Kaydet
+              </>
+            )}
           </button>
         )}
       </div>
@@ -402,10 +416,10 @@ export function LiteratureTabs({
     void handleFetchArticles();
   }, [tab]);
 
-  const tabs: { id: TabId; label: string; icon: string; count?: number }[] = [
-    { id: "feed", label: "Günlük Akış", icon: "📰" },
-    { id: "saved", label: "Kaydedilenler", icon: "★", count: savedList.length },
-    { id: "annotated", label: "Notlarım", icon: "✏️", count: notlarim.length },
+  const tabs: { id: TabId; label: string; icon: IconName; count?: number }[] = [
+    { id: "feed", label: "Günlük Akış", icon: "newspaper" },
+    { id: "saved", label: "Kaydedilenler", icon: "star", count: savedList.length },
+    { id: "annotated", label: "Notlarım", icon: "pencil", count: notlarim.length },
   ];
 
   return (
@@ -423,7 +437,7 @@ export function LiteratureTabs({
                 : "border-transparent text-stone-500 hover:bg-[var(--surface-2)] hover:text-stone-700 dark:hover:text-stone-300"
             }`}
           >
-            <span aria-hidden>{t.icon}</span>
+            <Icon name={t.icon} className="h-4 w-4" />
             {t.label}
             {t.count !== undefined && (
               <span
@@ -456,9 +470,9 @@ export function LiteratureTabs({
               type="submit"
               disabled={!searchInput.trim() || fetching}
               aria-label="Ara"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-xs text-stone-500 transition-colors hover:text-amber-600 disabled:opacity-40 dark:hover:text-amber-400"
+              className="absolute right-1 top-1/2 flex -translate-y-1/2 rounded-full px-2 py-1 text-xs text-stone-500 transition-colors hover:text-amber-600 disabled:opacity-40 dark:hover:text-amber-400"
             >
-              🔍
+              <Icon name="search" className="h-3.5 w-3.5" />
             </button>
           </div>
           <button
@@ -466,7 +480,13 @@ export function LiteratureTabs({
             onClick={() => setShowAdd((v) => !v)}
             className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold"
           >
-            {showAdd ? "✕ Kapat" : "+ Kendi Makaleni Ekle"}
+            {showAdd ? (
+              <>
+                <Icon name="x" /> Kapat
+              </>
+            ) : (
+              "+ Kendi Makaleni Ekle"
+            )}
           </button>
         </form>
       </div>
@@ -493,14 +513,14 @@ export function LiteratureTabs({
             {activeQuery ? (
               <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-stone-500">
                 <span className="rounded-full bg-amber-400/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300">
-                  🔍 {activeQuery}
+                  <Icon name="search" /> {activeQuery}
                 </span>
                 için PubMed&apos;deki en güncel makaleler.
                 <button
                   onClick={handleClearSearch}
                   className="text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
                 >
-                  ✕ Aramayı temizle
+                  <Icon name="x" /> Aramayı temizle
                 </button>
               </p>
             ) : (
@@ -513,7 +533,13 @@ export function LiteratureTabs({
               disabled={fetching}
               className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold disabled:opacity-60"
             >
-              {fetching ? "Getiriliyor…" : "🔄 Yenile"}
+              {fetching ? (
+                "Getiriliyor…"
+              ) : (
+                <>
+                  <Icon name="refresh" /> Yenile
+                </>
+              )}
             </button>
           </div>
 
@@ -641,7 +667,7 @@ export function LiteratureTabs({
                                 }}
                                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-stone-400 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
                               >
-                                🗑
+                                <Icon name="trash" className="h-4 w-4" />
                               </button>
                             </form>
                           </div>
@@ -663,14 +689,15 @@ export function LiteratureTabs({
                                 rel="noopener noreferrer"
                                 className="text-stone-500 hover:text-amber-600 dark:hover:text-amber-400"
                               >
-                                DOI ↗
+                                DOI <Icon name="external" />
                               </a>
                             )}
                             <IntentLink
                               href={`/library/${a.id}`}
                               className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
                             >
-                              {summary ? "✎ Özeti düzenle" : "✎ Özet yaz"}
+                              <Icon name="pencil" />{" "}
+                              {summary ? "Özeti düzenle" : "Özet yaz"}
                             </IntentLink>
                             <Link
                               href={`/notes/new?source=${a.id}`}
@@ -735,7 +762,7 @@ export function LiteratureTabs({
                   }}
                   className="mt-2 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
                 >
-                  ✕ Filtreleri temizle
+                  <Icon name="x" /> Filtreleri temizle
                 </button>
               </div>
             ) : (

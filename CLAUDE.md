@@ -39,6 +39,9 @@
   handler'lar (`src/app/api/…`) üzerinden yapılır.
 - Tüm tablolarda `user_id` + RLS zorunludur; sorgular oturumdaki kullanıcıya
   göre otomatik filtrelenir.
+- Yazı tipi Google Sans (`next/font/google`, `--font-google-sans`). Arayüzde
+  emoji kullanılmaz; simgeler `src/components/Icon.tsx` (currentColor SVG)
+  üzerinden eklenir.
 
 ## Komutlar
 

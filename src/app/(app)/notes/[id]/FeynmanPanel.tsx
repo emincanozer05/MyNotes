@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState } from "react";
 
 const AUDIENCES = [
@@ -43,7 +44,7 @@ export function FeynmanPanel({ noteId }: { noteId: string }) {
 
   return (
     <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-4">
-      <h2 className="text-sm font-semibold">🎓 Feynman Modu — &quot;Bunu Birine Anlat&quot;</h2>
+      <h2 className="text-sm font-semibold"><Icon name="graduation" /> Feynman Modu — &quot;Bunu Birine Anlat&quot;</h2>
       <p className="mt-1 text-xs text-stone-500">
         Bu akademik notu yapay zekâ ile hedef kitleye göre sadeleştirin.
       </p>
@@ -81,7 +82,13 @@ export function FeynmanPanel({ noteId }: { noteId: string }) {
             onClick={copy}
             className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-500 hover:underline"
           >
-            {copied ? "Kopyalandı ✓" : "Panoya kopyala"}
+            {copied ? (
+              <>
+                Kopyalandı <Icon name="check" strokeWidth={2.4} />
+              </>
+            ) : (
+              "Panoya kopyala"
+            )}
           </button>
         </div>
       )}

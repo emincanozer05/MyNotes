@@ -1,19 +1,20 @@
 "use client";
 
 import { CloseIcon } from "@/components/CloseIcon";
+import { Icon, type IconName } from "@/components/Icon";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Panel", icon: "◈" },
-  { href: "/library", label: "Literatür", icon: "☰" },
-  { href: "/notes", label: "Post-it Notlar", icon: "✎" },
-  { href: "/bookshelf", label: "Kitap Rafı", icon: "▥" },
-  { href: "/glossary", label: "Ne, nedir?", icon: "?" },
-  { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "❖" },
-  { href: "/network", label: "Network Haritası", icon: "◎" },
-  { href: "/backup", label: "Yedekleme", icon: "⤓" },
+const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "Panel", icon: "dashboard" },
+  { href: "/library", label: "Literatür", icon: "newspaper" },
+  { href: "/notes", label: "Post-it Notlar", icon: "sticky-note" },
+  { href: "/bookshelf", label: "Kitap Rafı", icon: "library" },
+  { href: "/glossary", label: "Ne, nedir?", icon: "help" },
+  { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "graduation" },
+  { href: "/network", label: "Network Haritası", icon: "network" },
+  { href: "/backup", label: "Yedekleme", icon: "archive" },
 ];
 
 export function Sidebar({ userEmail }: { userEmail: string }) {
@@ -44,7 +45,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         aria-label="Menüyü aç"
         className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] md:hidden"
       >
-        ☰
+        <Icon name="menu" className="h-5 w-5" />
       </button>
       {open && (
         <div
@@ -113,11 +114,11 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
                 />
                 <span
                   aria-hidden
-                  className={`w-4 text-center transition-colors ${
+                  className={`flex w-4 justify-center transition-colors ${
                     active ? "text-[var(--brand-1)]" : "opacity-70"
                   }`}
                 >
-                  {item.icon}
+                  <Icon name={item.icon} className="h-4 w-4" />
                 </span>
                 {item.label}
               </Link>

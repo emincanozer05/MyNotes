@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   forceCollide,
@@ -604,7 +605,7 @@ export function NetworkGraph({
             onClick={() => zoomCenter(1.25)}
             className="flex h-8 w-8 items-center justify-center border-b border-[var(--border)] text-[var(--muted)] transition-colors last:border-b-0 hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
-            +
+            <Icon name="plus" className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -613,7 +614,7 @@ export function NetworkGraph({
             onClick={() => zoomCenter(0.8)}
             className="flex h-8 w-8 items-center justify-center border-b border-[var(--border)] text-[var(--muted)] transition-colors last:border-b-0 hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
-            −
+            <Icon name="minus" className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -622,7 +623,7 @@ export function NetworkGraph({
             onClick={() => fitView()}
             className="flex h-8 w-8 items-center justify-center border-b border-[var(--border)] text-[var(--muted)] transition-colors last:border-b-0 hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
-            ⤢
+            <Icon name="maximize" className="h-3.5 w-3.5" />
           </button>
       </div>
 

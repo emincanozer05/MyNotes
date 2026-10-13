@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState } from "react";
 import { saveBookLink } from "../actions";
 
@@ -83,7 +84,7 @@ export function BookLink({
         }}
         className="w-28 rounded-md border border-dashed border-[var(--border)] px-2 py-1.5 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-500/10"
       >
-        🔗 Link ekle
+        <Icon name="link" /> Link ekle
       </button>
     );
   }
@@ -97,7 +98,7 @@ export function BookLink({
         title={url}
         className="flex-1 truncate rounded-md bg-[var(--brand-1)] px-2 py-1.5 text-center text-xs font-semibold text-white transition-[filter] hover:brightness-105"
       >
-        🔗 Link
+        <Icon name="link" /> Link
       </a>
       <button
         type="button"
@@ -108,7 +109,7 @@ export function BookLink({
         title="Linki düzenle"
         className="rounded-md border border-[var(--border)] px-1.5 py-1.5 text-xs transition-colors hover:bg-stone-500/10"
       >
-        ✎
+        <Icon name="pencil" className="h-3.5 w-3.5" />
       </button>
     </div>
   );

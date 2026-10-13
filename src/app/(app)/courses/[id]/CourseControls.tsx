@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setCourseStatus, setCourseCover } from "../actions";
@@ -67,7 +68,7 @@ export function CourseControls({
         disabled={pending}
         className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-semibold transition-colors hover:bg-stone-500/10 disabled:opacity-60"
       >
-        🖼 Görsel ekle
+        <Icon name="image" /> Görsel ekle
       </button>
       <input
         ref={fileRef}

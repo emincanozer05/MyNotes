@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
@@ -275,7 +276,7 @@ export function PdfViewer({
   async function postit(text: string, page: number, tags: string, highlightId?: string) {
     flash("Post-it kaydediliyor…");
     const res = await savePdfPostit({ articleId, text, page, tags, highlightId });
-    flash(res.error ? `Kaydedilemedi: ${res.error}` : "Post-it panosuna kaydedildi 📌");
+    flash(res.error ? `Kaydedilemedi: ${res.error}` : "Post-it panosuna kaydedildi");
   }
 
   /** Highlights the pending selection and files it as a tagged post-it. */
@@ -368,7 +369,7 @@ export function PdfViewer({
       page: h.page,
       tags: tagName,
     });
-    flash(res.error ? `Değiştirilemedi: ${res.error}` : `Etiket: ${tagName} 🏷`);
+    flash(res.error ? `Değiştirilemedi: ${res.error}` : `Etiket: ${tagName}`);
   }
 
   const scrollToSpot = useCallback((page: number, y: number) => {
@@ -424,7 +425,7 @@ export function PdfViewer({
               className="btn-ghost rounded-full px-2.5 py-1 font-bold"
               aria-label="Uzaklaştır"
             >
-              −
+              <Icon name="minus" />
             </button>
             <span className="w-10 text-center tabular-nums">
               {Math.round(scale * 100)}%
@@ -435,14 +436,14 @@ export function PdfViewer({
               className="btn-ghost rounded-full px-2.5 py-1 font-bold"
               aria-label="Yakınlaştır"
             >
-              +
+              <Icon name="plus" />
             </button>
             <button
               type="button"
               onClick={() => setPanelOpen((o) => !o)}
               className="btn-ghost rounded-full px-3 py-1 font-semibold"
             >
-              🖍 Vurgular ({highlights.length})
+              <Icon name="highlighter" /> Vurgular ({highlights.length})
             </button>
             {downloadUrl && (
               <a
@@ -451,7 +452,7 @@ export function PdfViewer({
                 rel="noopener noreferrer"
                 className="btn-ghost rounded-full px-3 py-1 font-semibold"
               >
-                ↗ Yeni sekmede
+                <Icon name="external" /> Yeni sekmede
               </a>
             )}
           </>
@@ -523,7 +524,7 @@ export function PdfViewer({
                   </button>
                   <div className="mt-1.5 flex gap-3 text-[11px] font-semibold">
                     <button type="button" onClick={() => askTagFor(h)}>
-                      📌 Post-it
+                      <Icon name="pin" /> Post-it
                     </button>
                     <button
                       type="button"
@@ -555,7 +556,7 @@ export function PdfViewer({
               </button>
               <div className="mt-1.5 flex gap-3 font-semibold">
                 <button type="button" onClick={() => askTagFor(h)}>
-                  📌 Post-it
+                  <Icon name="pin" /> Post-it
                 </button>
                 <button
                   type="button"
@@ -607,7 +608,7 @@ export function PdfViewer({
                   onClick={() => setTagging(true)}
                   className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
                 >
-                  📌 Post-it
+                  <Icon name="pin" /> Post-it
                 </button>
                 <button
                   type="button"
@@ -615,7 +616,7 @@ export function PdfViewer({
                   title="Seçili İngilizce metni Türkçeye çevir, önizle ve Türkçe post-it olarak kaydet"
                   className="rounded-full px-2.5 py-1 text-xs font-semibold hover:bg-stone-500/10"
                 >
-                  🇹🇷 Türkçe
+                  <Icon name="languages" /> Türkçe
                 </button>
               </div>
               {/* w-0 + min-w-full: the preview fills the button row's width but never widens it. */}
@@ -642,7 +643,7 @@ export function PdfViewer({
                           }}
                           className="rounded-full bg-emerald-600 px-2.5 py-1 font-semibold text-white hover:bg-emerald-700"
                         >
-                          📌 Türkçe Post-it
+                          <Icon name="pin" /> Türkçe Post-it
                         </button>
                         <button
                           type="button"
@@ -716,7 +717,7 @@ export function PdfViewer({
                       onClick={() => setMenu({ ...menu, mode: "tag" })}
                       className="flex-1 rounded-md bg-stone-900 px-2 py-1.5 font-semibold text-white dark:bg-stone-100 dark:text-stone-900"
                     >
-                      🏷 Etiketi değiştir
+                      <Icon name="tag" /> Etiketi değiştir
                     </button>
                     <button
                       type="button"

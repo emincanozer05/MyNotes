@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -47,7 +48,7 @@ export default async function ArticleDetailPage({
         prefetch
         className="text-sm text-stone-500 hover:text-amber-600"
       >
-        ← Literatür
+        <Icon name="arrow-left" /> Literatür
       </Link>
 
       <div className="glass-card rounded-2xl border-t-2 border-t-amber-400/70 p-5">
@@ -68,13 +69,17 @@ export default async function ArticleDetailPage({
               rel="noopener noreferrer"
               className="rounded-full border border-[var(--border)] px-3 py-1 font-medium hover:bg-stone-500/10"
             >
-              Makaleye git ↗
+              Makaleye git <Icon name="external" />
             </a>
           )}
           {pdfOf(article.metadata) && (
             <PdfOpenButton
               articleId={article.id}
-              label="📄 PDF'i aç"
+              label={
+                <>
+                  <Icon name="file" /> PDF&apos;i aç
+                </>
+              }
               className="rounded-full border border-[var(--border)] px-3 py-1 font-medium hover:bg-stone-500/10"
             />
           )}
@@ -96,7 +101,7 @@ export default async function ArticleDetailPage({
                 href={`/library/print/${article.id}`}
                 className="rounded-full border border-[var(--border)] px-3 py-1 font-medium hover:bg-stone-500/10"
               >
-                🖨 Yazdır (A4)
+                <Icon name="printer" /> Yazdır (A4)
               </Link>
             </>
           )}
@@ -120,7 +125,7 @@ export default async function ArticleDetailPage({
             href={`/print/${article.id}`}
             className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
           >
-            🖨 Çıktı al (A4)
+            <Icon name="printer" /> Çıktı al (A4)
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
