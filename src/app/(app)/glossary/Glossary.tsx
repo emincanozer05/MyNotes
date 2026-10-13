@@ -8,14 +8,7 @@ import {
   deleteGlossaryEntry,
   updateGlossaryEntry,
 } from "./actions";
-
-export interface GlossaryEntry {
-  id: string;
-  term: string;
-  definition: string;
-  source_path: string | null;
-  created_at: string;
-}
+import type { GlossaryEntry } from "@/lib/glossaryStore";
 
 /** Turkish-aware, case-insensitive key for search and sorting. */
 function key(s: string) {

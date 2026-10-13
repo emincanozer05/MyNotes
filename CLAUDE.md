@@ -103,6 +103,10 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    `source_path`). Not editöründe (`RichTextEditor`) metin seçilince araç
    çubuğundaki "Sözlüğe Kaydet" seçimi başlıksız girdi olarak ekler; başlık
    sonradan sayfada elle girilir ("Başlık bekleyenler" bölümü). Yedeklemeye dahil.
+   0015 uygulanmamışsa girdiler `voice-notes` bucket'ında `<uid>/glossary/v-<ts>.json`
+   anlık görüntüsü olarak tutulur (bucket'ta UPDATE politikası yok: her yazma yeni
+   dosya + eskileri silme); tablo oluşunca ilk okumada otomatik tabloya taşınır.
+   Erişim `src/lib/glossaryStore.ts` üzerinden.
 
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
