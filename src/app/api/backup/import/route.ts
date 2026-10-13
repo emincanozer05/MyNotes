@@ -14,6 +14,7 @@ const IMPORT_ORDER: { table: string; conflict: string }[] = [
   { table: "flashcards", conflict: "id" },
   { table: "voice_notes", conflict: "id" },
   { table: "contacts", conflict: "id" },
+  { table: "glossary_entries", conflict: "id" },
 ];
 
 /** POST /api/backup/import — restores rows from an exported backup JSON. */

@@ -7,6 +7,7 @@ import {
   getUserTags,
   type UserTag,
 } from "@/app/(app)/tagsActions";
+import { addGlossaryEntry } from "@/app/(app)/glossary/actions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel, normalizeCategory } from "@/lib/categories";
 import { translateInfoLabel } from "@/lib/translateInfo";
@@ -163,6 +164,10 @@ export function RichTextEditor({
   const [newTagColor, setNewTagColor] = useState(TAG_COLOR_SWATCHES[0]);
   const [tagBusy, setTagBusy] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
+  // "Sözlüğe Kaydet" status for the current selection.
+  const [glossaryState, setGlossaryState] = useState<
+    { kind: "idle" | "saving" | "saved" } | { kind: "error"; message: string }
+  >({ kind: "idle" });
   const pendingRangeRef = useRef<Range | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -574,7 +579,28 @@ export function RichTextEditor({
     const rect = range.getBoundingClientRect();
     pendingRangeRef.current = range.cloneRange();
     setPickerOpen(false);
+    setGlossaryState({ kind: "idle" });
     setFloating({ kind: "select", ...panelPosition(rect), text });
+  }
+
+  /**
+   * Saves the selected text to the "Ne, nedir?" glossary as a definition with
+   * an empty title (filled in later on /glossary). The note itself is untouched.
+   */
+  async function saveSelectionToGlossary() {
+    if (floating?.kind !== "select" || glossaryState.kind === "saving") return;
+    setGlossaryState({ kind: "saving" });
+    try {
+      const res = await addGlossaryEntry({
+        definition: floating.text,
+        sourcePath: window.location.pathname,
+      });
+      setGlossaryState(
+        res.error ? { kind: "error", message: res.error } : { kind: "saved" },
+      );
+    } catch {
+      setGlossaryState({ kind: "error", message: "Sözlüğe kaydedilemedi." });
+    }
   }
 
   function createMarkEl(tag: UserTag, groupId: string): HTMLElement {
@@ -1398,6 +1424,32 @@ export function RichTextEditor({
               >
                 🏷
               </button>
+
+              <span className="my-0.5 h-px w-full bg-[var(--border)]" />
+
+              <button
+                type="button"
+                title="Seçili metni “Ne, nedir?” sözlüğüne kaydet (başlığı sonradan eklenebilir)"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={saveSelectionToGlossary}
+                disabled={glossaryState.kind === "saving" || glossaryState.kind === "saved"}
+                className={`w-full rounded px-1.5 py-1 text-[11px] font-semibold transition-colors ${
+                  glossaryState.kind === "saved"
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                    : "bg-amber-400 text-stone-900 hover:bg-amber-300"
+                }`}
+              >
+                {glossaryState.kind === "saving"
+                  ? "Kaydediliyor…"
+                  : glossaryState.kind === "saved"
+                    ? "✓ Sözlüğe kaydedildi"
+                    : "📖 Sözlüğe Kaydet"}
+              </button>
+              {glossaryState.kind === "error" && (
+                <p className="w-full text-[11px] leading-snug text-rose-600">
+                  {glossaryState.message}
+                </p>
+              )}
             </div>
           ) : (
             <div className="w-64 max-w-[calc(100vw-16px)] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-xl">

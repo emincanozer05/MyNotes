@@ -98,6 +98,12 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    PDF "Türkçe" ve editör çevirisi Gemini'yi önce dener. 429'da Gemini 1 dk
    atlanır. Ortak anahtar/model okuma `src/lib/gemini.ts`'te.
 
+11. ✅ **Ne, nedir?** sözlüğü (`/glossary`): kavram/ifade tanımları
+   `glossary_entries` tablosunda (`0015`; `term` boş olabilir, `definition`,
+   `source_path`). Not editöründe (`RichTextEditor`) metin seçilince araç
+   çubuğundaki "Sözlüğe Kaydet" seçimi başlıksız girdi olarak ekler; başlık
+   sonradan sayfada elle girilir ("Başlık bekleyenler" bölümü). Yedeklemeye dahil.
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS
