@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { extractTaggedPassages } from "@/lib/wiki";
+import { Icon, type IconName } from "@/components/Icon";
 
-const MODULES = [
-  { title: "Literatür", detail: "Günlük PubMed akışı, kaydettiğin makaleler ve özetlerin", href: "/library", icon: "☰" },
-  { title: "Post-it Notlar", detail: "Kategorilere ayrılmış notlar ve etiketlediğin pasajlar", href: "/notes", icon: "✎" },
-  { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane ve zengin metin özetleri", href: "/bookshelf", icon: "▥" },
-  { title: "Kurslar ve Eğitimler", detail: "S&C kursların, ilerleme durumu ve notların", href: "/courses", icon: "❖" },
-  { title: "Network Haritası", detail: "Kişisel ve profesyonel ağını interaktif grafikte yönet", href: "/network", icon: "◎" },
+const MODULES: { title: string; detail: string; href: string; icon: IconName }[] = [
+  { title: "Literatür", detail: "Günlük PubMed akışı, kaydettiğin makaleler ve özetlerin", href: "/library", icon: "newspaper" },
+  { title: "Post-it Notlar", detail: "Kategorilere ayrılmış notlar ve etiketlediğin pasajlar", href: "/notes", icon: "sticky-note" },
+  { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane ve zengin metin özetleri", href: "/bookshelf", icon: "library" },
+  { title: "Kurslar ve Eğitimler", detail: "S&C kursların, ilerleme durumu ve notların", href: "/courses", icon: "graduation" },
+  { title: "Network Haritası", detail: "Kişisel ve profesyonel ağını interaktif grafikte yönet", href: "/network", icon: "network" },
 ];
 
 export default async function DashboardPage() {
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
                 aria-hidden
                 className="opacity-0 transition-opacity group-hover:opacity-100"
               >
-                →
+                <Icon name="arrow-right" className="h-4 w-4" />
               </span>
             </p>
           </Link>
@@ -109,7 +110,7 @@ export default async function DashboardPage() {
               className="glass-card card-lift group flex flex-col rounded-2xl p-5"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-lg text-[var(--accent-text)]">
-                {m.icon}
+                <Icon name={m.icon} className="h-5 w-5" />
               </span>
               <p className="mt-3 flex items-center gap-1.5 font-bold">
                 {m.title}
@@ -117,7 +118,7 @@ export default async function DashboardPage() {
                   aria-hidden
                   className="translate-x-0 text-[var(--muted)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
                 >
-                  →
+                  <Icon name="arrow-right" className="h-4 w-4" />
                 </span>
               </p>
               <p className="mt-1 text-sm text-[var(--muted)]">{m.detail}</p>

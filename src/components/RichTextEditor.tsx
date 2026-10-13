@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   createOrGetTag,
@@ -898,7 +899,7 @@ export function RichTextEditor({
 
   /**
    * "Vurguyu kaldır": strips highlights from the current selection — both the
-   * coloured tag `<mark>`s intersecting it and any manual (🖍) background
+   * coloured tag `<mark>`s intersecting it and any manual (highlighter) background
    * colour. Tag marks are unwrapped in place so the text itself is untouched.
    */
   function removeHighlightFromSelection() {
@@ -1078,7 +1079,7 @@ export function RichTextEditor({
       </span>
     ) : saveState === "saved" && savedAt ? (
       <span className="text-xs text-emerald-600 dark:text-emerald-400">
-        ✓ Otomatik kaydedildi · {savedAt}
+        <Icon name="check" strokeWidth={2.4} /> Otomatik kaydedildi · {savedAt}
       </span>
     ) : (
       <span className="text-xs text-stone-400">Değişiklikler otomatik kaydedilir</span>
@@ -1108,7 +1109,7 @@ export function RichTextEditor({
               title="Notun içeriğini bu Türkçe çeviriyle değiştir"
               className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-40"
             >
-              ✓ Türkçeyi kaydet
+              <Icon name="check" strokeWidth={2.4} /> Türkçeyi kaydet
             </button>
             <button
               type="button"
@@ -1129,7 +1130,7 @@ export function RichTextEditor({
               : "border-[var(--border)] text-stone-500 hover:bg-stone-500/10"
           }`}
         >
-          🇹🇷 Türkçeye çevir
+          <Icon name="languages" /> Türkçeye çevir
         </button>
         <button
           type="button"
@@ -1141,7 +1142,8 @@ export function RichTextEditor({
               : "border-[var(--border)] text-stone-500 hover:bg-stone-500/10"
           }`}
         >
-          🇬🇧 Eng {engOpen && engTarget === "en" ? "▴" : "▾"}
+          <Icon name="languages" /> Eng{" "}
+          <Icon name={engOpen && engTarget === "en" ? "chevron-up" : "chevron-down"} />
         </button>
       </div>
 
@@ -1212,9 +1214,9 @@ export function RichTextEditor({
             >
               {(
                 [
-                  { a: "left", icon: "⇤", title: "Sola yasla — metin sağdan sarar" },
-                  { a: "center", icon: "↔", title: "Ortala (metin sarmaz)" },
-                  { a: "right", icon: "⇥", title: "Sağa yasla — metin soldan sarar" },
+                  { a: "left", icon: "align-left", title: "Sola yasla — metin sağdan sarar" },
+                  { a: "center", icon: "align-center", title: "Ortala (metin sarmaz)" },
+                  { a: "right", icon: "align-right", title: "Sağa yasla — metin soldan sarar" },
                 ] as const
               ).map(({ a, icon, title }) => (
                 <button
@@ -1222,9 +1224,9 @@ export function RichTextEditor({
                   type="button"
                   onClick={() => setImageAlign(a)}
                   title={title}
-                  className="rounded px-1 text-xs text-stone-500 hover:bg-stone-500/15"
+                  className="flex rounded px-1 py-0.5 text-xs text-stone-500 hover:bg-stone-500/15"
                 >
-                  {icon}
+                  <Icon name={icon} className="h-3.5 w-3.5" />
                 </button>
               ))}
               <span className="mx-0.5 h-3 w-px bg-[var(--border)]" />
@@ -1243,9 +1245,9 @@ export function RichTextEditor({
                 type="button"
                 onClick={deleteSelectedImage}
                 title="Görseli sil"
-                className="rounded px-1 text-[11px] text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
+                className="flex rounded px-1 py-0.5 text-[11px] text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
               >
-                🗑
+                <Icon name="trash" className="h-3.5 w-3.5" />
               </button>
             </div>
             {/* left edge handle */}
@@ -1325,9 +1327,9 @@ export function RichTextEditor({
                 type="button"
                 onClick={() => removeMark(floating.mark)}
                 title="Vurguyu tamamen kaldır"
-                className="rounded-full px-1.5 text-xs text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
+                className="flex rounded-full px-1.5 py-0.5 text-xs text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
               >
-                🗑
+                <Icon name="trash" className="h-3.5 w-3.5" />
               </button>
             </div>
           ) : !pickerOpen ? (
@@ -1379,13 +1381,13 @@ export function RichTextEditor({
 
               {(
                 [
-                  { cmd: "formatBlock", arg: "BLOCKQUOTE", label: "❝", title: "Alıntı" },
-                  { cmd: "insertUnorderedList", label: "•", title: "Madde listesi" },
-                  { cmd: "insertOrderedList", label: "1.", title: "Numaralı liste" },
+                  { cmd: "formatBlock", arg: "BLOCKQUOTE", key: "quote", label: <Icon name="quote" className="h-3.5 w-3.5" />, title: "Alıntı" },
+                  { cmd: "insertUnorderedList", key: "ul", label: "•", title: "Madde listesi" },
+                  { cmd: "insertOrderedList", key: "ol", label: "1.", title: "Numaralı liste" },
                 ] as const
               ).map((b) => (
                 <button
-                  key={b.label}
+                  key={b.key}
                   type="button"
                   title={b.title}
                   onMouseDown={(e) => e.preventDefault()}
@@ -1400,9 +1402,9 @@ export function RichTextEditor({
 
               {(
                 [
-                  { cmd: "justifyLeft", label: "⇤", title: "Sola yasla" },
-                  { cmd: "justifyRight", label: "⇥", title: "Sağa yasla" },
-                  { cmd: "justifyFull", label: "☰", title: "İki yana yasla" },
+                  { cmd: "justifyLeft", icon: "align-left", title: "Sola yasla" },
+                  { cmd: "justifyRight", icon: "align-right", title: "Sağa yasla" },
+                  { cmd: "justifyFull", icon: "align-justify", title: "İki yana yasla" },
                 ] as const
               ).map((a) => (
                 <button
@@ -1413,7 +1415,7 @@ export function RichTextEditor({
                   onClick={() => execOnSelection(a.cmd)}
                   className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
                 >
-                  {a.label}
+                  <Icon name={a.icon} className="h-4 w-4" />
                 </button>
               ))}
 
@@ -1437,14 +1439,14 @@ export function RichTextEditor({
                 onClick={clearForeColor}
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-black/20 text-[11px] leading-none text-stone-500 hover:bg-stone-500/15"
               >
-                ⦸
+                <Icon name="ban" className="h-3.5 w-3.5" />
               </button>
 
               <label
                 title="Vurgu (fon) rengi"
                 className="flex h-7 cursor-pointer items-center gap-0.5 rounded px-1 hover:bg-stone-500/15"
               >
-                <span className="text-sm">🖍</span>
+                <Icon name="highlighter" className="h-4 w-4" />
                 <input
                   type="color"
                   onChange={(e) => execOnSelection("hiliteColor", e.target.value)}
@@ -1458,7 +1460,7 @@ export function RichTextEditor({
                 onClick={removeHighlightFromSelection}
                 className="w-full rounded border border-[var(--border)] px-1.5 py-1 text-[11px] font-medium text-stone-500 hover:bg-rose-500/10 hover:text-rose-600"
               >
-                ✕ Vurguyu kaldır
+                <Icon name="x" /> Vurguyu kaldır
               </button>
 
               <span className="my-0.5 h-px w-full bg-[var(--border)]" />
@@ -1470,7 +1472,7 @@ export function RichTextEditor({
                 onClick={addLinkToSelection}
                 className="flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm hover:bg-stone-500/15"
               >
-                🔗
+                <Icon name="link" className="h-4 w-4" />
               </button>
               <button
                 type="button"
@@ -1482,7 +1484,7 @@ export function RichTextEditor({
                 }}
                 className="flex h-7 items-center justify-center gap-1 rounded bg-stone-900 px-2 text-xs font-semibold text-white hover:opacity-90 dark:bg-stone-100 dark:text-stone-900"
               >
-                🏷
+                <Icon name="tag" className="h-3.5 w-3.5" />
               </button>
 
               <span className="my-0.5 h-px w-full bg-[var(--border)]" />
@@ -1502,8 +1504,16 @@ export function RichTextEditor({
                 {glossaryState.kind === "saving"
                   ? "Kaydediliyor…"
                   : glossaryState.kind === "saved"
-                    ? "✓ Sözlüğe kaydedildi"
-                    : "📖 Sözlüğe Kaydet"}
+                    ? (
+                      <>
+                        <Icon name="check" strokeWidth={2.4} /> Sözlüğe kaydedildi
+                      </>
+                    )
+                    : (
+                      <>
+                        <Icon name="book" /> Sözlüğe Kaydet
+                      </>
+                    )}
               </button>
               {glossaryState.kind === "error" && (
                 <p className="w-full text-[11px] leading-snug text-rose-600">

@@ -2,12 +2,10 @@
 
 import { IntentLink } from "@/components/IntentLink";
 import type { Source } from "@/lib/types";
-import { deleteArticle, getArticleSummary } from "./actions";
+import { deleteArticle } from "./actions";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
-import { SummaryReadModal } from "./SummaryReadModal";
-import { PdfOpenButton } from "./PdfOpenButton";
-import { pdfOf } from "@/lib/articlePdf";
+import { Icon } from "@/components/Icon";
 import {
   articleLink,
   hasSummary,
@@ -29,7 +27,7 @@ function DeleteButton({ id }: { id: string }) {
         }}
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-stone-400 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
       >
-        🗑
+        <Icon name="trash" className="h-4 w-4" />
       </button>
     </form>
   );
@@ -52,45 +50,55 @@ function StatusPills({
             : "bg-[var(--surface-2)] text-stone-500"
         }`}
       >
-        {summary ? "✓ Özet yazıldı" : "Özet yok"}
+        {summary ? (
+          <span className="inline-flex items-center gap-1">
+            <Icon name="check" strokeWidth={2.4} />
+            Özet yazıldı
+          </span>
+        ) : (
+          "Özet yok"
+        )}
       </span>
       {noteCount > 0 && (
         <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-semibold text-stone-500">
-          📝 {noteCount} not
+          <span className="inline-flex items-center gap-1">
+            <Icon name="file-text" />
+            {noteCount} not
+          </span>
         </span>
       )}
     </>
   );
 }
 
+/**
+ * The card's two actions, side by side at equal width: open the summary
+ * (read + edit live on the article page) and the A4 print page.
+ */
 function Actions({ a, summary }: { a: Source; summary: boolean }) {
+  const btn =
+    "inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold";
   return (
-    <>
+    <div className="grid w-full grid-cols-2 gap-2">
       <IntentLink
         href={`/library/${a.id}`}
-        title={summary ? "Özeti düzenle" : "Özet yaz"}
-        className="btn-gradient rounded-full px-3 py-1.5 text-xs font-semibold"
+        title={summary ? "Özeti oku / düzenle" : "Özet yaz"}
+        className={`btn-gradient ${btn}`}
       >
-        {summary ? "✎ Özeti düzenle" : "✎ Özet yaz"}
+        <Icon name={summary ? "book" : "pencil"} />
+        <span className="truncate">
+          {summary ? "Özeti Oku/Düzenle" : "Özet Yaz"}
+        </span>
       </IntentLink>
-      {summary && (
-        <SummaryReadModal
-          html={summaryOf(a)}
-          loadHtml={() => getArticleSummary(a.id)}
-          title={a.title}
-          label="📖 Oku"
-          className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
-        />
-      )}
-      {pdfOf(a.metadata) && <PdfOpenButton articleId={a.id} />}
       <IntentLink
         href={`/library/print/${a.id}`}
         title="A4 çıktı sayfasını aç"
-        className="btn-ghost rounded-full px-3 py-1.5 text-xs font-semibold"
+        className={`btn-ghost ${btn}`}
       >
-        🖨 Çıktı al
+        <Icon name="printer" />
+        <span className="truncate">Çıktı Al</span>
       </IntentLink>
-    </>
+    </div>
   );
 }
 
@@ -160,7 +168,7 @@ export function MyNoteCard({
         <div className="flex flex-wrap items-center gap-1.5 lg:max-w-[22rem] lg:justify-end">
           <StatusPills summary={summary} noteCount={noteCount} />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+        <div className="flex items-center gap-1.5 lg:w-[19rem] lg:shrink-0">
           <Actions a={a} summary={summary} />
           <DeleteButton id={a.id} />
         </div>
@@ -198,7 +206,7 @@ export function MyNoteCard({
 
       {/* Actions pinned to the bottom so cards line up */}
       <div className="mt-auto pt-4">
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--border)] pt-3">
+        <div className="border-t border-[var(--border)] pt-3">
           <Actions a={a} summary={summary} />
         </div>
       </div>

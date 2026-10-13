@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -11,9 +12,9 @@ interface TitledNote {
 }
 
 function backInfo(kind: string): { href: string; label: string } {
-  if (kind === "book") return { href: "/bookshelf", label: "← Kitap Rafı" };
-  if (kind === "article") return { href: "/library", label: "← Literatür" };
-  return { href: "/courses", label: "← Kurslar ve Eğitimler (S&C)" };
+  if (kind === "book") return { href: "/bookshelf", label: "Kitap Rafı" };
+  if (kind === "article") return { href: "/library", label: "Literatür" };
+  return { href: "/courses", label: "Kurslar ve Eğitimler (S&C)" };
 }
 
 export default async function PrintSourcePage({
@@ -45,7 +46,7 @@ export default async function PrintSourcePage({
     <div className="space-y-4">
       <div className="no-print mx-auto flex max-w-[210mm] items-center justify-between">
         <Link href={back.href} className="text-sm text-stone-500 hover:text-amber-600">
-          {back.label}
+          <Icon name="arrow-left" /> {back.label}
         </Link>
         <PrintButton />
       </div>

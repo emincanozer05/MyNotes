@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { Icon } from "@/components/Icon";
 import { saveSourceNotes, type TitledNote } from "@/app/(app)/sourceNotesActions";
 import { parseNoteHash, scrollToPassage } from "@/lib/passageScroll";
 
@@ -33,11 +34,15 @@ function reorder(
  * A "Çıktı al" button prints all titles to a vertical A4 page.
  */
 export function TitledNotes({
+  heading,
+  description,
   sourceId,
   initialNotes,
   printHref,
   tagCategory,
 }: {
+  heading: string;
+  description?: string;
   sourceId: string;
   initialNotes: TitledNote[];
   printHref: string;
@@ -116,100 +121,124 @@ export function TitledNotes({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header: add-title (left) + print (right) */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={addTitle}
-          className="btn-gradient rounded-full px-4 py-1.5 text-xs font-semibold"
-        >
-          + Başlık Ekle
-        </button>
-        <Link
-          href={printHref}
-          className="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-stone-500/10"
-        >
-          🖨 Çıktı al (A4)
-        </Link>
-      </div>
+    <section className="space-y-4">
+      {/* Panel: heading + print, then the titles as a full-width list */}
+      <div className="glass-card rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold">{heading}</h2>
+            {description && (
+              <p className="mt-1 text-sm leading-relaxed text-stone-500">
+                {description}
+              </p>
+            )}
+          </div>
+          <Link
+            href={printHref}
+            className="btn-ghost inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold"
+          >
+            <Icon name="printer" /> Çıktı al (A4)
+          </Link>
+        </div>
 
-      {/* Title chips (drag to reorder), numbered by their order */}
-      {notes.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {notes.map((n, i) => {
-            const isActive = n.id === activeId;
-            return (
-              <span
-                key={n.id}
-                draggable
-                onDragStart={() => setDragId(n.id)}
-                onDragEnter={() => handleDragEnter(n.id)}
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnd={handleDragEnd}
-                title="Sürükleyerek sırala"
-                className={`group inline-flex cursor-grab items-center gap-1.5 rounded-xl border py-1 pl-1.5 pr-1 text-xs font-semibold shadow-sm transition-all active:cursor-grabbing ${
-                  dragId === n.id ? "opacity-50" : ""
-                } ${
-                  isActive
-                    ? "border-amber-500/70 bg-gradient-to-b from-amber-400/20 to-amber-500/10 text-amber-700 shadow-amber-500/20 dark:text-amber-300"
-                    : "border-[var(--border)] text-stone-500 hover:border-stone-400/60 hover:text-stone-400 dark:hover:border-stone-500/60"
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className={`flex h-5 w-5 shrink-0 select-none items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            Başlıklar{notes.length > 0 ? ` · ${notes.length}` : ""}
+          </p>
+          <button
+            type="button"
+            onClick={addTitle}
+            className="btn-gradient inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-xs font-semibold"
+          >
+            <Icon name="plus" strokeWidth={2.4} /> Başlık Ekle
+          </button>
+        </div>
+
+        {/* Title list (drag to reorder), numbered by order; titles wrap in
+            full instead of being cut off. */}
+        {notes.length > 0 && (
+          <ol className="mt-3 grid gap-2">
+            {notes.map((n, i) => {
+              const isActive = n.id === activeId;
+              return (
+                <li
+                  key={n.id}
+                  draggable
+                  onDragStart={() => setDragId(n.id)}
+                  onDragEnter={() => handleDragEnter(n.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={handleDragEnd}
+                  title="Sürükleyerek sırala"
+                  className={`group flex cursor-grab items-start gap-2.5 rounded-xl border px-2.5 py-2 transition-all active:cursor-grabbing ${
+                    dragId === n.id ? "opacity-50" : ""
+                  } ${
                     isActive
-                      ? "bg-amber-500 text-stone-950 shadow-sm shadow-amber-500/40"
-                      : "bg-stone-500/15 text-stone-500 group-hover:bg-stone-500/25"
+                      ? "border-amber-500/60 bg-amber-500/10 shadow-sm shadow-amber-500/10"
+                      : "border-[var(--border)] hover:border-stone-400/60 hover:bg-stone-500/5 dark:hover:border-stone-500/60"
                   }`}
                 >
-                  {i + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveId(n.id)}
-                  onDoubleClick={() => renameTitle(n.id)}
-                  title="Seç (çift tıkla: yeniden adlandır)"
-                  className="max-w-56 truncate py-0.5 tracking-wide"
-                >
-                  {n.title}
-                </button>
-                <span className="flex items-center gap-0.5 opacity-40 transition-opacity group-hover:opacity-100">
+                  <span
+                    aria-hidden
+                    className={`mt-0.5 flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${
+                      isActive
+                        ? "bg-amber-500 text-stone-950"
+                        : "bg-stone-500/15 text-stone-500 group-hover:bg-stone-500/25"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => renameTitle(n.id)}
-                    title="Yeniden adlandır"
-                    className="rounded-md px-1 py-0.5 text-stone-400 hover:bg-stone-500/10 hover:text-amber-600"
+                    onClick={() => setActiveId(n.id)}
+                    onDoubleClick={() => renameTitle(n.id)}
+                    title="Seç (çift tıkla: yeniden adlandır)"
+                    aria-current={isActive ? "true" : undefined}
+                    className={`min-w-0 flex-1 py-0.5 text-left text-sm font-semibold leading-snug break-words ${
+                      isActive
+                        ? "text-amber-800 dark:text-amber-200"
+                        : "text-stone-600 dark:text-stone-300"
+                    }`}
                   >
-                    ✎
+                    {n.title}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => removeTitle(n.id)}
-                    title="Sil"
-                    className="rounded-md px-1 py-0.5 text-stone-400 hover:bg-rose-500/10 hover:text-rose-500"
-                  >
-                    ×
-                  </button>
-                </span>
-              </span>
-            );
-          })}
-        </div>
-      )}
+                  <span className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => renameTitle(n.id)}
+                      title="Yeniden adlandır"
+                      aria-label="Yeniden adlandır"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-stone-500/10 hover:text-amber-600"
+                    >
+                      <Icon name="pencil" className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeTitle(n.id)}
+                      title="Sil"
+                      aria-label="Sil"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-rose-500/10 hover:text-rose-500"
+                    >
+                      <Icon name="trash" className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
 
       {/* Active editor */}
       {active ? (
         <div ref={editorRef} className="scroll-mt-20">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold">
+          <h3 className="mb-3 flex items-start gap-2.5 px-1 text-base font-bold leading-snug">
             <span
               aria-hidden
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold tabular-nums text-stone-950"
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold tabular-nums text-stone-950"
             >
               {notes.findIndex((n) => n.id === active.id) + 1}
             </span>
-            {active.title}
+            <span className="min-w-0 break-words">{active.title}</span>
           </h3>
           <RichTextEditor
             key={active.id}
@@ -222,9 +251,9 @@ export function TitledNotes({
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-          Henüz başlık yok. <b>+ Başlık Ekle</b> ile ilk notunu oluştur.
+          Henüz başlık yok. <b>Başlık Ekle</b> ile ilk notunu oluştur.
         </p>
       )}
-    </div>
+    </section>
   );
 }

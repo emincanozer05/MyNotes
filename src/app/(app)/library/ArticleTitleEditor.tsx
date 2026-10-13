@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateArticleTitle } from "./actions";
@@ -51,7 +52,7 @@ export function ArticleTitleEditor({
           className="ml-1.5 align-middle text-xs text-stone-400 transition-colors hover:text-amber-600 dark:hover:text-amber-400"
           title="Başlığı düzenle"
         >
-          ✎
+          <Icon name="pencil" className="h-3.5 w-3.5" />
         </button>
       </span>
     );
@@ -83,7 +84,7 @@ export function ArticleTitleEditor({
         onClick={() => setEditing(false)}
         className="text-[11px] text-stone-400 hover:text-stone-600"
       >
-        ✕
+        <Icon name="x" className="h-3.5 w-3.5" />
       </button>
       {error && (
         <span className="w-full text-xs font-medium text-rose-600 dark:text-rose-400">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createQuickNote } from "./actions";
@@ -172,7 +173,7 @@ export function NewPostitButton({ category }: { category?: string }) {
                               }
                         }
                       >
-                        {on ? "✓ " : ""}
+                        {on && <Icon name="check" strokeWidth={2.4} />}{" "}
                         {t.name}
                       </button>
                     );

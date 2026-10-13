@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState } from "react";
 import { TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel } from "@/lib/categories";
@@ -139,7 +140,7 @@ export function TagPicker({
             onClick={onBack}
             className="w-full text-[11px] text-stone-500 hover:underline"
           >
-            ← Geri
+            <Icon name="arrow-left" /> Geri
           </button>
         )}
       </div>

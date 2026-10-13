@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -42,7 +43,7 @@ export default async function ArticlePdfPage({
         href={`/library/${data.id}`}
         className="text-sm text-stone-500 hover:text-amber-600"
       >
-        ← Makale
+        <Icon name="arrow-left" /> Makale
       </Link>
       <PdfViewer
         articleId={data.id}

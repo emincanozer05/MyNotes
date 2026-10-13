@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
@@ -128,7 +129,7 @@ export function AddCourseModal() {
               onClick={() => fileRef.current?.click()}
               className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-stone-500/10"
             >
-              🖼 Görsel ekle
+              <Icon name="image" /> Görsel ekle
             </button>
             {cover.startsWith("data:") && (
               // eslint-disable-next-line @next/next/no-img-element

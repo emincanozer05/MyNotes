@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -36,7 +37,7 @@ export function HeaderSearch() {
         title="Ara"
         className="shrink-0 rounded-full px-2 py-0.5 text-sm text-stone-500 transition-colors hover:bg-amber-500/10 hover:text-amber-600"
       >
-        ⌕
+        <Icon name="search" className="h-4 w-4" />
       </button>
     </form>
   );

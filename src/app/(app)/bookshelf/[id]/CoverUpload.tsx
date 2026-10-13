@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setBookCover } from "../actions";
@@ -55,7 +56,13 @@ export function CoverUpload({
           </span>
         )}
         <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-          {pending ? "Yükleniyor…" : "🖼 Kapağı değiştir"}
+          {pending ? (
+            "Yükleniyor…"
+          ) : (
+            <>
+              <Icon name="image" />&nbsp;Kapağı değiştir
+            </>
+          )}
         </span>
       </button>
       <input

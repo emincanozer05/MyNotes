@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { BackupPanel } from "./BackupPanel";
 
@@ -53,7 +54,7 @@ export default async function BackupPage() {
       <BackupPanel />
 
       <p className="rounded-xl border border-[var(--border)] p-4 text-xs text-stone-500">
-        💡 İpucu: Önemli çalışmalardan sonra düzenli olarak yedek indir. Yedek
+        <Icon name="lightbulb" className="h-4 w-4 text-amber-500" /> İpucu: Önemli çalışmalardan sonra düzenli olarak yedek indir. Yedek
         dosyası; makale, kitap, not ve etiket verilerini içerir.
       </p>
     </div>

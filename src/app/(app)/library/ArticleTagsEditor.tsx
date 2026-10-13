@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateArticleTags } from "./actions";
@@ -73,7 +74,11 @@ export function ArticleTagsEditor({
           className="rounded-full border border-dashed border-stone-400/50 px-2.5 py-0.5 text-[11px] font-semibold text-stone-500 transition-colors hover:border-sky-500/50 hover:text-sky-600"
           title="Etiketleri düzenle"
         >
-          {current.length > 0 ? "✎" : "+ Etiket ekle"}
+          {current.length > 0 ? (
+            <Icon name="pencil" className="h-3 w-3" />
+          ) : (
+            "+ Etiket ekle"
+          )}
         </button>
       </span>
     );
@@ -138,7 +143,7 @@ export function ArticleTagsEditor({
         onClick={() => setEditing(false)}
         className="text-[11px] text-stone-400 hover:text-stone-600"
       >
-        ✕
+        <Icon name="x" className="h-3.5 w-3.5" />
       </button>
     </span>
   );

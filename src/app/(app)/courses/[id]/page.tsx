@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -52,7 +53,7 @@ export default async function CourseDetailPage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link href="/courses" className="text-sm text-stone-500 hover:text-amber-600">
-        ← Kurslar ve Eğitimler (S&C)
+        <Icon name="arrow-left" /> Kurslar ve Eğitimler (S&C)
       </Link>
 
       <div className="glass-card overflow-hidden rounded-2xl">
@@ -83,25 +84,20 @@ export default async function CourseDetailPage({
               rel="noopener noreferrer"
               className="mt-3 inline-block text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"
             >
-              Kursa git ↗
+              Kursa git <Icon name="external" />
             </a>
           )}
         </div>
       </div>
 
-      <div>
-        <h2 className="mb-2 text-lg font-bold">Notların</h2>
-        <p className="mb-3 text-sm text-stone-500">
-          Her başlık için ayrı bir not tut — biçimlendir, görsel ekleyip
-          boyutlandır. Sağ üstten A4 çıktısı alabilirsin.
-        </p>
-        <TitledNotes
-          sourceId={course.id}
-          initialNotes={seededNotes}
-          printHref={`/print/${course.id}`}
-          tagCategory={COURSE_TAG_CATEGORY}
-        />
-      </div>
+      <TitledNotes
+        heading="Notların"
+        description="Her başlık için ayrı bir not tut — biçimlendir, görsel ekleyip boyutlandır."
+        sourceId={course.id}
+        initialNotes={seededNotes}
+        printHref={`/print/${course.id}`}
+        tagCategory={COURSE_TAG_CATEGORY}
+      />
     </div>
   );
 }

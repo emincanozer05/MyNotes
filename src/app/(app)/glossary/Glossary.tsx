@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -240,7 +241,7 @@ function EntryCard({
             title="Düzenle"
             className="rounded-full px-2 py-0.5 text-xs text-stone-500 hover:bg-stone-500/10"
           >
-            ✎
+            <Icon name="pencil" className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -249,7 +250,7 @@ function EntryCard({
             title="Sil"
             className="rounded-full px-2 py-0.5 text-xs text-stone-500 hover:bg-rose-500/15 hover:text-rose-600"
           >
-            🗑
+            <Icon name="trash" className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -263,7 +264,7 @@ function EntryCard({
           href={entry.source_path}
           className="mt-2 inline-block text-xs font-medium text-[var(--brand-1)] hover:underline"
         >
-          Kaynağa git →
+          Kaynağa git <Icon name="arrow-right" />
         </Link>
       )}
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}

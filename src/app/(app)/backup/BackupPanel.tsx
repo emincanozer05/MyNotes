@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -81,7 +82,7 @@ export function BackupPanel() {
           href="/api/backup/export"
           className="btn-gradient mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold"
         >
-          ⬇ Yedeği indir (.json)
+          <Icon name="download" /> Yedeği indir (.json)
         </a>
       </section>
 
@@ -99,7 +100,13 @@ export function BackupPanel() {
           disabled={importing}
           className="mt-4 rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-stone-500/10 disabled:opacity-60"
         >
-          {importing ? "Geri yükleniyor…" : "⬆ Yedek dosyası seç"}
+          {importing ? (
+            "Geri yükleniyor…"
+          ) : (
+            <>
+              <Icon name="upload" /> Yedek dosyası seç
+            </>
+          )}
         </button>
         <input
           ref={fileRef}
@@ -122,7 +129,7 @@ export function BackupPanel() {
         {result && (
           <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
             <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-              ✓ Geri yükleme tamamlandı
+              <Icon name="check" strokeWidth={2.4} /> Geri yükleme tamamlandı
             </p>
             <ul className="mt-2 space-y-0.5 text-xs text-stone-600 dark:text-stone-400">
               {Object.entries(result).map(([table, n]) => (

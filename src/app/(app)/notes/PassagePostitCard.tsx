@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { pastelize } from "@/lib/color";
@@ -154,7 +155,7 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
             }}
             className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-stone-700 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white"
           >
-            Kaynağa git →
+            Kaynağa git <Icon name="arrow-right" />
           </button>
         </div>
       )}

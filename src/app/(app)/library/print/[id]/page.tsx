@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -49,7 +50,7 @@ export default async function PrintArticlePage({
           href="/library"
           className="text-sm text-stone-500 hover:text-amber-600"
         >
-          ← Literatür
+          <Icon name="arrow-left" /> Literatür
         </Link>
         <PrintButton />
       </div>

@@ -1,4 +1,4 @@
-/** Crisp "×" for close buttons (the text glyph renders tiny in Gravity). */
+/** Crisp "×" for close buttons (the text glyph renders tiny in most fonts). */
 export function CloseIcon({ size = 14 }: { size?: number }) {
   return (
     <svg

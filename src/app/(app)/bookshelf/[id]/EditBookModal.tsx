@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
@@ -56,7 +57,7 @@ export function EditBookModal({
         title="Kitap bilgilerini düzelt"
         className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-medium transition-colors hover:bg-stone-500/10"
       >
-        ✎ Düzelt
+        <Icon name="pencil" /> Düzelt
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} labelledBy="edit-book-title">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/Icon";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateArticleTopic } from "./actions";
@@ -47,7 +48,13 @@ export function ArticleTopicEditor({
         }`}
         title="Konuyu düzenle"
       >
-        {isSet ? `${current} ✎` : "+ Konu ekle"}
+        {isSet ? (
+          <>
+            {current} <Icon name="pencil" className="h-3 w-3" />
+          </>
+        ) : (
+          "+ Konu ekle"
+        )}
       </button>
     );
   }
@@ -84,7 +91,7 @@ export function ArticleTopicEditor({
         onClick={() => setEditing(false)}
         className="text-[11px] text-stone-400 hover:text-stone-600"
       >
-        ✕
+        <Icon name="x" className="h-3.5 w-3.5" />
       </button>
     </span>
   );
