@@ -16,17 +16,18 @@ import {
 } from "@/lib/explain";
 
 /**
- * "Açıkla" — RemNote-style AI Explain for any readable text on the page.
+ * "Açıkla" — RemNote-style AI Explain for text written in the note / summary editors.
  *
- * Select text (mouse drag, keyboard, or long-press on touch) and a small
- * "Açıkla" button appears next to it. Pressing it sends the selection, its
+ * Select text in an editor and press its toolbar "Açıkla" button. That sends the selection, its
  * paragraph and the nearest section heading to `endpoint`, and streams the
  * explanation into a popup anchored to the selection. The popup can
  * re-generate the explanation simpler or in more detail from the same context.
  *
- * Self-contained: mount it once (the app layout does) and it works on every
- * page. Selections inside form controls, buttons, menus or any element marked
- * `data-no-explain` are ignored, and the component never cancels or alters
+ * Mount it once (the app layout does). It only reacts to selections inside the
+ * note / summary editors (`data-explain-inline`), which trigger it through
+ * `EXPLAIN_REQUEST_EVENT`; selections elsewhere are ignored, as are those inside
+ * form controls, buttons, menus or any element marked `data-no-explain`.
+ * The component never cancels or alters
  * page events, so interactive elements keep their normal behaviour.
  *
  * Results are cached per tab in memory (and per server instance by the
@@ -189,6 +190,9 @@ function readSelection(touch: boolean, path: string): Snapshot | null {
   for (const node of [common, elementOf(range.startContainer), elementOf(range.endContainer)]) {
     if (node?.closest(EXCLUDED)) return null;
   }
+
+  // Only the note / summary editors offer "Açıkla" (via their own toolbar button).
+  if (!common.closest("[data-explain-inline]")) return null;
 
   const text = normalizeText(sel.toString());
   if (!text || !/[\p{L}\p{N}]/u.test(text)) return null;
