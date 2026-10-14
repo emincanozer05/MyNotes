@@ -238,7 +238,7 @@ export function NotesBoard({
                 <option value="">Tüm etiketler ({allTags.length})</option>
                 {allTags.map((t) => (
                   <option key={t.name} value={t.name}>
-                    #{t.name} ({tagCounts.get(t.name) ?? 0})
+                    {t.name} ({tagCounts.get(t.name) ?? 0})
                   </option>
                 ))}
               </select>

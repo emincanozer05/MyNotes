@@ -122,7 +122,7 @@ export default async function PrintArticlePage({
                     </p>
                     {tags.length > 0 && (
                       <p className="mt-1 text-xs text-stone-500">
-                        {tags.map((t) => `#${t}`).join("  ")}
+                        {tags.join("  ")}
                       </p>
                     )}
                   </article>

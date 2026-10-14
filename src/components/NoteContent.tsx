@@ -20,7 +20,7 @@ function linkifyToHtml(text: string, linkMap: Map<string, string>): string {
     const preChar = pre ?? "";
     const t = String(tag);
     const href = `/notes?tag=${encodeURIComponent(t.toLocaleLowerCase("tr"))}`;
-    return `${preChar}<a href="${href}" class="font-medium text-sky-700 dark:text-sky-400 hover:underline">#${t}</a>`;
+    return `${preChar}<a href="${href}" class="font-medium text-sky-700 dark:text-sky-400 hover:underline">${t}</a>`;
   });
 }
 
@@ -97,7 +97,7 @@ export function NoteContent({
           href={`/notes?tag=${encodeURIComponent(tag.toLocaleLowerCase("tr"))}`}
           className="font-medium text-sky-700 dark:text-sky-400 hover:underline"
         >
-          #{tag}
+          {tag}
         </Link>,
       );
     }

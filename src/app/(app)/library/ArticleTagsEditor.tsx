@@ -60,7 +60,7 @@ export function ArticleTagsEditor({
             key={tag}
             className="rounded-full border border-sky-500/40 bg-sky-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"
           >
-            #{tag}
+            {tag}
           </span>
         ))}
         <button
@@ -91,7 +91,7 @@ export function ArticleTagsEditor({
           key={tag}
           className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"
         >
-          #{tag}
+          {tag}
           <button
             type="button"
             onClick={() => setList((prev) => prev.filter((t) => t !== tag))}

@@ -83,7 +83,7 @@ export default async function NoteDetailPage({
                 href={`/notes?tag=${encodeURIComponent(t.name)}`}
                 className="rounded-full bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100"
               >
-                #{t.name}
+                {t.name}
               </Link>
               <form action={deleteTagAction} className="absolute -right-1.5 -top-1.5">
                 <input type="hidden" name="id" value={t.id} />

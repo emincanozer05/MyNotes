@@ -20,6 +20,7 @@ import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { IntentLink } from "@/components/IntentLink";
 import { Icon, type IconName } from "@/components/Icon";
 import { MyNoteCard } from "./MyNoteCard";
+import { buildTagGraph, NO_TAG, NO_TAG_LABEL, TagMap } from "./TagMap";
 import {
   FilterSelect,
   LibraryToolbar,
@@ -198,6 +199,10 @@ export function LiteratureTabs({
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [noteTagFilter, setNoteTagFilter] = useState<string>("all");
+  // "Notlarım": tag map (default) or the searchable list; `mapTag` is the tag
+  // selected on the map (its articles open below it).
+  const [notesView, setNotesView] = useState<"map" | "list">("map");
+  const [mapTag, setMapTag] = useState<string | null>(null);
   // Local list controls shared by "Kaydedilenler" and "Notlarım".
   const [listQuery, setListQuery] = useState("");
   const [sort, setSort] = useState<SortId>("added");
@@ -278,6 +283,19 @@ export function LiteratureTabs({
     }
     return sortArticles(list, sort);
   }, [notlarim, noteTagFilter, listQuery, sort]);
+
+  // Tag map data + the articles of the selected tag.
+  const tagGraph = useMemo(() => buildTagGraph(notlarim.map(tagsOf)), [notlarim]);
+  const mapSelected =
+    mapTag && tagGraph.nodes.some((n) => n.id === mapTag) ? mapTag : null;
+  const mapArticles = useMemo(() => {
+    if (!mapSelected) return [];
+    const list = notlarim.filter((a) => {
+      const tags = tagsOf(a);
+      return mapSelected === NO_TAG ? tags.length === 0 : tags.includes(mapSelected);
+    });
+    return sortArticles(list, "added");
+  }, [notlarim, mapSelected]);
 
   const savedFilteredCount = useMemo(() => {
     let n = 0;
@@ -604,7 +622,6 @@ export function LiteratureTabs({
                   items={savedTagItems}
                   active={tagFilter}
                   onChange={setTagFilter}
-                  prefix="#"
                 />
               )}
             </LibraryToolbar>
@@ -729,6 +746,84 @@ export function LiteratureTabs({
       {tab === "annotated" &&
         (notlarim.length > 0 ? (
           <div className="space-y-4">
+            <div
+              role="group"
+              aria-label="Notlarım görünümü"
+              className="flex w-fit overflow-hidden rounded-full border border-[var(--border)] text-xs font-semibold"
+            >
+              {(
+                [
+                  { id: "map", label: "Harita", icon: "network" },
+                  { id: "list", label: "Liste", icon: "list" },
+                ] as const
+              ).map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setNotesView(v.id)}
+                  aria-pressed={notesView === v.id}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 transition-colors ${
+                    notesView === v.id
+                      ? "bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                      : "bg-[var(--surface-2)] text-stone-500 hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  <Icon name={v.icon} className="h-3.5 w-3.5" />
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
+            {notesView === "map" ? (
+              <div className="space-y-4">
+                <p className="text-sm text-[var(--muted)]">
+                  {tagGraph.nodes.length} etiket · {notlarim.length} çalışma — etikete
+                  tıkla, o etiketteki çalışmalar altta açılsın; sürükle, kaydır ve
+                  yakınlaştır.
+                </p>
+                <TagMap
+                  nodes={tagGraph.nodes}
+                  edges={tagGraph.edges}
+                  selected={mapSelected}
+                  onSelect={setMapTag}
+                />
+                {mapSelected ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-base font-bold">
+                        {mapSelected === NO_TAG ? NO_TAG_LABEL : mapSelected}
+                        <span className="ml-2 text-xs font-normal text-stone-500">
+                          {mapArticles.length} çalışma
+                        </span>
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setMapTag(null)}
+                        className="btn-ghost inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                      >
+                        <Icon name="x" /> Seçimi kaldır
+                      </button>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {mapArticles.map((a) => (
+                        <MyNoteCard
+                          key={a.id}
+                          article={a}
+                          noteCount={noteCounts[a.id] ?? 0}
+                          allTags={allTags}
+                          layout="grid"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-dashed border-stone-300 p-6 text-center text-sm text-stone-500 dark:border-stone-700">
+                    Haritadan bir etiket seç.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
             <LibraryToolbar
               query={listQuery}
               onQueryChange={setListQuery}
@@ -746,7 +841,6 @@ export function LiteratureTabs({
                   items={noteTagItems}
                   active={noteTagFilter}
                   onChange={setNoteTagFilter}
-                  prefix="#"
                 />
               )}
             </LibraryToolbar>
@@ -782,6 +876,8 @@ export function LiteratureTabs({
                     layout={view}
                   />
                 ))}
+              </div>
+            )}
               </div>
             )}
           </div>

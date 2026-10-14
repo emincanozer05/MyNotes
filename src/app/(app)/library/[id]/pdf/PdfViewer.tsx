@@ -709,7 +709,7 @@ export function PdfViewer({
                   </div>
                   <p className="text-[11px] text-stone-500">
                     Etiket:{" "}
-                    {menuTags === null ? "…" : menuTags.length ? menuTags.map((t) => `#${t}`).join(" ") : "yok"}
+                    {menuTags === null ? "…" : menuTags.length ? menuTags.join(", ") : "yok"}
                   </p>
                   <div className="flex gap-2 pt-0.5">
                     <button

@@ -111,6 +111,15 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    dosya + eskileri silme); tablo oluşunca ilk okumada otomatik tabloya taşınır.
    Erişim `src/lib/glossaryStore.ts` üzerinden.
 
+12. ✅ Arayüz düzeltmeleri: not editörünün seçim araç kutusunda "Açıkla" butonu
+   (`ExplainSelection` yalnızca `EXPLAIN_REQUEST_EVENT` olayıyla tetiklenir; editörde
+   yüzen buton gizlenir, `data-explain-inline`); Kitap Notları başlıkları açılır
+   menü (`TitledNotes`); etiketlerde `#` öneki gösterilmez (yazarken `#etiket`
+   sözdizimi geçerli); Literatür "Notlarım" sekmesi etiket haritası
+   (`library/TagMap.tsx`, d3-force): düğüm = etiket (boyut = çalışma sayısı), kenar =
+   aynı makalede birlikte geçme; etikete tıklayınca o etiketin çalışmaları altta açılır;
+   "Liste" görünümü eski arama/sıralama listesini korur.
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS

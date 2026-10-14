@@ -34,6 +34,13 @@ export type ExplainEvent =
 
 // Limits are enforced on both sides: the client refuses before sending, the
 // server re-validates since the endpoint is reachable directly.
+/**
+ * Window event the rich-text editor's selection toolbar fires to ask
+ * `ExplainSelection` to explain the current selection (the editor shows its own
+ * "Açıkla" button inside the toolbar instead of the floating one).
+ */
+export const EXPLAIN_REQUEST_EVENT = "explain-selection";
+
 export const MAX_SELECTION_CHARS = 3000;
 export const MAX_PARAGRAPH_CHARS = 2400;
 export const MAX_HEADING_CHARS = 300;
