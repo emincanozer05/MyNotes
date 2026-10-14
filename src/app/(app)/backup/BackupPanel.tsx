@@ -36,7 +36,7 @@ export function BackupPanel() {
     const data = parsed as { app?: string; tables?: unknown };
     // Accept both the current ("noteflow") and legacy ("sc-hub") backup ids.
     if ((data?.app !== "noteflow" && data?.app !== "sc-hub") || !data?.tables) {
-      setError("Bu dosya bir NOTE yedeği değil.");
+      setError("Bu dosya bir Memory Palace yedeği değil.");
       return;
     }
     if (

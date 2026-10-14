@@ -66,10 +66,16 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             href="/"
             className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
           >
-            {/* Wordmark logo (same as the app icon), drawn as text so it
-                follows the light/dark theme. */}
-            <span className="pl-1 text-xl font-normal leading-none tracking-[0.32em]">
-              NOTE
+            {/* Logo on a white tile (the mark's dark letters need a light
+                background in dark theme), same as the app icon. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/icon-192.png"
+              alt=""
+              className="h-9 w-9 rounded-lg border border-[var(--border)]"
+            />
+            <span className="text-base font-semibold leading-tight">
+              Memory Palace
             </span>
           </Link>
           <button

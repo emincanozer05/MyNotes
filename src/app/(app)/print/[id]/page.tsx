@@ -63,7 +63,7 @@ export default async function PrintSourcePage({
           )}
           <div className="flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-              NOTE — Not Föyü
+              Memory Palace — Not Föyü
             </p>
             <h1 className="mt-2 text-2xl font-bold leading-snug">{source.title}</h1>
             {(source.authors.length > 0 || source.year) && (

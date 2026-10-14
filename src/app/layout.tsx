@@ -12,12 +12,12 @@ const googleSans = Google_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "NOTE",
-  applicationName: "NOTE",
+  title: "Memory Palace",
+  applicationName: "Memory Palace",
   // Home-screen install on iOS (Android reads app/manifest.ts).
   // "black-translucent": the page draws under the iOS status bar, so the
   // bar takes the app header's colour instead of a white strip.
-  appleWebApp: { capable: true, title: "NOTE", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Memory Palace", statusBarStyle: "black-translucent" },
   description:
     "Literatür takibi, bilimsel not alma ve kategorili bilgi yönetimi platformu",
 };
