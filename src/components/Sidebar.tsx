@@ -66,13 +66,12 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             href="/"
             className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
           >
-            {/* Logo on a white tile (the mark's dark letters need a light
-                background in dark theme), same as the app icon. */}
+            {/* Transparent logo; its dark letters get a light outline in dark theme. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/icons/icon-192.png"
               alt=""
-              className="h-9 w-9 rounded-lg border border-[var(--border)]"
+              className="h-9 w-9 dark:[filter:drop-shadow(0_0_1px_#fff)_drop-shadow(0_0_1px_#fff)]"
             />
             <span className="text-base font-semibold leading-tight">
               Memory Palace
