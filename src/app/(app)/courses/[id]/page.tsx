@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CourseControls } from "./CourseControls";
+import { EditableTitle } from "./EditableTitle";
 import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { normalizeStatus } from "../status";
@@ -66,7 +67,7 @@ export default async function CourseDetailPage({
           />
         )}
         <div className="p-5">
-          <h1 className="text-2xl font-bold leading-tight">{course.title}</h1>
+          <EditableTitle courseId={course.id} title={course.title} />
           {(course.authors.length > 0 || course.year) && (
             <p className="mt-1 text-sm text-stone-500">
               {course.authors.join(", ")}
