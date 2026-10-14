@@ -12,6 +12,7 @@ const TABLES = [
   "flashcards",
   "voice_notes",
   "contacts",
+  "career_nodes",
 ] as const;
 
 /**
