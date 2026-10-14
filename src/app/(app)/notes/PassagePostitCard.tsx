@@ -91,7 +91,6 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
               className="rounded-full px-2 py-0.5 text-[9px] font-semibold text-white"
               style={{ background: t.color ?? "#78716c" }}
             >
-              <span className="opacity-70"># </span>
               {t.name}
             </span>
           ))}
@@ -134,7 +133,6 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
                   className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
                   style={{ background: t.color ?? "#78716c" }}
                 >
-                  <span className="opacity-70"># </span>
                   {t.name}
                 </span>
               ))}
