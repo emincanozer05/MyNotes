@@ -12,6 +12,7 @@ import { addGlossaryEntry } from "@/app/(app)/glossary/actions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel, normalizeCategory } from "@/lib/categories";
 import { EXPLAIN_REQUEST_EVENT } from "@/lib/explain";
+import { imageFileToDataUrl } from "@/lib/imageDataUrl";
 import { translateInfoLabel } from "@/lib/translateInfo";
 import { applyGroupTranslation, groupTextNodes, joinGroupText } from "@/lib/translateGroups";
 
@@ -343,22 +344,86 @@ export function RichTextEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const doSave = useCallback(async () => {
-    const html = ref.current?.innerHTML ?? latestHtmlRef.current;
-    latestHtmlRef.current = html;
-    if (html === lastSavedRef.current) return;
-    setSaveState("saving");
-    setError(null);
-    const res = await onSaveRef.current(html);
-    if (res?.error) {
-      setSaveState("error");
-      setError(res.error);
-    } else {
-      lastSavedRef.current = html;
-      setSaveState("saved");
-      setSavedAt(new Date().toLocaleTimeString("tr-TR"));
+  /**
+   * One save at a time (the note is sent whole, so overlapping requests could
+   * land out of order). A server action that throws means the request never
+   * got an answer (flaky tablet/mobile link, page suspended, body too large):
+   * retry a few times with backoff instead of failing on the first hiccup.
+   */
+  const savingRef = useRef(false);
+  const saveAgainRef = useRef(false);
+  const networkFailRef = useRef(false);
+  const autoRetriesRef = useRef(0);
+
+  const saveWithRetry = useCallback(async (html: string) => {
+    const delays = [0, 1200, 3500];
+    for (let i = 0; i < delays.length; i++) {
+      if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
+      try {
+        return { res: await onSaveRef.current(html), network: false };
+      } catch {
+        // retry
+      }
     }
+    return { res: null, network: true };
   }, []);
+
+  const doSave = useCallback(async () => {
+    if (savingRef.current) {
+      saveAgainRef.current = true;
+      return;
+    }
+    savingRef.current = true;
+    try {
+      do {
+        saveAgainRef.current = false;
+        const html = ref.current?.innerHTML ?? latestHtmlRef.current;
+        latestHtmlRef.current = html;
+        if (html === lastSavedRef.current) break;
+        setSaveState("saving");
+        setError(null);
+        const { res, network } = await saveWithRetry(html);
+        networkFailRef.current = network;
+        if (network || res?.error) {
+          setSaveState("error");
+          setError(
+            network
+              ? "Bağlantı sorunu: kaydedilemedi, bağlantı düzelince otomatik yeniden denenecek."
+              : (res?.error ?? "Kaydedilemedi"),
+          );
+          break;
+        }
+        autoRetriesRef.current = 0;
+        lastSavedRef.current = html;
+        setSaveState("saved");
+        setSavedAt(new Date().toLocaleTimeString("tr-TR"));
+      } while (saveAgainRef.current);
+    } finally {
+      savingRef.current = false;
+    }
+  }, [saveWithRetry]);
+
+  // After a network failure, keep trying in the background: when the link
+  // comes back, the tab becomes visible again, or every 15 s (max 8 times).
+  useEffect(() => {
+    if (saveState !== "error" || !networkFailRef.current) return;
+    const retry = () => {
+      if (autoRetriesRef.current >= 8) return;
+      autoRetriesRef.current += 1;
+      void doSave();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") retry();
+    };
+    const id = setInterval(retry, 15_000);
+    window.addEventListener("online", retry);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("online", retry);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [saveState, doSave]);
 
   const scheduleSave = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -392,7 +457,7 @@ export function RichTextEditor({
       if (timerRef.current) clearTimeout(timerRef.current);
       if (hideTimer.current) clearTimeout(hideTimer.current);
       if (latestHtmlRef.current !== lastSavedRef.current) {
-        void onSaveRef.current(latestHtmlRef.current);
+        void Promise.resolve(onSaveRef.current(latestHtmlRef.current)).catch(() => {});
       }
     };
   }, []);
@@ -540,9 +605,7 @@ export function RichTextEditor({
   }
 
   function insertImageFromFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => insertImageFromDataUrl(String(reader.result));
-    reader.readAsDataURL(file);
+    void imageFileToDataUrl(file).then(insertImageFromDataUrl);
   }
 
 

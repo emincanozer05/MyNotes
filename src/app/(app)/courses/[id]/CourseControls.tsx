@@ -1,5 +1,6 @@
 "use client";
 
+import { imageFileToDataUrl } from "@/lib/imageDataUrl";
 import { Icon } from "@/components/Icon";
 import { useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -26,15 +27,12 @@ export function CourseControls({
   }
 
   function handleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result);
+    void imageFileToDataUrl(file, { maxDim: 1000 }).then((dataUrl) => {
       startTransition(async () => {
         await setCourseCover(courseId, dataUrl);
         router.refresh();
       });
-    };
-    reader.readAsDataURL(file);
+    });
   }
 
   return (

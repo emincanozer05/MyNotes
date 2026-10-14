@@ -107,7 +107,13 @@ export function CareerTree({
       try {
         error = (await task()).error;
       } catch {
-        error = "Bağlantı hatası: değişiklikler kaydedilemedi.";
+        // Request got no answer (flaky tablet link): retry once before failing.
+        try {
+          await new Promise((r) => setTimeout(r, 1500));
+          error = (await task()).error;
+        } catch {
+          error = "Bağlantı hatası: değişiklikler kaydedilemedi.";
+        }
       }
       inflight.current -= 1;
       if (error) {
