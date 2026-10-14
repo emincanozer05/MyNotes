@@ -14,6 +14,7 @@ import {
 } from "react";
 import { PinchTracker, type PinchView } from "@/lib/pinchZoom";
 import {
+  LINE_H,
   STATUS_LABEL,
   branchPath,
   branchWidth,
@@ -105,7 +106,7 @@ interface NodeViewProps {
   depth: number;
   dir: -1 | 0 | 1;
   color: string;
-  label: string;
+  lines: string[];
   labelWidth: number;
   sub: string;
   aria: string;
@@ -283,27 +284,35 @@ const NodeView = memo(function NodeView(p: NodeViewProps) {
             fontWeight={700}
             className="career-label"
           >
-            {p.label}
+            {p.lines.map((line, i) => (
+              <tspan key={i} x={0} dy={i === 0 ? 0 : 18}>
+                {line}
+              </tspan>
+            ))}
           </text>
         ) : (
           <g>
             {/* Invisible plate: the whole label is a click / drag target */}
             <rect
               x={p.dir > 0 ? tx - 4 : tx - p.labelWidth - 4}
-              y={-22}
+              y={-6 - p.lines.length * LINE_H - 2}
               width={p.labelWidth + 8}
-              height={44}
+              height={p.lines.length * LINE_H + 44}
               fill="transparent"
             />
             <text
               x={tx}
-              y={-6}
+              y={-6 - (p.lines.length - 1) * LINE_H}
               textAnchor={anchor}
               fontSize={fontSize}
               fontWeight={depth <= 1 ? 700 : 600}
               className="career-label"
             >
-              {p.label}
+              {p.lines.map((line, i) => (
+                <tspan key={i} x={tx} dy={i === 0 ? 0 : LINE_H}>
+                  {line}
+                </tspan>
+              ))}
             </text>
             <text
               x={tx}
@@ -804,9 +813,7 @@ export function TreeCanvas(props: Props) {
                 fontWeight={700}
                 className="career-label"
               >
-                {draggedNode.title.length > 28
-                  ? `${draggedNode.title.slice(0, 27)}…`
-                  : draggedNode.title}
+                {draggedNode.title}
               </text>
             </g>
           )}
@@ -882,7 +889,7 @@ function NodeItem({
       depth={n.depth}
       dir={n.dir}
       color={n.color}
-      label={n.label}
+      lines={n.lines}
       labelWidth={n.labelWidth}
       sub={sub}
       aria={`${node.title}, ${sub}`}
