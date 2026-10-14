@@ -68,8 +68,9 @@ npm run lint    # eslint
    türetilir, ağda olmayan ortak tanıdık yeni kişi olarak eklenir. Literatür
    listesi `library_articles()` RPC'si (`0011`) ile görselsiz özet çeker;
    etiket filtreleri (Literatür + Post-it) dropdown; dar ekranda açılır menü.
-8. ✅ Aşama 8 — **Açıkla** (RemNote AI Explain benzeri): herhangi bir okunabilir
-   metin seçilince yanında "Açıkla" butonu çıkar; seçim + paragraf + en yakın
+8. ✅ Aşama 8 — **Açıkla** (RemNote AI Explain benzeri): yalnızca not/özet yazma
+   bölümlerinde (`RichTextEditor`, `data-explain-inline`) metin seçilince araç
+   çubuğundaki "Açıkla" butonuyla çalışır; sayfanın başka yerlerinde buton çıkmaz; seçim + paragraf + en yakın
    başlık `POST /api/explain`'e gider, açıklama NDJSON akışıyla seçimin yanındaki
    popup'a yazılır ("Daha Basit Açıkla" / "Detaylandır" aynı bağlamla yeniden
    üretir). Bileşen `src/components/ExplainSelection.tsx` (app layout'ta tek kez
