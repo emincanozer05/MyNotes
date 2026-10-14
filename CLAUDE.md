@@ -126,6 +126,20 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    (`src/lib/pinchZoom.ts`, pointer events); Tailwind `hover:` dokunmatikte çalışmadığından
    hover ile açılan sil butonları `touch-show` sınıfıyla dokunmatikte hep görünür.
 
+14. ✅ **Kariyer Yol Haritası** (`/career`, kenar çubuğunda ayrı sekme): ana kariyer
+   hedefi ağacın gövdesi, gelişim alanları ana dallar, alt hedefler/görevler
+   dallardaki düğümlerdir (kutu/liste/Kanban yok). Tek tabloda (`career_nodes`,
+   `0016`; komşuluk listesi, kullanıcı başına tek gövde, `parent_id` cascade) tutulur:
+   durum, öncelik, tarihler, alt görevler, kaynaklar, notlar, ön koşullar
+   (`prerequisites` → kilitli düğüm), dal rengi/tarafı, `collapsed`, `sort_order`.
+   Saf mantık `src/lib/career.ts` (ilerleme = yaprak hedeflerden hesaplanır, iki
+   taraflı ağaç yerleşimi, örnek ağaç); arayüz `src/app/(app)/career/`:
+   `CareerTree.tsx` (yerel durum + sıralı, iyimser Supabase yazımı: `actions.ts`),
+   `TreeCanvas.tsx` (SVG; sürükle/tekerlek/iki parmak zoom, düğümü başka düğüme
+   sürükleyerek taşıma, aç/kapa, sığdır, tam ekran), `NodePanel.tsx` (sağ detay
+   paneli). Tamamlanan dallar bağlantı çizgisini doldurur; tamamlanınca tek seferlik
+   halka animasyonu. Yedeklemeye dahil. Tablo yoksa sayfa açıklayıcı uyarı gösterir.
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS

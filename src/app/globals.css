@@ -470,3 +470,154 @@ h2 {
     opacity: 1;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Kariyer Yol Haritası — SVG ağaç. Durum, CSS ile okunur (data-state), böylece
+   düğümler React'te yeniden çizilmeden vurgulanır / solar.
+--------------------------------------------------------------------------- */
+.career-node {
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 0.9, 0.35, 1),
+    opacity 0.2s ease;
+}
+.career-node[data-state="idle"],
+.career-node[data-state="locked"] {
+  opacity: 0.55;
+}
+.career-node:hover,
+.career-node:focus-visible,
+.career-node[data-selected] {
+  opacity: 1;
+}
+.career-node[data-match="miss"] {
+  opacity: 0.22;
+}
+.career-node[data-dragging] {
+  opacity: 0.25;
+}
+.career-node:focus-visible circle:first-child + circle {
+  stroke: var(--ring);
+}
+.career-enter {
+  animation: career-in 0.3s ease-out both;
+}
+@keyframes career-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.career-label {
+  fill: var(--foreground);
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.career-sub {
+  fill: var(--muted);
+  font-weight: 500;
+}
+.career-pct {
+  pointer-events: none;
+}
+/* Branches fill with the child's progress; completing a goal eases the fill in. */
+.career-edge {
+  transition: d 0.32s cubic-bezier(0.22, 0.9, 0.35, 1);
+}
+.career-edge-fill {
+  transition:
+    stroke-dasharray 0.7s ease-out,
+    d 0.32s cubic-bezier(0.22, 0.9, 0.35, 1);
+}
+.career-ring {
+  transition: stroke-dasharray 0.7s ease-out;
+}
+.career-fill {
+  animation: career-fill 0.45s ease-out both;
+}
+@keyframes career-fill {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* One expanding ring when a goal is completed. */
+.career-pulse {
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: career-pulse 0.9s ease-out both;
+}
+@keyframes career-pulse {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+/* Quick actions appear on hover / selection (touch: selection). */
+.career-actions {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.career-node:hover .career-actions,
+.career-node:focus-within .career-actions,
+.career-node[data-selected] .career-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.career-btn {
+  cursor: pointer;
+}
+.career-btn circle {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.4;
+}
+.career-btn path {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.career-btn:hover circle {
+  fill: var(--surface-2);
+  stroke: var(--brand-1);
+}
+.career-pill rect {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.4;
+}
+.career-pill text {
+  fill: var(--foreground);
+  pointer-events: none;
+}
+.career-pill:hover rect {
+  stroke: var(--brand-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .career-node,
+  .career-edge,
+  .career-edge-fill,
+  .career-ring,
+  .career-enter,
+  .career-fill,
+  .career-pulse {
+    transition: none;
+    animation: none;
+  }
+}
