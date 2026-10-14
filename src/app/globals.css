@@ -462,3 +462,11 @@ h2 {
   /* White highlight text (on-screen) is unreadable on printed white paper. */
   .tag-mark { color: #000 !important; }
 }
+
+/* Tailwind's hover: variants only apply on hover-capable pointers, so controls
+   revealed on hover (delete buttons on cards) stay visible on touch screens. */
+@media (hover: none) {
+  .touch-show {
+    opacity: 1;
+  }
+}

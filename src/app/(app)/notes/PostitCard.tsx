@@ -88,7 +88,7 @@ export function PostitCard({ note }: { note: PostitData }) {
               e.stopPropagation();
               if (!window.confirm("Bu not silinsin mi?")) e.preventDefault();
             }}
-            className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs font-bold leading-none text-stone-700/70 opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+            className="flex h-5 w-5 items-center justify-center rounded-full bg-black/10 text-xs font-bold leading-none text-stone-700/70 touch-show opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
           >
             ×
           </button>

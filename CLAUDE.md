@@ -120,6 +120,12 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    aynı makalede birlikte geçme; etikete tıklayınca o etiketin çalışmaları altta açılır;
    "Liste" görünümü eski arama/sıralama listesini korur.
 
+13. ✅ Tablet uyumu: kenar çubuğu `lg` (1024px) altında açılır menüdür (dikey tablet
+   tam genişlik kullanır); haritalar (`NetworkGraph`, `TagMap`) iki parmakla
+   yakınlaştırma/uzaklaştırma + iki parmakla kaydırmayı destekler
+   (`src/lib/pinchZoom.ts`, pointer events); Tailwind `hover:` dokunmatikte çalışmadığından
+   hover ile açılan sil butonları `touch-show` sınıfıyla dokunmatikte hep görünür.
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS

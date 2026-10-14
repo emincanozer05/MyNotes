@@ -43,7 +43,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menüyü aç"
-        className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] md:hidden"
+        className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] lg:hidden"
       >
         <Icon name="menu" className="h-5 w-5" />
       </button>
@@ -51,12 +51,12 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         <div
           aria-hidden
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
         />
       )}
 
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-transform duration-200 md:sticky md:top-0 md:z-auto md:h-screen md:w-56 md:translate-x-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-56 lg:translate-x-0 ${
           open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
@@ -75,7 +75,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Menüyü kapat"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--muted)] hover:bg-[var(--surface-2)] md:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--muted)] hover:bg-[var(--surface-2)] lg:hidden"
           >
             <CloseIcon />
           </button>
