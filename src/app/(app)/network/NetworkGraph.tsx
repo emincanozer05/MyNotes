@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/Icon";
+import { PinchTracker } from "@/lib/pinchZoom";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   forceCollide,
@@ -109,6 +110,8 @@ export function NetworkGraph({
   const sizeRef = useRef<{ w: number; h: number } | null>(null);
   const hoveredRef = useRef<string | null>(null);
   const driftRef = useRef(true);
+  /** Two-finger pinch zoom / pan (touch + pen). */
+  const pinch = useRef(new PinchTracker(MIN_ZOOM, MAX_ZOOM));
   /** Focus request for a node that isn't on the map yet (just saved). */
   const pendingFocus = useRef<string | null>(null);
 
@@ -378,6 +381,33 @@ export function NetworkGraph({
     | null
   >(null);
 
+  function canvasOrigin() {
+    const rect = svgRef.current!.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  }
+
+  /** Drops the current one-finger gesture (a node drag releases its node). */
+  function cancelGesture() {
+    const g = gesture.current;
+    gesture.current = null;
+    if (g?.type === "drag") {
+      const n = nodesRef.current.get(g.id);
+      if (n) {
+        n.fx = null;
+        n.fy = null;
+      }
+      simRef.current?.alphaTarget(driftRef.current ? IDLE_ALPHA : 0);
+    }
+  }
+
+  /** Registers the pointer; true when a second finger started a pinch. */
+  function beginPinch(e: React.PointerEvent): boolean {
+    if (!pinch.current.down(e, canvasOrigin(), viewRef.current)) return false;
+    svgRef.current?.setPointerCapture(e.pointerId);
+    cancelGesture();
+    return true;
+  }
+
   function toGraph(clientX: number, clientY: number) {
     const rect = svgRef.current!.getBoundingClientRect();
     const v = viewRef.current;
@@ -390,6 +420,7 @@ export function NetworkGraph({
   function onNodePointerDown(e: React.PointerEvent, id: string) {
     if (e.button !== 0) return;
     e.stopPropagation();
+    if (beginPinch(e)) return;
     svgRef.current?.setPointerCapture(e.pointerId);
     const n = nodesRef.current.get(id);
     if (!n) return;
@@ -401,12 +432,21 @@ export function NetworkGraph({
 
   function onSvgPointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return;
+    if (beginPinch(e)) return;
     svgRef.current?.setPointerCapture(e.pointerId);
     const v = viewRef.current;
     gesture.current = { type: "pan", sx: e.clientX, sy: e.clientY, vx: v.x, vy: v.y, moved: false };
   }
 
   function onPointerMove(e: React.PointerEvent) {
+    const pinched = pinch.current.move(e, canvasOrigin());
+    if (pinch.current.active) {
+      if (pinched) {
+        viewRef.current = pinched;
+        applyView();
+      }
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
     const dx = e.clientX - g.sx;
@@ -425,6 +465,7 @@ export function NetworkGraph({
   }
 
   function onPointerUp(e: React.PointerEvent) {
+    pinch.current.up(e);
     const g = gesture.current;
     gesture.current = null;
     if (svgRef.current?.hasPointerCapture(e.pointerId)) {

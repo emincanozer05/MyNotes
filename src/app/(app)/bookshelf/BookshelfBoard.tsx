@@ -123,7 +123,7 @@ export function BookshelfBoard({
                     ariaLabel="Kitabı sil"
                     title="Sil"
                     message={`"${b.title}" kitabı ve notları silinsin mi?`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/30 text-sm leading-none text-white/80 opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/30 text-sm leading-none text-white/80 touch-show opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
                   </ConfirmSubmit>

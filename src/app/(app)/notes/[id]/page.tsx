@@ -91,7 +91,7 @@ export default async function NoteDetailPage({
                   message={`"${t.name}" etiketi tüm notlardan silinsin mi?`}
                   title="Etiketi sil"
                   ariaLabel={`${t.name} etiketini sil`}
-                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100"
+                  className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--surface)] bg-stone-500 text-[9px] leading-none text-white touch-show opacity-0 transition-opacity hover:bg-rose-600 group-hover:opacity-100"
                 >
                   ×
                 </ConfirmSubmit>

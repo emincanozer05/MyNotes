@@ -80,7 +80,7 @@ export default async function CoursesPage() {
                     ariaLabel="Sil"
                     title="Sil"
                     message={`"${c.title}" silinsin mi?`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-sm leading-none text-white/80 opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-sm leading-none text-white/80 touch-show opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
                   </ConfirmSubmit>
