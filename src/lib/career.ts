@@ -376,8 +376,8 @@ export interface LayoutNode {
   dir: -1 | 0 | 1;
   /** Branch colour (inherited from the main branch). */
   color: string;
-  /** Display label, already truncated. */
-  label: string;
+  /** Full title, word-wrapped into display lines (never truncated). */
+  lines: string[];
   labelWidth: number;
   parentId: string | null;
 }
@@ -394,15 +394,43 @@ const BRANCH_GAP = 26;
 const COL_GAP = 64;
 const ROOT_GAP = 110;
 const CHAR_W = 6.7;
-const MAX_LABEL = 26;
+/** Characters per label line before the title wraps. */
+const WRAP_AT = 30;
+const ROOT_WRAP_AT = 40;
+export const LINE_H = 14;
 
 export function radiusAt(depth: number): number {
   return RADIUS[Math.min(depth, RADIUS.length - 1)];
 }
 
-function truncate(s: string, max = MAX_LABEL): string {
-  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+/** Word-wraps a title; words longer than a line are split. Never drops text. */
+function wrapTitle(title: string, max: number): string[] {
+  const lines: string[] = [];
+  let cur = "";
+  for (const raw of title.trim().split(/\s+/)) {
+    let word = raw;
+    while (word.length > max) {
+      if (cur) {
+        lines.push(cur);
+        cur = "";
+      }
+      lines.push(word.slice(0, max));
+      word = word.slice(max);
+    }
+    if (!cur) cur = word;
+    else if (cur.length + 1 + word.length <= max) cur += ` ${word}`;
+    else {
+      lines.push(cur);
+      cur = word;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [""];
 }
+
+/** Estimated text width; main-branch titles are set larger and bold. */
+const widthOf = (lines: string[], depth = 2) =>
+  Math.max(...lines.map((l) => l.length)) * CHAR_W * (depth === 1 ? 1.2 : 1);
 
 /**
  * Two-sided tidy tree around the trunk (root at 0,0): main branches go to the
@@ -418,7 +446,7 @@ export function layoutTree(tree: TreeIndex): Layout {
     return { nodes: out, byId, bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 } };
   }
 
-  const rootLabel = truncate(root.title, 44);
+  const rootLines = wrapTitle(root.title, ROOT_WRAP_AT);
   const rootNode: LayoutNode = {
     id: root.id,
     x: 0,
@@ -427,8 +455,8 @@ export function layoutTree(tree: TreeIndex): Layout {
     depth: 0,
     dir: 0,
     color: TRUNK_COLOR,
-    label: rootLabel,
-    labelWidth: rootLabel.length * CHAR_W * 1.15,
+    lines: rootLines,
+    labelWidth: widthOf(rootLines) * 1.15,
     parentId: null,
   };
   out.push(rootNode);
@@ -444,11 +472,23 @@ export function layoutTree(tree: TreeIndex): Layout {
     sides[m.side ?? (i % 2 === 0 ? "right" : "left")].push(m);
   });
 
-  const rows = new Map<string, number>();
-  const rowsOf = (n: CareerNode): number => {
+  // Vertical space (px) a node's subtree needs; a long, wrapped title makes
+  // its own row taller so neighbours never overlap.
+  const linesOf = new Map<string, string[]>();
+  const wrapped = (n: CareerNode) => {
+    let l = linesOf.get(n.id);
+    if (!l) {
+      l = wrapTitle(n.title, WRAP_AT);
+      linesOf.set(n.id, l);
+    }
+    return l;
+  };
+  const heights = new Map<string, number>();
+  const heightOf = (n: CareerNode): number => {
     const kids = visibleKids(n);
-    const v = kids.length ? kids.reduce((s, k) => s + rowsOf(k), 0) : 1;
-    rows.set(n.id, v);
+    const own = Math.max(ROW, wrapped(n).length * LINE_H + 34);
+    const v = kids.length ? Math.max(own, kids.reduce((s, k) => s + heightOf(k), 0)) : own;
+    heights.set(n.id, v);
     return v;
   };
 
@@ -460,7 +500,7 @@ export function layoutTree(tree: TreeIndex): Layout {
     // Column widths per depth for this side.
     const colW: number[] = [];
     const measure = (n: CareerNode, depth: number) => {
-      const lw = truncate(n.title).length * CHAR_W + 14;
+      const lw = widthOf(wrapped(n), depth) + 14;
       colW[depth] = Math.max(colW[depth] ?? 0, radiusAt(depth) * 2 + lw);
       for (const k of visibleKids(n)) measure(k, depth + 1);
     };
@@ -470,13 +510,13 @@ export function layoutTree(tree: TreeIndex): Layout {
       colX[d] = colX[d - 1] + (colW[d - 1] ?? 0) + COL_GAP;
     }
 
-    const totalRows = branches.reduce((s, b) => s + rowsOf(b), 0);
-    const totalH = totalRows * ROW + (branches.length - 1) * BRANCH_GAP;
+    const totalH =
+      branches.reduce((s, b) => s + heightOf(b), 0) + (branches.length - 1) * BRANCH_GAP;
     let cursor = -totalH / 2;
 
     const place = (n: CareerNode, depth: number, top: number, color: string): number => {
       const kids = visibleKids(n);
-      const span = (rows.get(n.id) ?? 1) * ROW;
+      const span = heights.get(n.id) ?? ROW;
       let y: number;
       if (kids.length === 0) {
         y = top + span / 2;
@@ -485,11 +525,11 @@ export function layoutTree(tree: TreeIndex): Layout {
         const ys: number[] = [];
         for (const k of kids) {
           ys.push(place(k, depth + 1, t, color));
-          t += (rows.get(k.id) ?? 1) * ROW;
+          t += heights.get(k.id) ?? ROW;
         }
         y = (ys[0] + ys[ys.length - 1]) / 2;
       }
-      const label = truncate(n.title);
+      const lines = wrapped(n);
       const ln: LayoutNode = {
         id: n.id,
         x: dir * colX[depth],
@@ -498,8 +538,8 @@ export function layoutTree(tree: TreeIndex): Layout {
         depth,
         dir,
         color,
-        label,
-        labelWidth: label.length * CHAR_W,
+        lines,
+        labelWidth: widthOf(lines, depth),
         parentId: n.parent_id,
       };
       out.push(ln);
@@ -510,7 +550,7 @@ export function layoutTree(tree: TreeIndex): Layout {
     for (const b of branches) {
       const color = branchColorValue(b.color);
       place(b, 1, cursor, color);
-      cursor += (rows.get(b.id) ?? 1) * ROW + BRANCH_GAP;
+      cursor += (heights.get(b.id) ?? ROW) + BRANCH_GAP;
     }
   }
 
@@ -524,8 +564,9 @@ export function layoutTree(tree: TreeIndex): Layout {
     const right = n.depth === 0 ? n.x + Math.max(n.r, lw) : n.dir > 0 ? n.x + n.r + lw : n.x + n.r;
     minX = Math.min(minX, left);
     maxX = Math.max(maxX, right);
-    minY = Math.min(minY, n.y - n.r - 6);
-    maxY = Math.max(maxY, n.y + n.r + (n.depth === 0 ? 34 : 6));
+    const extraAbove = n.depth === 0 ? 0 : (n.lines.length - 1) * LINE_H + 10;
+    minY = Math.min(minY, n.y - Math.max(n.r + 6, extraAbove + 8));
+    maxY = Math.max(maxY, n.y + n.r + (n.depth === 0 ? 18 + n.lines.length * 18 : 6));
   }
   return { nodes: out, byId, bounds: { minX, minY, maxX, maxY } };
 }
