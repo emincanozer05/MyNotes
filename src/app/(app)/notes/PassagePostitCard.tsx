@@ -106,7 +106,7 @@ export function PassagePostitCard({ passage }: { passage: PassageData }) {
 
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/50 p-4 backdrop-blur-xl"
           onClick={() => setExpanded(false)}
           role="dialog"
           aria-modal="true"
