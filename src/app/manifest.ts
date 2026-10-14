@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 /** Web app manifest: lets the site be installed to a phone's home screen. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "NOTE",
-    short_name: "NOTE",
+    name: "Memory Palace",
+    short_name: "Memory Palace",
     description: "Literatür takibi, bilimsel not alma ve kategorili bilgi yönetimi platformu",
     start_url: "/",
     scope: "/",

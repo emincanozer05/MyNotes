@@ -58,7 +58,7 @@ export default async function PrintArticlePage({
       <div className="a4-sheet">
         <header className="border-b-2 border-stone-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-            NOTE — Makale Not Föyü
+            Memory Palace — Makale Not Föyü
           </p>
           <h1 className="mt-2 text-xl font-bold leading-snug">
             {article.title}

@@ -1,4 +1,4 @@
-# S&C Hub — Kuvvet & Kondisyon Bilgi Platformu
+# Memory Palace — Kişisel Bilgi ve Öğrenme Platformu
 
 @AGENTS.md
 
