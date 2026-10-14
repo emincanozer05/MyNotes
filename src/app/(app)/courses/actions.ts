@@ -111,3 +111,23 @@ export async function setCourseCover(id: string, cover: string) {
   revalidatePath("/courses");
   return { error: error?.message ?? null };
 }
+
+/** Renames a course. */
+export async function setCourseTitle(id: string, title: string) {
+  const supabase = await createClient();
+  const user = await getSessionUser(supabase);
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const next = title.trim().slice(0, 300);
+  if (!next) return { error: "Başlık boş olamaz." };
+
+  const { error } = await supabase
+    .from("sources")
+    .update({ title: next })
+    .eq("id", id)
+    .eq("kind", "other");
+
+  revalidatePath(`/courses/${id}`);
+  revalidatePath("/courses");
+  return { error: error?.message ?? null };
+}
