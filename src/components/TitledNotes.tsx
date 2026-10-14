@@ -55,6 +55,8 @@ export function TitledNotes({
   );
   const [dragId, setDragId] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const active = notes.find((n) => n.id === activeId) ?? null;
 
@@ -72,6 +74,23 @@ export function TitledNotes({
     // Only on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close the title menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   function handleDragEnter(id: string) {
     if (dragId && dragId !== id) {
@@ -154,77 +173,115 @@ export function TitledNotes({
           </button>
         </div>
 
-        {/* Title list (drag to reorder), numbered by order; titles wrap in
-            full instead of being cut off. */}
+        {/* Title dropdown (drag rows to reorder). The trigger shows the open
+            title; the menu lists every title with rename / delete actions. */}
         {notes.length > 0 && (
-          <ol className="mt-3 grid gap-2">
-            {notes.map((n, i) => {
-              const isActive = n.id === activeId;
-              return (
-                <li
-                  key={n.id}
-                  draggable
-                  onDragStart={() => setDragId(n.id)}
-                  onDragEnter={() => handleDragEnter(n.id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDragEnd={handleDragEnd}
-                  title="Sürükleyerek sırala"
-                  className={`group flex cursor-grab items-start gap-2.5 rounded-xl border px-2.5 py-2 transition-all active:cursor-grabbing ${
-                    dragId === n.id ? "opacity-50" : ""
-                  } ${
-                    isActive
-                      ? "border-amber-500/60 bg-amber-500/10 shadow-sm shadow-amber-500/10"
-                      : "border-[var(--border)] hover:border-stone-400/60 hover:bg-stone-500/5 dark:hover:border-stone-500/60"
-                  }`}
-                >
-                  <span
-                    aria-hidden
-                    className={`mt-0.5 flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${
-                      isActive
-                        ? "bg-amber-500 text-stone-950"
-                        : "bg-stone-500/15 text-stone-500 group-hover:bg-stone-500/25"
-                    }`}
-                  >
-                    {i + 1}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveId(n.id)}
-                    onDoubleClick={() => renameTitle(n.id)}
-                    title="Seç (çift tıkla: yeniden adlandır)"
-                    aria-current={isActive ? "true" : undefined}
-                    className={`min-w-0 flex-1 py-0.5 text-left text-sm font-semibold leading-snug break-words ${
-                      isActive
-                        ? "text-amber-800 dark:text-amber-200"
-                        : "text-stone-600 dark:text-stone-300"
-                    }`}
-                  >
-                    {n.title}
-                  </button>
-                  <span className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => renameTitle(n.id)}
-                      title="Yeniden adlandır"
-                      aria-label="Yeniden adlandır"
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-stone-500/10 hover:text-amber-600"
+          <div ref={menuRef} className="relative mt-3">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={menuOpen}
+              className={`flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition-colors ${
+                menuOpen
+                  ? "border-amber-500/60 bg-amber-500/10"
+                  : "border-[var(--border)] hover:border-stone-400/60 hover:bg-stone-500/5"
+              }`}
+            >
+              <span
+                aria-hidden
+                className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold tabular-nums text-stone-950"
+              >
+                {active ? notes.findIndex((n) => n.id === active.id) + 1 : "–"}
+              </span>
+              <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-amber-800 dark:text-amber-200">
+                {active?.title ?? "Başlık seç"}
+              </span>
+              <Icon
+                name="chevron-down"
+                className={`h-4 w-4 shrink-0 text-stone-400 transition-transform ${
+                  menuOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {menuOpen && (
+              <ol
+                role="listbox"
+                aria-label="Başlıklar"
+                className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[min(24rem,60vh)] space-y-1 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-[var(--shadow-2)]"
+              >
+                {notes.map((n, i) => {
+                  const isActive = n.id === activeId;
+                  return (
+                    <li
+                      key={n.id}
+                      role="option"
+                      aria-selected={isActive}
+                      draggable
+                      onDragStart={() => setDragId(n.id)}
+                      onDragEnter={() => handleDragEnter(n.id)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDragEnd={handleDragEnd}
+                      title="Sürükleyerek sırala"
+                      className={`group flex cursor-grab items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors active:cursor-grabbing ${
+                        dragId === n.id ? "opacity-50" : ""
+                      } ${
+                        isActive ? "bg-amber-500/10" : "hover:bg-stone-500/10"
+                      }`}
                     >
-                      <Icon name="pencil" className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeTitle(n.id)}
-                      title="Sil"
-                      aria-label="Sil"
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-rose-500/10 hover:text-rose-500"
-                    >
-                      <Icon name="trash" className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+                      <span
+                        aria-hidden
+                        className={`mt-0.5 flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${
+                          isActive
+                            ? "bg-amber-500 text-stone-950"
+                            : "bg-stone-500/15 text-stone-500 group-hover:bg-stone-500/25"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveId(n.id);
+                          setMenuOpen(false);
+                        }}
+                        onDoubleClick={() => renameTitle(n.id)}
+                        title="Seç (çift tıkla: yeniden adlandır)"
+                        className={`min-w-0 flex-1 py-0.5 text-left text-sm font-semibold leading-snug break-words ${
+                          isActive
+                            ? "text-amber-800 dark:text-amber-200"
+                            : "text-stone-600 dark:text-stone-300"
+                        }`}
+                      >
+                        {n.title}
+                      </button>
+                      <span className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => renameTitle(n.id)}
+                          title="Yeniden adlandır"
+                          aria-label="Yeniden adlandır"
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-stone-500/10 hover:text-amber-600"
+                        >
+                          <Icon name="pencil" className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeTitle(n.id)}
+                          title="Sil"
+                          aria-label="Sil"
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:bg-rose-500/10 hover:text-rose-500"
+                        >
+                          <Icon name="trash" className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
         )}
       </div>
 

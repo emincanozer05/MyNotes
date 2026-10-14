@@ -11,6 +11,7 @@ import {
 import { addGlossaryEntry } from "@/app/(app)/glossary/actions";
 import { tagHighlightBg, TAG_COLOR_SWATCHES } from "@/lib/color";
 import { categoryLabel, normalizeCategory } from "@/lib/categories";
+import { EXPLAIN_REQUEST_EVENT } from "@/lib/explain";
 import { translateInfoLabel } from "@/lib/translateInfo";
 import { applyGroupTranslation, groupTextNodes, joinGroupText } from "@/lib/translateGroups";
 
@@ -1159,6 +1160,7 @@ export function RichTextEditor({
       >
         <div
           ref={ref}
+          data-explain-inline
           contentEditable
           suppressContentEditableWarning
           data-placeholder={placeholder}
@@ -1301,7 +1303,7 @@ export function RichTextEditor({
                   className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-white"
                   style={{ background: t.color }}
                 >
-                  # {t.name}
+                  {t.name}
                   <button
                     type="button"
                     onClick={() => removeTagFromMarkGroup(floating.mark, t.name)}
@@ -1489,6 +1491,15 @@ export function RichTextEditor({
 
               <span className="my-0.5 h-px w-full bg-[var(--border)]" />
 
+              <button
+                type="button"
+                title="Seçili metni yapay zekâ ile açıkla"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => window.dispatchEvent(new Event(EXPLAIN_REQUEST_EVENT))}
+                className="w-full rounded bg-blue-600 px-1.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                Açıkla
+              </button>
               <button
                 type="button"
                 title="Seçili metni “Ne, nedir?” sözlüğüne kaydet (başlığı sonradan eklenebilir)"

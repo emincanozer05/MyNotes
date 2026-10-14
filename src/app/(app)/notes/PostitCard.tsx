@@ -113,7 +113,7 @@ export function PostitCard({ note }: { note: PostitData }) {
                   key={t.name}
                   className="rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] font-medium"
                 >
-                  #{t.name}
+                  {t.name}
                 </span>
               ))}
             </div>
@@ -163,7 +163,7 @@ export function PostitCard({ note }: { note: PostitData }) {
                       key={t.name}
                       className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
                     >
-                      #{t.name}
+                      {t.name}
                     </span>
                   ))}
                 </div>

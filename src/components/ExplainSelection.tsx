@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { CloseIcon } from "@/components/CloseIcon";
 import {
+  EXPLAIN_REQUEST_EVENT,
   MAX_HEADING_CHARS,
   MAX_PARAGRAPH_CHARS,
   MAX_SELECTION_CHARS,
@@ -42,6 +43,8 @@ type Snapshot = {
   /** Touch selection: place the button below (native menus sit above). */
   touch: boolean;
   path: string;
+  /** Inside an element that offers its own "Açıkla" control (`data-explain-inline`). */
+  inline: boolean;
 };
 
 type Popup = {
@@ -199,6 +202,7 @@ function readSelection(touch: boolean, path: string): Snapshot | null {
     range: range.cloneRange(),
     touch,
     path,
+    inline: !!common.closest("[data-explain-inline]"),
   };
 }
 
@@ -551,9 +555,23 @@ export function ExplainSelection({ endpoint = "/api/explain" }: { endpoint?: str
     [endpoint],
   );
 
+  // The rich-text editor's selection toolbar has its own "Açıkla" button; it
+  // asks for the current selection to be explained through this event.
+  useEffect(() => {
+    function onRequest() {
+      const snap = readSelection(false, pathRef.current);
+      if (!snap) return;
+      setButton(null);
+      void explain(snap, "default");
+    }
+    window.addEventListener(EXPLAIN_REQUEST_EVENT, onRequest);
+    return () => window.removeEventListener(EXPLAIN_REQUEST_EVENT, onRequest);
+  }, [explain]);
+
   if (!mounted) return null;
 
-  const visibleButton = button && button.path === pathname && !popup ? button : null;
+  const visibleButton =
+    button && button.path === pathname && !popup && !button.inline ? button : null;
   const visiblePopup = popup && popup.snap.path === pathname ? popup : null;
   const busy = visiblePopup?.status === "loading" || visiblePopup?.status === "streaming";
   const canRefine = visiblePopup?.status === "done" && !!visiblePopup.text;
