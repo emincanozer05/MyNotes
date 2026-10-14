@@ -1,5 +1,6 @@
 "use client";
 
+import { imageFileToDataUrl } from "@/lib/imageDataUrl";
 import { Icon } from "@/components/Icon";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -24,9 +25,7 @@ export function AddCourseModal() {
   }
 
   function handleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => setCover(String(reader.result));
-    reader.readAsDataURL(file);
+    void imageFileToDataUrl(file, { maxDim: 1000 }).then(setCover);
   }
 
   function handleSubmit(fd: FormData) {

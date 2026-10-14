@@ -485,11 +485,8 @@ export function ExplainSelection({ endpoint = "/api/explain" }: { endpoint?: str
         update({ status: "done", text: hit });
         return;
       }
-      if (!navigator.onLine) {
-        update({ status: "error", error: "İnternet bağlantısı yok. Bağlantı gelince tekrar deneyin." });
-        return;
-      }
-
+      // No `navigator.onLine` pre-check: tablets often report "offline" while
+      // the connection works; a failed fetch below is the reliable signal.
       const timeout = setTimeout(() => ctrl.abort("timeout"), REQUEST_TIMEOUT_MS);
       let acc = "";
       try {
