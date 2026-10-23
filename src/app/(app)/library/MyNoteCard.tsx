@@ -10,8 +10,6 @@ import {
   articleLink,
   hasSummary,
   isOpenAccess,
-  plainText,
-  summaryOf,
   tagsOf,
 } from "./articleMeta";
 
@@ -33,41 +31,16 @@ function DeleteButton({ id }: { id: string }) {
   );
 }
 
-/** Small status pill: summary written / not yet, note count. */
-function StatusPills({
-  summary,
-  noteCount,
-}: {
-  summary: boolean;
-  noteCount: number;
-}) {
+/** Note-count pill; renders nothing when the article has no notes. */
+function NoteCountPill({ noteCount }: { noteCount: number }) {
+  if (noteCount <= 0) return null;
   return (
-    <>
-      <span
-        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-          summary
-            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-            : "bg-[var(--surface-2)] text-stone-500"
-        }`}
-      >
-        {summary ? (
-          <span className="inline-flex items-center gap-1">
-            <Icon name="check" strokeWidth={2.4} />
-            Özet yazıldı
-          </span>
-        ) : (
-          "Özet yok"
-        )}
+    <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-semibold text-stone-500">
+      <span className="inline-flex items-center gap-1">
+        <Icon name="file-text" />
+        {noteCount} not
       </span>
-      {noteCount > 0 && (
-        <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-semibold text-stone-500">
-          <span className="inline-flex items-center gap-1">
-            <Icon name="file-text" />
-            {noteCount} not
-          </span>
-        </span>
-      )}
-    </>
+    </span>
   );
 }
 
@@ -115,7 +88,6 @@ export function MyNoteCard({
   layout: "grid" | "list";
 }) {
   const summary = hasSummary(a);
-  const preview = summary ? plainText(summaryOf(a)) : "";
   const meta = [a.journal, a.year].filter(Boolean).join(" · ");
   const authors =
     a.authors.slice(0, 3).join(", ") + (a.authors.length > 3 ? " ve diğerleri" : "");
@@ -139,12 +111,6 @@ export function MyNoteCard({
     </p>
   );
 
-  const previewBlock = preview ? (
-    <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-      {preview}
-    </p>
-  ) : null;
-
   if (layout === "list") {
     return (
       <article className="glass-card flex flex-col gap-3 rounded-xl p-4 lg:flex-row lg:items-center">
@@ -163,11 +129,12 @@ export function MyNoteCard({
           </div>
           {title}
           {byline}
-          {previewBlock}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 lg:max-w-[22rem] lg:justify-end">
-          <StatusPills summary={summary} noteCount={noteCount} />
-        </div>
+        {noteCount > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 lg:max-w-[22rem] lg:justify-end">
+            <NoteCountPill noteCount={noteCount} />
+          </div>
+        )}
         <div className="flex items-center gap-1.5 lg:w-[19rem] lg:shrink-0">
           <Actions a={a} summary={summary} />
           <DeleteButton id={a.id} />
@@ -193,16 +160,17 @@ export function MyNoteCard({
         {title}
         {byline}
       </div>
-      {previewBlock}
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <StatusPills summary={summary} noteCount={noteCount} />
-        {isOpenAccess(a.journal) && (
-          <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-            Open Access
-          </span>
-        )}
-      </div>
+      {(noteCount > 0 || isOpenAccess(a.journal)) && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <NoteCountPill noteCount={noteCount} />
+          {isOpenAccess(a.journal) && (
+            <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+              Open Access
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Actions pinned to the bottom so cards line up */}
       <div className="mt-auto pt-4">
