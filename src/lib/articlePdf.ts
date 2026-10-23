@@ -216,3 +216,41 @@ export function pdfDeepLink(articleId: string, content: string): string | null {
   if (m[2]) q.set("hl", m[2]);
   return `/library/${articleId}/pdf?${q}`;
 }
+
+/**
+ * Collapses a selection's per-span rectangles into one band per text line.
+ * pdf.js puts every run of text in its own absolutely positioned span, so a
+ * raw selection is a patchwork of overlapping boxes (darker seams where they
+ * overlap, gaps between bold/regular runs). Rects that share a line are
+ * unioned, neighbouring lines are trimmed so they never overlap, and stray
+ * oversized boxes (a whole block element caught by the range) are dropped.
+ */
+export function mergeLineRects(rects: PdfRect[]): PdfRect[] {
+  const valid = rects.filter((r) => r.w > 0 && r.h > 0);
+  if (valid.length === 0) return [];
+  const heights = valid.map((r) => r.h).sort((a, b) => a - b);
+  const median = heights[Math.floor(heights.length / 2)];
+  const sorted = valid
+    .filter((r) => r.h <= median * 3)
+    .sort((a, b) => a.y + a.h / 2 - (b.y + b.h / 2) || a.x - b.x);
+
+  const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (const r of sorted) {
+    const line = lines[lines.length - 1];
+    const overlap = line ? Math.min(line.y2, r.y + r.h) - Math.max(line.y1, r.y) : 0;
+    if (line && overlap >= Math.min(line.y2 - line.y1, r.h) * 0.5) {
+      line.x1 = Math.min(line.x1, r.x);
+      line.x2 = Math.max(line.x2, r.x + r.w);
+      line.y1 = Math.min(line.y1, r.y);
+      line.y2 = Math.max(line.y2, r.y + r.h);
+    } else {
+      lines.push({ x1: r.x, y1: r.y, x2: r.x + r.w, y2: r.y + r.h });
+    }
+  }
+  for (let i = 0; i + 1 < lines.length; i++) {
+    const a = lines[i];
+    const b = lines[i + 1];
+    if (a.y2 > b.y1) a.y2 = b.y1 = (a.y2 + b.y1) / 2;
+  }
+  return lines.map((l) => ({ x: l.x1, y: l.y1, w: l.x2 - l.x1, h: l.y2 - l.y1 }));
+}
