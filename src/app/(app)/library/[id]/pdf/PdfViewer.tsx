@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
 import {
+  mergeLineRects,
   PDF_HIGHLIGHT_COLORS,
   type PdfHighlight,
   type PdfRect,
@@ -25,6 +26,27 @@ interface Pending {
   /** Viewport position of the floating toolbar. */
   top: number;
   left: number;
+}
+
+/** A range's client rects that fall on `pageEl`, as page fractions, merged per line. */
+function rangeRectsOnPage(range: Range, pageEl: HTMLElement): PdfRect[] {
+  const box = pageEl.getBoundingClientRect();
+  const rects: PdfRect[] = [];
+  for (const r of Array.from(range.getClientRects())) {
+    if (r.width < 1 || r.height < 1) continue;
+    const x1 = Math.max(r.left, box.left);
+    const x2 = Math.min(r.right, box.right);
+    const y1 = Math.max(r.top, box.top);
+    const y2 = Math.min(r.bottom, box.bottom);
+    if (x2 - x1 < 1 || y2 - y1 < 1) continue;
+    rects.push({
+      x: (x1 - box.left) / box.width,
+      y: (y1 - box.top) / box.height,
+      w: (x2 - x1) / box.width,
+      h: (y2 - y1) / box.height,
+    });
+  }
+  return mergeLineRects(rects);
 }
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
@@ -159,22 +181,7 @@ export function PdfViewer({
         setPending(null);
         return;
       }
-      const box = pageEl.getBoundingClientRect();
-      const rects: PdfRect[] = [];
-      for (const r of Array.from(range.getClientRects())) {
-        if (r.width < 1 || r.height < 1) continue;
-        const x1 = Math.max(r.left, box.left);
-        const x2 = Math.min(r.right, box.right);
-        const y1 = Math.max(r.top, box.top);
-        const y2 = Math.min(r.bottom, box.bottom);
-        if (x2 - x1 < 1 || y2 - y1 < 1) continue;
-        rects.push({
-          x: (x1 - box.left) / box.width,
-          y: (y1 - box.top) / box.height,
-          w: (x2 - x1) / box.width,
-          h: (y2 - y1) / box.height,
-        });
-      }
+      const rects = rangeRectsOnPage(range, pageEl);
       if (rects.length === 0) {
         setPending(null);
         return;
@@ -200,6 +207,39 @@ export function PdfViewer({
       document.removeEventListener("mouseup", onUp);
       document.removeEventListener("touchend", onUp);
       document.removeEventListener("keyup", onUp);
+    };
+  }, []);
+
+  // The text layer's native selection paint is hidden (it draws every pdf.js
+  // span as its own overlapping box); the live selection is drawn here instead
+  // as one continuous band per line.
+  const [liveSel, setLiveSel] = useState<Record<number, PdfRect[]>>({});
+  useEffect(() => {
+    let frame = 0;
+    function update() {
+      frame = 0;
+      const sel = window.getSelection();
+      const root = containerRef.current;
+      const next: Record<number, PdfRect[]> = {};
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0 && root) {
+        const range = sel.getRangeAt(0);
+        for (const pageEl of root.querySelectorAll<HTMLElement>("[data-pdf-page]")) {
+          if (!range.intersectsNode(pageEl)) continue;
+          const rects = rangeRectsOnPage(range, pageEl);
+          if (rects.length) next[Number(pageEl.dataset.pdfPage)] = rects;
+        }
+      }
+      setLiveSel((prev) =>
+        Object.keys(prev).length === 0 && Object.keys(next).length === 0 ? prev : next,
+      );
+    }
+    function onChange() {
+      if (!frame) frame = requestAnimationFrame(update);
+    }
+    document.addEventListener("selectionchange", onChange);
+    return () => {
+      document.removeEventListener("selectionchange", onChange);
+      cancelAnimationFrame(frame);
     };
   }, []);
 
@@ -490,6 +530,7 @@ export function PdfViewer({
                 onHover={setHoverId}
                 onPickHighlight={openMenu}
                 highlights={highlights.filter((h) => h.page === i + 1)}
+                selection={liveSel[i + 1]}
               />
             ))}
         </div>
@@ -757,6 +798,7 @@ function PdfPage({
   onHover,
   onPickHighlight,
   highlights,
+  selection,
 }: {
   doc: PDFDocumentProxy;
   pdfjs: PdfJs;
@@ -768,6 +810,7 @@ function PdfPage({
   onHover: (id: string | null) => void;
   onPickHighlight: (id: string, x: number, y: number) => void;
   highlights: PdfHighlight[];
+  selection?: PdfRect[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -897,7 +940,7 @@ function PdfPage({
       {/* Highlights sit between the canvas and the (transparent) text layer. */}
       <div className="pointer-events-none absolute inset-0">
         {highlights.flatMap((h) =>
-          h.rects.map((r, i) => (
+          mergeLineRects(h.rects).map((r, i) => (
             <span
               key={`${h.id}-${i}`}
               data-hl-id={h.id}
@@ -916,10 +959,23 @@ function PdfPage({
             />
           )),
         )}
+        {selection?.map((r, i) => (
+          <span
+            key={`sel-${i}`}
+            className="absolute"
+            style={{
+              left: `${r.x * 100}%`,
+              top: `${r.y * 100}%`,
+              width: `${r.w * 100}%`,
+              height: `${r.h * 100}%`,
+              background: "rgba(59,130,246,0.3)",
+            }}
+          />
+        ))}
       </div>
       <div
         ref={textRef}
-        className={`textLayer absolute inset-0 ${hoverId && highlights.some((h) => h.id === hoverId) ? "[&_span]:!cursor-pointer" : ""}`}
+        className={`textLayer selectionRendering absolute inset-0 ${hoverId && highlights.some((h) => h.id === hoverId) ? "[&_span]:!cursor-pointer" : ""}`}
       />
       <span className="pointer-events-none absolute bottom-1 right-2 text-[10px] text-stone-400">
         {pageNumber}
