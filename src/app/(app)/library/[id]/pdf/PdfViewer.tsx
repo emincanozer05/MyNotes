@@ -112,6 +112,8 @@ export function PdfViewer({
   const [flashId, setFlashId] = useState<string | null>(initialHighlightId);
   const [pageSize, setPageSize] = useState({ w: 612, h: 792 });
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -446,12 +448,73 @@ export function PdfViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, scale > 0]);
 
+  // Full-screen reading: the native Fullscreen API where the browser offers
+  // it on elements (desktop, iPadOS), otherwise a fixed overlay that covers
+  // the app chrome (e.g. iPhone Safari).
+  const toggleFullscreen = useCallback(() => {
+    const el = rootRef.current as
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => void })
+      | null;
+    const d = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => void;
+    };
+    const nativeEl = document.fullscreenElement ?? d.webkitFullscreenElement;
+    if (nativeEl) {
+      if (document.exitFullscreen) void document.exitFullscreen();
+      else d.webkitExitFullscreen?.();
+      return;
+    }
+    if (fullscreen) {
+      setFullscreen(false);
+      return;
+    }
+    if (el?.requestFullscreen) {
+      el.requestFullscreen().catch(() => setFullscreen(true));
+    } else if (el?.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else {
+      setFullscreen(true);
+    }
+  }, [fullscreen]);
+
+  useEffect(() => {
+    function onChange() {
+      const d = document as Document & { webkitFullscreenElement?: Element | null };
+      const nativeEl = document.fullscreenElement ?? d.webkitFullscreenElement;
+      setFullscreen(!!nativeEl && nativeEl === rootRef.current);
+    }
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
+  }, []);
+
+  // Overlay mode has no browser-provided exit, so Escape closes it here.
+  useEffect(() => {
+    if (!fullscreen || document.fullscreenElement) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
   const sorted = [...highlights].sort(
     (a, b) => a.page - b.page || (a.rects[0]?.y ?? 0) - (b.rects[0]?.y ?? 0),
   );
 
   return (
-    <div>
+    <div
+      ref={rootRef}
+      className={
+        fullscreen
+          ? "fixed inset-0 z-50 overflow-y-auto bg-[var(--background)] p-3 sm:p-4"
+          : undefined
+      }
+    >
       <div className="glass-card sticky top-0 z-10 flex flex-wrap items-center gap-2 rounded-2xl px-3 py-2 text-xs">
         <span className="min-w-0 flex-1 truncate font-semibold" title={title}>
           {title}
@@ -495,6 +558,16 @@ export function PdfViewer({
                 <Icon name="external" /> Yeni sekmede
               </a>
             )}
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="btn-ghost rounded-full px-3 py-1 font-semibold"
+              aria-pressed={fullscreen}
+              title={fullscreen ? "Tam ekrandan çık (Esc)" : "Tam ekran oku"}
+            >
+              <Icon name={fullscreen ? "fullscreen-exit" : "fullscreen"} />{" "}
+              {fullscreen ? "Çık" : "Tam ekran"}
+            </button>
           </>
         )}
       </div>
