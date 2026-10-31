@@ -5,12 +5,12 @@ import { getCategories } from "../categoriesActions";
 import { BookshelfBoard, type BookCardData } from "./BookshelfBoard";
 
 const SPINE_COLORS = [
-  "from-amber-600 to-orange-700",
-  "from-emerald-600 to-teal-700",
-  "from-sky-600 to-indigo-700",
-  "from-rose-600 to-pink-700",
-  "from-violet-600 to-fuchsia-700",
-  "from-stone-600 to-stone-800",
+  "bg-amber-700",
+  "bg-emerald-700",
+  "bg-sky-700",
+  "bg-rose-700",
+  "bg-violet-700",
+  "bg-stone-700",
 ];
 function spineColor(title: string) {
   let h = 0;

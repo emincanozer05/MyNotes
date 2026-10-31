@@ -11,8 +11,12 @@ interface TitledNote {
   html: string;
 }
 
-function backInfo(kind: string): { href: string; label: string } {
+function backInfo(
+  kind: string,
+  metaCategory?: unknown,
+): { href: string; label: string } {
   if (kind === "book") return { href: "/bookshelf", label: "Kitap Rafı" };
+  if (metaCategory === "notebook") return { href: "/notebook", label: "Not Defterim" };
   if (kind === "article") return { href: "/library", label: "Literatür" };
   return { href: "/courses", label: "Kurslar ve Eğitimler (S&C)" };
 }
@@ -40,7 +44,7 @@ export default async function PrintSourcePage({
 
   const notes = Array.isArray(meta.notes) ? meta.notes : [];
   const summary = meta.summary ?? "";
-  const back = backInfo(source.kind);
+  const back = backInfo(source.kind, (source.metadata as { category?: unknown } | null)?.category);
 
   return (
     <div className="space-y-4">

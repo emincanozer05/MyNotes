@@ -141,6 +141,18 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    paneli). Tamamlanan dallar bağlantı çizgisini doldurur; tamamlanınca tek seferlik
    halka animasyonu. Yedeklemeye dahil. Tablo yoksa sayfa açıklayıcı uyarı gösterir.
 
+15. ✅ **Not Defterim** (`/notebook`, kenar çubuğunda Kurslar'ın altında): kategorilere
+   ayrılmış kişisel not sayfaları (varsayılan Tarih / Bilim / Felsefe / Kişisel Gelişim;
+   Spor yok). Kategori eklenirken/düzenlenirken simge seçilir (`NOTEBOOK_ICONS`,
+   `Icon.tsx`); sekmede arama butonu tüm kategorilerde başlık + not metninde arar.
+   Migration gerekmez: sayfalar `sources` (kind `other`, `metadata.category = "notebook"`,
+   `metadata.nb_category`, `category` kolonu = kategori slug'ı → pasajlar ilgili Post-it
+   panosuna düşer), kategori listesi kullanıcı başına tek ayar satırında
+   (`metadata.category = "notebook-config"`, `metadata.categories`). Detay sayfası
+   `TitledNotes` kullanır. Mantık `src/lib/notebook.ts`, eylemler `notebook/actions.ts`.
+   Tasarım sadeleştirildi: gradyan renkler kaldırıldı (düz `btn-gradient`, düz kategori
+   sekmeleri ve kapak renkleri).
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS

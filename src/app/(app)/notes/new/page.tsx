@@ -1,3 +1,4 @@
+import { NOTEBOOK_CONFIG_MARKER } from "@/lib/notebook";
 import { createClient } from "@/lib/supabase/server";
 import { getCategories } from "../../categoriesActions";
 import { NoteForm } from "../NoteForm";
@@ -12,7 +13,7 @@ export default async function NewNotePage({
   const [{ data: sources }, categories] = await Promise.all([
     supabase
       .from("sources")
-      .select("id, title, authors, year")
+      .select("id, title, authors, year, cat:metadata->>category")
       .order("created_at", { ascending: false }),
     getCategories(),
   ]);
@@ -42,7 +43,7 @@ export default async function NewNotePage({
         <span className="gradient-text">Yeni Not</span>
       </h1>
       <NoteForm
-        sources={sources ?? []}
+        sources={(sources ?? []).filter((s) => s.cat !== NOTEBOOK_CONFIG_MARKER)}
         error={error}
         note={initialNote}
         categories={categories}

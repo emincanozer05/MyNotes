@@ -1,3 +1,4 @@
+import { NOTEBOOK_CONFIG_MARKER } from "@/lib/notebook";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCategories } from "../../../categoriesActions";
@@ -22,7 +23,7 @@ export default async function EditNotePage({
       .maybeSingle(),
     supabase
       .from("sources")
-      .select("id, title, authors, year")
+      .select("id, title, authors, year, cat:metadata->>category")
       .order("created_at", { ascending: false }),
     getCategories(),
   ]);
@@ -38,7 +39,7 @@ export default async function EditNotePage({
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Notu Düzenle</h1>
       <NoteForm
-        sources={sources ?? []}
+        sources={(sources ?? []).filter((s) => s.cat !== NOTEBOOK_CONFIG_MARKER)}
         error={error}
         note={{ ...note, tags }}
         categories={categories}

@@ -185,7 +185,7 @@ export function NotesBoard({
               onClick={() => switchCategory(c.slug)}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                 active
-                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow"
+                  ? "bg-[var(--foreground)] text-[var(--surface)]"
                   : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
               }`}
             >

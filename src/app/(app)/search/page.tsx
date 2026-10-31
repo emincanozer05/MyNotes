@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { NOTEBOOK_CONFIG_MARKER, NOTEBOOK_MARKER } from "@/lib/notebook";
 
 const MAX_PER_TABLE = 50;
 const SNIPPET_CONTEXT = 90;
@@ -68,12 +69,14 @@ function firstSnippet(
 function sourceHref(kind: string, metadata: Record<string, unknown>, id: string) {
   if (kind === "book") return `/bookshelf/${id}`;
   if (kind === "other" && metadata?.category === "course") return `/courses/${id}`;
+  if (kind === "other" && metadata?.category === NOTEBOOK_MARKER) return `/notebook/${id}`;
   return `/library/${id}`;
 }
 
 function sourceKindLabel(kind: string, metadata: Record<string, unknown>) {
   if (kind === "book") return "Kitap";
   if (kind === "other" && metadata?.category === "course") return "Kurs";
+  if (kind === "other" && metadata?.category === NOTEBOOK_MARKER) return "Not Defterim";
   return "Makale";
 }
 
@@ -122,6 +125,8 @@ async function searchEverything(query: string): Promise<SearchHit[]> {
 
   for (const s of sources.data ?? []) {
     const metadata = (s.metadata ?? {}) as Record<string, unknown>;
+    // The Not Defterim settings row isn't content.
+    if (metadata.category === NOTEBOOK_CONFIG_MARKER) continue;
     hits.push({
       href: sourceHref(s.kind, metadata, s.id),
       kindLabel: sourceKindLabel(s.kind, metadata),
