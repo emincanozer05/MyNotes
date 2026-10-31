@@ -13,6 +13,7 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/bookshelf", label: "Kitap Rafı", icon: "library" },
   { href: "/glossary", label: "Ne, nedir?", icon: "help" },
   { href: "/courses", label: "Kurslar ve Eğitimler (S&C)", icon: "graduation" },
+  { href: "/notebook", label: "Not Defterim", icon: "notebook" },
   { href: "/network", label: "Network Haritası", icon: "network" },
   { href: "/career", label: "Kariyer Yol Haritası", icon: "tree" },
   { href: "/backup", label: "Yedekleme", icon: "archive" },

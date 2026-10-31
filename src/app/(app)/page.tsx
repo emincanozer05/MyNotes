@@ -8,6 +8,7 @@ const MODULES: { title: string; detail: string; href: string; icon: IconName }[]
   { title: "Post-it Notlar", detail: "Kategorilere ayrılmış notlar ve etiketlediğin pasajlar", href: "/notes", icon: "sticky-note" },
   { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane ve zengin metin özetleri", href: "/bookshelf", icon: "library" },
   { title: "Kurslar ve Eğitimler", detail: "S&C kursların, ilerleme durumu ve notların", href: "/courses", icon: "graduation" },
+  { title: "Not Defterim", detail: "Kategorilere ayrılmış kişisel notların", href: "/notebook", icon: "notebook" },
   { title: "Network Haritası", detail: "Kişisel ve profesyonel ağını interaktif grafikte yönet", href: "/network", icon: "network" },
 ];
 
@@ -23,7 +24,11 @@ export default async function DashboardPage() {
     { count: contactCount },
   ] = await Promise.all([
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "article"),
-    supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "other"),
+    supabase
+      .from("sources")
+      .select("*", { count: "exact", head: true })
+      .eq("kind", "other")
+      .contains("metadata", { category: "course" }),
     supabase.from("notes").select("*", { count: "exact", head: true }),
     supabase.from("sources").select("*", { count: "exact", head: true }).eq("kind", "book"),
     // board_sources() (migration 0009) returns the rich-text fields with

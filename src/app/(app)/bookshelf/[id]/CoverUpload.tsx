@@ -49,7 +49,7 @@ export function CoverUpload({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-stone-600 to-stone-800 p-3 text-center">
+          <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-stone-700 p-3 text-center">
             <span className="text-xs font-semibold text-white">{title}</span>
           </span>
         )}

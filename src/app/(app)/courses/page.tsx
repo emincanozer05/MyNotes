@@ -17,11 +17,11 @@ interface CourseRow {
 }
 
 const GRAD = [
-  "from-amber-500 to-orange-600",
-  "from-emerald-500 to-teal-600",
-  "from-sky-500 to-indigo-600",
-  "from-rose-500 to-pink-600",
-  "from-violet-500 to-fuchsia-600",
+  "bg-amber-700",
+  "bg-emerald-700",
+  "bg-sky-700",
+  "bg-rose-700",
+  "bg-violet-700",
 ];
 function grad(title: string) {
   let h = 0;
@@ -100,7 +100,7 @@ export default async function CoursesPage() {
                     />
                   ) : (
                     <div
-                      className={`flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br p-3 text-center ${grad(c.title)}`}
+                      className={`flex aspect-[16/10] w-full items-center justify-center p-3 text-center ${grad(c.title)}`}
                     >
                       <span className="line-clamp-3 text-sm font-black uppercase tracking-wide text-white">
                         {c.title}

@@ -174,12 +174,8 @@ h2 {
 }
 
 .btn-gradient {
-  /* Warm accent button — a hair of gradient for depth, not flash */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--brand-1) 92%, #fff) 0%,
-    var(--brand-1) 100%
-  );
+  /* Flat accent button — solid colour, no gradient */
+  background: var(--brand-1);
   color: #fff;
   border: 1px solid color-mix(in srgb, var(--brand-1) 75%, #000);
   box-shadow: var(--shadow-1);

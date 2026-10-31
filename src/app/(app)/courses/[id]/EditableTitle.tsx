@@ -5,8 +5,21 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setCourseTitle } from "../actions";
 
-/** Course title that turns into an input on click and saves on Enter/blur. */
-export function EditableTitle({ courseId, title }: { courseId: string; title: string }) {
+/**
+ * Title that turns into an input on click and saves on Enter/blur. Defaults to
+ * renaming a course; other tabs (Not Defterim) pass their own `save` action.
+ */
+export function EditableTitle({
+  courseId,
+  title,
+  save = setCourseTitle,
+  label = "Kurs başlığı",
+}: {
+  courseId: string;
+  title: string;
+  save?: (id: string, title: string) => Promise<{ error?: string | null } | undefined>;
+  label?: string;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
@@ -31,7 +44,7 @@ export function EditableTitle({ courseId, title }: { courseId: string; title: st
       return;
     }
     startTransition(async () => {
-      const res = await setCourseTitle(courseId, next);
+      const res = await save(courseId, next);
       if (res?.error) {
         setError(res.error);
         doneRef.current = false;
@@ -55,7 +68,7 @@ export function EditableTitle({ courseId, title }: { courseId: string; title: st
           value={value}
           disabled={pending}
           maxLength={300}
-          aria-label="Kurs başlığı"
+          aria-label={label}
           onChange={(e) => setValue(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {

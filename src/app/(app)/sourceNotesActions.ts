@@ -38,6 +38,7 @@ export async function saveSourceNotes(id: string, notes: TitledNote[]) {
   // Detail pages call router.refresh(); revalidate the lists too.
   revalidatePath("/bookshelf");
   revalidatePath("/courses");
+  revalidatePath("/notebook");
   revalidatePath("/library");
   return { error: error?.message ?? null };
 }

@@ -3,6 +3,7 @@ import { pastelize } from "@/lib/color";
 import { extractTaggedPassages } from "@/lib/wiki";
 import { normalizeCategory } from "@/lib/categories";
 import { pdfDeepLink } from "@/lib/articlePdf";
+import { NOTEBOOK_MARKER } from "@/lib/notebook";
 import { getCategories } from "../categoriesActions";
 import type { PostitData } from "./PostitCard";
 import { NotesBoard, type PassageItem } from "./NotesBoard";
@@ -47,8 +48,9 @@ interface SourceRow {
   } | null;
 }
 
-function sourceHref(kind: string, id: string): string {
+function sourceHref(kind: string, id: string, metaCategory?: string): string {
   if (kind === "book") return `/bookshelf/${id}`;
+  if (kind === "other" && metaCategory === NOTEBOOK_MARKER) return `/notebook/${id}`;
   if (kind === "other") return `/courses/${id}`;
   return `/library/${id}`; // article
 }
@@ -112,6 +114,9 @@ export default async function NotesPage({
   const sourceKindById = new Map<string, string>(
     ((sources ?? []) as SourceRow[]).map((s) => [s.id, s.kind]),
   );
+  const sourceMetaCategoryById = new Map<string, string | undefined>(
+    ((sources ?? []) as SourceRow[]).map((s) => [s.id, s.metadata?.category]),
+  );
 
   // Each note is its own post-it card.
   const noteCards: PostitData[] = ((notes ?? []) as unknown as NoteRow[]).map((n) => {
@@ -132,7 +137,7 @@ export default async function NotesPage({
       sourceHref:
         n.source_id && kind
           ? (kind === "article" ? pdfDeepLink(n.source_id, n.content ?? "") : null) ??
-            sourceHref(kind, n.source_id)
+            sourceHref(kind, n.source_id, sourceMetaCategoryById.get(n.source_id))
           : null,
       tags: tags.map((t) => ({ name: t.name })),
       cls: clsFor(n.id),
@@ -145,13 +150,19 @@ export default async function NotesPage({
   // also surface as post-its, linking back to their source.
   const passages: PassageItem[] = [];
   for (const s of (sources ?? []) as SourceRow[]) {
-    const base = sourceHref(s.kind, s.id);
+    const base = sourceHref(s.kind, s.id, s.metadata?.category);
     // A book's category is managed in its `metadata` (see bookshelf actions),
     // so highlighted passages land on that category's board. The schema column
     // is the fallback for sources that don't keep it there (e.g. articles);
     // courses' metadata.category is the "course" marker, not a board slug, and
     // normalizes to the default "spor" — exactly where S&C content belongs.
-    const srcCategory = normalizeCategory(s.metadata?.category ?? s.category);
+    // Not Defterim pages keep their category slug in the `category` column
+    // (metadata.category is the "notebook" marker).
+    const srcCategory = normalizeCategory(
+      s.metadata?.category === NOTEBOOK_MARKER
+        ? s.category
+        : (s.metadata?.category ?? s.category),
+    );
     // Anchor each passage to its titled note (or the seeded legacy summary)
     // plus its index inside that note, so "Kaynağa git" scrolls straight to
     // the exact highlighted text.

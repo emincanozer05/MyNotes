@@ -96,7 +96,7 @@ export function BookshelfBoard({
               onClick={() => switchCategory(c.slug)}
               className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                 active
-                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow"
+                  ? "bg-[var(--foreground)] text-[var(--surface)]"
                   : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
               }`}
             >
@@ -143,7 +143,7 @@ export function BookshelfBoard({
                     />
                   ) : (
                     <div
-                      className={`flex aspect-[2/3] w-full items-center justify-center rounded-lg bg-gradient-to-br p-2 text-center shadow-md transition-transform group-hover:scale-[1.03] ${b.spineCls}`}
+                      className={`flex aspect-[2/3] w-full items-center justify-center rounded-lg p-2 text-center shadow-md transition-transform group-hover:scale-[1.03] ${b.spineCls}`}
                     >
                       <span className="line-clamp-5 text-[11px] font-semibold leading-tight text-white">
                         {b.title}
