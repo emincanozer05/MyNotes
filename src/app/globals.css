@@ -1,51 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  /* Notion-inspired warm neutral palette */
-  --background: #f7f7f5;
-  --foreground: #37352f;
+  /* Zotero-inspired neutral palette: grey panes, white item list, blue accent */
+  --background: #f7f7f7;
+  --foreground: #222222;
   --surface: #ffffff;
-  --surface-2: #f1f1ef;
-  --surface-3: #e8e8e5;
-  --border: #e6e6e3;
-  --border-strong: #d7d7d3;
-  --muted: #787774;
-  /* Accent stops (warm; used sparingly) */
-  --brand-1: #d9730d;
+  --surface-2: #f0f0f0;
+  --surface-3: #e4e4e4;
+  --border: #e2e2e2;
+  --border-strong: #cfcfcf;
+  --muted: #6e6e6e;
+  /* Accent stops (used sparingly) */
+  --brand-1: #4072e5;
   --brand-2: #de5451;
   --brand-3: #9065b0;
   --brand-4: #337ea9;
   /* Derived accent tints, so components don't hard-code opacity values */
   --accent: var(--brand-1);
-  --accent-soft: color-mix(in srgb, var(--brand-1) 10%, transparent);
-  --accent-text: #b45309;
-  --ring: color-mix(in srgb, var(--brand-1) 45%, transparent);
-  /* Elevation — two steps only, so cards stay flat and calm */
-  --shadow-1: 0 1px 2px rgba(15, 12, 8, 0.05), 0 1px 1px rgba(15, 12, 8, 0.03);
-  --shadow-2: 0 8px 24px -12px rgba(15, 12, 8, 0.22), 0 2px 6px -2px rgba(15, 12, 8, 0.08);
-  --radius: 14px;
+  --accent-soft: color-mix(in srgb, var(--brand-1) 12%, transparent);
+  --accent-text: #2c58c2;
+  --ring: color-mix(in srgb, var(--brand-1) 50%, transparent);
+  /* Elevation — kept almost flat, like a desktop reference manager */
+  --shadow-1: 0 1px 1px rgba(0, 0, 0, 0.03);
+  --shadow-2: 0 6px 18px -10px rgba(0, 0, 0, 0.2);
+  --radius: 8px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  /* Calmer, smaller corners app-wide (Zotero-like). */
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
   --color-foreground: var(--foreground);
   --font-sans: var(--font-google-sans);
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }
 
+/* "amber" is the app's accent utility colour throughout the components; it is
+   re-pointed at the Zotero-style blue so every accent stays consistent. */
+@theme {
+  --color-amber-50: #eff4fe;
+  --color-amber-100: #dde7fc;
+  --color-amber-200: #bfd2fa;
+  --color-amber-300: #92b3f5;
+  --color-amber-400: #6493ee;
+  --color-amber-500: #4072e5;
+  --color-amber-600: #305fd0;
+  --color-amber-700: #284eb0;
+  --color-amber-800: #23418c;
+  --color-amber-900: #203970;
+  --color-amber-950: #162346;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #171716;
-    --foreground: #e8e8e5;
-    --surface: #1f1f1e;
-    --surface-2: #292928;
-    --surface-3: #333331;
-    --border: #302f2e;
-    --border-strong: #403f3d;
-    --muted: #9b9a97;
-    --accent-text: #f0a05a;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-2: 0 10px 30px -14px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --background: #1e1e1e;
+    --foreground: #e4e4e4;
+    --surface: #262626;
+    --surface-2: #2f2f2f;
+    --surface-3: #3a3a3a;
+    --border: #363636;
+    --border-strong: #474747;
+    --muted: #a3a3a3;
+    --brand-1: #4f82ee;
+    --accent-text: #8ab0ff;
+    --shadow-1: none;
+    --shadow-2: 0 10px 28px -14px rgba(0, 0, 0, 0.8);
   }
 }
 
@@ -165,28 +186,28 @@ h2 {
 }
 .glass-card:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-2);
 }
 
-/* Cards that are themselves a link/button lift very slightly on hover. */
+/* Cards that are themselves a link/button: a plain border highlight, no lift. */
 .card-lift:hover {
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--brand-1) 45%, var(--border));
 }
 
 .btn-gradient {
-  /* Flat accent button — solid colour, no gradient */
+  /* Flat accent button — solid colour, small square-ish corners. Unlayered,
+     so it wins over the pill (rounded-full) utilities on the markup. */
   background: var(--brand-1);
   color: #fff;
-  border: 1px solid color-mix(in srgb, var(--brand-1) 75%, #000);
-  box-shadow: var(--shadow-1);
+  border: 1px solid color-mix(in srgb, var(--brand-1) 80%, #000);
+  border-radius: 6px;
+  box-shadow: none;
   transition:
     filter 0.15s ease,
     box-shadow 0.15s ease,
     transform 0.1s ease;
 }
 .btn-gradient:hover {
-  filter: brightness(1.06);
-  box-shadow: var(--shadow-2);
+  filter: brightness(1.08);
 }
 .btn-gradient:active {
   transform: translateY(1px);
@@ -196,7 +217,8 @@ h2 {
 /* Neutral, bordered counterpart to .btn-gradient. */
 .btn-ghost {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
   color: inherit;
   transition:
     background-color 0.15s ease,
@@ -210,6 +232,7 @@ h2 {
 /* Filter pills (topic / tag chips). */
 .chip {
   border: 1px solid transparent;
+  border-radius: 4px;
   background: var(--surface-2);
   color: var(--muted);
   transition:
@@ -227,6 +250,12 @@ h2 {
 }
 .chip-accent:hover {
   background: color-mix(in srgb, var(--brand-1) 18%, transparent);
+}
+
+/* Search boxes and dropdowns: rectangular desktop-style fields. */
+input[type="search"],
+select {
+  border-radius: 6px;
 }
 
 /* Section heading rule — a label with a hairline that fills the row. */
@@ -337,9 +366,9 @@ h2 {
 .rte h2 { font-size: 14pt; font-weight: 700; margin: 0.5rem 0; }
 .rte ul { list-style: disc; padding-left: 1.4rem; }
 .rte ol { list-style: decimal; padding-left: 1.4rem; }
-.rte a { color: #d97706; text-decoration: underline; }
+.rte a { color: var(--accent-text); text-decoration: underline; }
 .rte blockquote {
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--brand-1);
   padding-left: 0.9rem;
   font-style: italic;
   color: #78716c;
@@ -364,7 +393,7 @@ h2 {
     outline-offset: 2px;
   }
   50% {
-    outline: 3px solid #f59e0b;
+    outline: 3px solid var(--brand-1);
     outline-offset: 2px;
   }
 }
@@ -391,7 +420,7 @@ h2 {
 .note-html ul { list-style: disc; padding-left: 1.4rem; }
 .note-html ol { list-style: decimal; padding-left: 1.4rem; }
 .note-html blockquote {
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--brand-1);
   padding-left: 0.9rem;
   font-style: italic;
   color: #78716c;

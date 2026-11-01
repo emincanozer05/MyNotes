@@ -45,7 +45,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menüyü aç"
-        className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] lg:hidden"
+        className="no-print fixed left-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-base text-[var(--muted)] lg:hidden"
       >
         <Icon name="menu" className="h-5 w-5" />
       </button>
@@ -58,11 +58,11 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
       )}
 
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-56 lg:translate-x-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface-2)] transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-56 lg:translate-x-0 ${
           open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-4 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
+        <div className="flex items-center justify-between px-3 pb-3 pt-[calc(env(safe-area-inset-top)+0.875rem)]">
           <Link
             href="/"
             className="group flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-90"
@@ -72,9 +72,9 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             <img
               src="/icons/icon-192.png"
               alt=""
-              className="h-9 w-9 dark:[filter:drop-shadow(0_0_1px_#fff)_drop-shadow(0_0_1px_#fff)]"
+              className="h-7 w-7 dark:[filter:drop-shadow(0_0_1px_#fff)_drop-shadow(0_0_1px_#fff)]"
             />
-            <span className="text-base font-semibold leading-tight">
+            <span className="text-sm font-semibold leading-tight">
               Memory Palace
             </span>
           </Link>
@@ -82,12 +82,15 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Menüyü kapat"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--muted)] hover:bg-[var(--surface-2)] lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-lg text-[var(--muted)] hover:bg-[var(--surface-3)] lg:hidden"
           >
             <CloseIcon />
           </button>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
+        <p className="px-4 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+          Kitaplığım
+        </p>
+        <nav className="flex-1 space-y-px overflow-y-auto px-2">
           {NAV_ITEMS.map((item) => {
             const active =
               item.href === "/"
@@ -106,23 +109,16 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
                 // app layout, so this prefetch happens once per link, not per nav.
                 prefetch
                 aria-current={active ? "page" : undefined}
-                className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors ${
+                className={`group flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors ${
                   active
-                    ? "bg-[var(--surface-2)] text-[var(--foreground)]"
-                    : "text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                    : "text-[var(--foreground)] hover:bg-[var(--surface-3)]"
                 }`}
               >
-                {/* Accent rail marks the active section at a glance */}
                 <span
                   aria-hidden
-                  className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--brand-1)] transition-opacity ${
-                    active ? "opacity-100" : "opacity-0"
-                  }`}
-                />
-                <span
-                  aria-hidden
-                  className={`flex w-4 justify-center transition-colors ${
-                    active ? "text-[var(--brand-1)]" : "opacity-70"
+                  className={`flex w-4 justify-center ${
+                    active ? "text-[var(--brand-1)]" : "text-[var(--muted)]"
                   }`}
                 >
                   <Icon name={item.icon} className="h-4 w-4" />
@@ -132,10 +128,10 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
             );
           })}
         </nav>
-        <div className="mt-2 flex items-center gap-2 border-t border-[var(--border)] px-4 py-3">
+        <div className="mt-2 flex items-center gap-2 border-t border-[var(--border)] px-4 py-2.5">
           <span
             aria-hidden
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-[11px] font-bold uppercase text-[var(--muted)]"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[11px] font-bold uppercase text-[var(--muted)]"
           >
             {userEmail.charAt(0) || "?"}
           </span>

@@ -139,7 +139,7 @@ export default async function NotesPage({
           ? (kind === "article" ? pdfDeepLink(n.source_id, n.content ?? "") : null) ??
             sourceHref(kind, n.source_id, sourceMetaCategoryById.get(n.source_id))
           : null,
-      tags: tags.map((t) => ({ name: t.name })),
+      tags: tags.map((t) => ({ name: t.name, color: t.color })),
       cls: clsFor(n.id),
       tilt: tiltFor(n.id),
       color: firstColor ? pastelize(firstColor) : null,

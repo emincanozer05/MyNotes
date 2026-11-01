@@ -13,10 +13,13 @@ export function ArticleTagsEditor({
   articleId,
   current,
   allTags,
+  subtle = false,
 }: {
   articleId: string;
   current: string[];
   allTags: string[];
+  /** Quiet chips; the edit control appears only while hovering the `.group`. */
+  subtle?: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -58,7 +61,11 @@ export function ArticleTagsEditor({
         {current.map((tag) => (
           <span
             key={tag}
-            className="rounded-full border border-sky-500/40 bg-sky-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"
+            className={
+              subtle
+                ? "rounded bg-[var(--surface-2)] px-1.5 py-px text-[11px] font-medium text-[var(--muted)]"
+                : "rounded-full border border-sky-500/40 bg-sky-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300"
+            }
           >
             {tag}
           </span>
@@ -71,7 +78,11 @@ export function ArticleTagsEditor({
             setInput("");
             setEditing(true);
           }}
-          className="rounded-full border border-dashed border-stone-400/50 px-2.5 py-0.5 text-[11px] font-semibold text-stone-500 transition-colors hover:border-sky-500/50 hover:text-sky-600"
+          className={
+            subtle
+              ? "touch-show rounded px-1 py-px text-[11px] font-medium text-[var(--muted)] opacity-0 transition-all hover:text-[var(--accent-text)] focus:opacity-100 group-hover:opacity-100"
+              : "rounded-full border border-dashed border-stone-400/50 px-2.5 py-0.5 text-[11px] font-semibold text-stone-500 transition-colors hover:border-sky-500/50 hover:text-sky-600"
+          }
           title="Etiketleri düzenle"
         >
           {current.length > 0 ? (
