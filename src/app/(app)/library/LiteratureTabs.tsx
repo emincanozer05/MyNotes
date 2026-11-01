@@ -19,7 +19,7 @@ import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { IntentLink } from "@/components/IntentLink";
 import { Icon, type IconName } from "@/components/Icon";
-import { MyNoteCard } from "./MyNoteCard";
+import { MyNoteCard, MyNoteList } from "./MyNoteCard";
 import { buildTagGraph, NO_TAG, NO_TAG_LABEL, TagMap } from "./TagMap";
 import {
   FilterSelect,
@@ -199,14 +199,14 @@ export function LiteratureTabs({
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [noteTagFilter, setNoteTagFilter] = useState<string>("all");
-  // "Notlarım": tag map (default) or the searchable list; `mapTag` is the tag
-  // selected on the map (its articles open below it).
-  const [notesView, setNotesView] = useState<"map" | "list">("map");
+  // "Notlarım": the searchable list (default) or the tag map; `mapTag` is the
+  // tag selected on the map (its articles open below it).
+  const [notesView, setNotesView] = useState<"map" | "list">("list");
   const [mapTag, setMapTag] = useState<string | null>(null);
   // Local list controls shared by "Kaydedilenler" and "Notlarım".
   const [listQuery, setListQuery] = useState("");
   const [sort, setSort] = useState<SortId>("added");
-  const [view, setView] = useState<ViewId>("grid");
+  const [view, setView] = useState<ViewId>("list");
   const [fetched, setFetched] = useState<FeedArticle[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [fetchErr, setFetchErr] = useState<string | null>(null);
@@ -449,7 +449,7 @@ export function LiteratureTabs({
             key={t.id}
             onClick={() => setTab(t.id)}
             aria-current={tab === t.id ? "page" : undefined}
-            className={`-mb-px flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-bold transition-colors ${
+            className={`-mb-px flex items-center gap-2 border-b-2 px-3.5 py-2 text-sm font-semibold transition-colors ${
               tab === t.id
                 ? "border-[var(--brand-1)] text-[var(--accent-text)]"
                 : "border-transparent text-stone-500 hover:bg-[var(--surface-2)] hover:text-stone-700 dark:hover:text-stone-300"
@@ -749,12 +749,12 @@ export function LiteratureTabs({
             <div
               role="group"
               aria-label="Notlarım görünümü"
-              className="flex w-fit overflow-hidden rounded-full border border-[var(--border)] text-xs font-semibold"
+              className="flex w-fit overflow-hidden rounded-md border border-[var(--border-strong)] text-xs font-semibold"
             >
               {(
                 [
-                  { id: "map", label: "Harita", icon: "network" },
                   { id: "list", label: "Liste", icon: "list" },
+                  { id: "map", label: "Harita", icon: "network" },
                 ] as const
               ).map((v) => (
                 <button
@@ -804,17 +804,11 @@ export function LiteratureTabs({
                         <Icon name="x" /> Seçimi kaldır
                       </button>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      {mapArticles.map((a) => (
-                        <MyNoteCard
-                          key={a.id}
-                          article={a}
-                          noteCount={noteCounts[a.id] ?? 0}
-                          allTags={allTags}
-                          layout="grid"
-                        />
-                      ))}
-                    </div>
+                    <MyNoteList
+                      articles={mapArticles}
+                      noteCounts={noteCounts}
+                      allTags={allTags}
+                    />
                   </div>
                 ) : (
                   <p className="rounded-xl border border-dashed border-stone-300 p-6 text-center text-sm text-stone-500 dark:border-stone-700">
@@ -860,23 +854,24 @@ export function LiteratureTabs({
                 </button>
               </div>
             ) : (
-              <div
-                className={
-                  view === "grid"
-                    ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                    : "space-y-2"
-                }
-              >
-                {notlarimFiltered.map((a) => (
-                  <MyNoteCard
-                    key={a.id}
-                    article={a}
-                    noteCount={noteCounts[a.id] ?? 0}
-                    allTags={allTags}
-                    layout={view}
-                  />
-                ))}
-              </div>
+              view === "grid" ? (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {notlarimFiltered.map((a) => (
+                    <MyNoteCard
+                      key={a.id}
+                      article={a}
+                      noteCount={noteCounts[a.id] ?? 0}
+                      allTags={allTags}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <MyNoteList
+                  articles={notlarimFiltered}
+                  noteCounts={noteCounts}
+                  allTags={allTags}
+                />
+              )
             )}
               </div>
             )}

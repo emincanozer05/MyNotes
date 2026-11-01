@@ -6,177 +6,192 @@ import { deleteArticle } from "./actions";
 import { ArticleTagsEditor } from "./ArticleTagsEditor";
 import { ArticleTitleEditor } from "./ArticleTitleEditor";
 import { Icon } from "@/components/Icon";
-import {
-  articleLink,
-  hasSummary,
-  isOpenAccess,
-  tagsOf,
-} from "./articleMeta";
+import { articleLink, hasSummary, plainText, tagsOf } from "./articleMeta";
 
-function DeleteButton({ id }: { id: string }) {
-  return (
-    <form action={deleteArticle}>
-      <input type="hidden" name="id" value={id} />
-      <button
-        title="Makaleyi sil"
-        aria-label="Makaleyi sil"
-        onClick={(e) => {
-          if (!window.confirm("Bu makale silinsin mi?")) e.preventDefault();
-        }}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-stone-400 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
-      >
-        <Icon name="trash" className="h-4 w-4" />
-      </button>
-    </form>
-  );
+/** Zotero-style creator label: "Zhang", "Zhang ve Li", "Zhang vd.". */
+function creatorOf(a: Source): string {
+  const last = (name: string) => name.trim().split(/\s+/).pop() ?? name;
+  const [first, second] = a.authors;
+  if (!first) return "";
+  if (a.authors.length === 1) return last(first);
+  if (a.authors.length === 2) return `${last(first)} ve ${last(second)}`;
+  return `${last(first)} vd.`;
 }
 
-/** Note-count pill; renders nothing when the article has no notes. */
-function NoteCountPill({ noteCount }: { noteCount: number }) {
-  if (noteCount <= 0) return null;
-  return (
-    <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-semibold text-stone-500">
-      <span className="inline-flex items-center gap-1">
-        <Icon name="file-text" />
-        {noteCount} not
-      </span>
-    </span>
-  );
-}
+const iconBtn =
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--muted)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--foreground)]";
 
 /**
- * The card's two actions, side by side at equal width: open the summary
- * (read + edit live on the article page) and the A4 print page.
+ * Quiet row/card actions: summary, A4 print, delete. Dimmed until the item is
+ * hovered or focused (always visible on touch screens).
  */
-function Actions({ a, summary }: { a: Source; summary: boolean }) {
-  const btn =
-    "inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold";
+function Actions({ a }: { a: Source }) {
+  const summary = hasSummary(a);
   return (
-    <div className="grid w-full grid-cols-2 gap-2">
+    <div className="touch-show flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
       <IntentLink
         href={`/library/${a.id}`}
         title={summary ? "Özeti oku / düzenle" : "Özet yaz"}
-        className={`btn-gradient ${btn}`}
+        aria-label={summary ? "Özeti oku / düzenle" : "Özet yaz"}
+        className={iconBtn}
       >
-        <Icon name={summary ? "book" : "pencil"} />
-        <span className="truncate">
-          {summary ? "Özeti Oku/Düzenle" : "Özet Yaz"}
-        </span>
+        <Icon name={summary ? "book" : "pencil"} className="h-4 w-4" />
       </IntentLink>
       <IntentLink
         href={`/library/print/${a.id}`}
-        title="A4 çıktı sayfasını aç"
-        className={`btn-ghost ${btn}`}
+        title="A4 çıktı al"
+        aria-label="A4 çıktı al"
+        className={iconBtn}
       >
-        <Icon name="printer" />
-        <span className="truncate">Çıktı Al</span>
+        <Icon name="printer" className="h-4 w-4" />
       </IntentLink>
+      <form action={deleteArticle}>
+        <input type="hidden" name="id" value={a.id} />
+        <button
+          title="Makaleyi sil"
+          aria-label="Makaleyi sil"
+          onClick={(e) => {
+            if (!window.confirm("Bu makale silinsin mi?")) e.preventDefault();
+          }}
+          className={`${iconBtn} hover:!bg-rose-500/10 hover:!text-rose-500`}
+        >
+          <Icon name="trash" className="h-4 w-4" />
+        </button>
+      </form>
     </div>
   );
 }
 
-/** Article card in the "Notlarım" tab (grid or list layout). */
-export function MyNoteCard({
-  article: a,
-  noteCount,
-  allTags,
-  layout,
-}: {
-  article: Source;
-  noteCount: number;
-  allTags: string[];
-  layout: "grid" | "list";
-}) {
-  const summary = hasSummary(a);
-  const meta = [a.journal, a.year].filter(Boolean).join(" · ");
-  const authors =
-    a.authors.slice(0, 3).join(", ") + (a.authors.length > 3 ? " ve diğerleri" : "");
+/** Small muted "n not" marker; nothing when the article has no notes. */
+function NoteCount({ n }: { n: number }) {
+  if (n <= 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
+      <Icon name="file-text" className="h-3 w-3" />
+      {n} not
+    </span>
+  );
+}
 
-  const title = (
-    // No line clamp: the title's inline editor expands in place and a
-    // clamped box would hide its input.
-    <h4 className="text-sm font-semibold leading-snug">
+function Title({ a, size }: { a: Source; size: "row" | "card" }) {
+  // No line clamp: the title's inline editor expands in place and a clamped
+  // box would hide its input.
+  return (
+    <h4
+      className={`font-semibold leading-snug ${
+        size === "card" ? "text-[15px]" : "text-sm"
+      }`}
+    >
       <ArticleTitleEditor
         articleId={a.id}
         title={a.title}
         href={articleLink(a)}
+        subtle
       />
     </h4>
   );
+}
 
-  const byline = (
-    <p className="mt-1 line-clamp-2 text-xs text-stone-500">
-      {authors}
-      {meta && (authors ? " · " : "") + meta}
-    </p>
-  );
-
-  if (layout === "list") {
-    return (
-      <article className="glass-card flex flex-col gap-3 rounded-xl p-4 lg:flex-row lg:items-center">
-        <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-            <ArticleTagsEditor
-              articleId={a.id}
-              current={tagsOf(a)}
-              allTags={allTags}
-            />
-            {isOpenAccess(a.journal) && (
-              <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                Open Access
+/**
+ * "Notlarım" list view — a Zotero-like item table: Başlık | Yazar | Yıl, with
+ * the title as the focus and everything else muted.
+ */
+export function MyNoteList({
+  articles,
+  noteCounts,
+  allTags,
+}: {
+  articles: Source[];
+  noteCounts: Record<string, number>;
+  allTags: string[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+      <div
+        aria-hidden
+        className="hidden items-center gap-4 border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)] md:flex"
+      >
+        <span className="flex-1">Başlık</span>
+        <span className="w-36">Yazar</span>
+        <span className="w-12">Yıl</span>
+        <span className="w-[5.75rem]" />
+      </div>
+      <ul className="divide-y divide-[var(--border)]">
+        {articles.map((a) => {
+          const creator = creatorOf(a);
+          const tags = tagsOf(a);
+          const n = noteCounts[a.id] ?? 0;
+          return (
+            <li
+              key={a.id}
+              className="group flex items-start gap-4 px-4 py-2.5 transition-colors hover:bg-[var(--surface-2)] md:items-center"
+            >
+              <div className="min-w-0 flex-1">
+                <Title a={a} size="row" />
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-xs text-[var(--muted)] md:hidden">
+                    {[creator, a.year].filter(Boolean).join(" · ")}
+                  </span>
+                  <ArticleTagsEditor
+                    articleId={a.id}
+                    current={tags}
+                    allTags={allTags}
+                    subtle
+                  />
+                  <NoteCount n={n} />
+                </div>
+              </div>
+              <span
+                className="hidden w-36 truncate text-xs text-[var(--muted)] md:block"
+                title={a.authors.join(", ")}
+              >
+                {creator || "—"}
               </span>
-            )}
-          </div>
-          {title}
-          {byline}
-        </div>
-        {noteCount > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 lg:max-w-[22rem] lg:justify-end">
-            <NoteCountPill noteCount={noteCount} />
-          </div>
-        )}
-        <div className="flex items-center gap-1.5 lg:w-[19rem] lg:shrink-0">
-          <Actions a={a} summary={summary} />
-          <DeleteButton id={a.id} />
-        </div>
-      </article>
-    );
-  }
+              <span className="hidden w-12 text-xs tabular-nums text-[var(--muted)] md:block">
+                {a.year ?? "—"}
+              </span>
+              <Actions a={a} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** "Notlarım" card view — just the title, one muted meta line and the tags. */
+export function MyNoteCard({
+  article: a,
+  noteCount,
+  allTags,
+}: {
+  article: Source;
+  noteCount: number;
+  allTags: string[];
+}) {
+  const meta = [creatorOf(a), a.year, a.journal && plainText(a.journal)]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <article className="glass-card flex flex-col rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+    <article className="glass-card group flex flex-col rounded-lg p-4">
+      <Title a={a} size="card" />
+      {meta && (
+        <p className="mt-1.5 truncate text-xs text-[var(--muted)]" title={meta}>
+          {meta}
+        </p>
+      )}
+      <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <ArticleTagsEditor
             articleId={a.id}
             current={tagsOf(a)}
             allTags={allTags}
+            subtle
           />
+          <NoteCount n={noteCount} />
         </div>
-        <DeleteButton id={a.id} />
-      </div>
-
-      <div className="mt-2.5">
-        {title}
-        {byline}
-      </div>
-
-      {(noteCount > 0 || isOpenAccess(a.journal)) && (
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <NoteCountPill noteCount={noteCount} />
-          {isOpenAccess(a.journal) && (
-            <span className="rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-              Open Access
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Actions pinned to the bottom so cards line up */}
-      <div className="mt-auto pt-4">
-        <div className="border-t border-[var(--border)] pt-3">
-          <Actions a={a} summary={summary} />
-        </div>
+        <Actions a={a} />
       </div>
     </article>
   );

@@ -7,6 +7,48 @@ import { deleteNote } from "./actions";
 
 interface Tag {
   name: string;
+  color?: string | null;
+}
+
+/**
+ * Post-its saved from the PDF reader store the quote as
+ * `<blockquote data-pdf-page="…">quote</blockquote>` (+ optional comment) and
+ * a title that is just the quote's first 60 characters. They are rendered like
+ * the other passage post-its: tag chips, the quote, the source line.
+ */
+function parsePdfQuote(content: string): { quote: string; rest: string } | null {
+  const m = /^\s*<blockquote data-pdf-page="\d+"[^>]*>([\s\S]*?)<\/blockquote>([\s\S]*)$/.exec(
+    content,
+  );
+  if (!m) return null;
+  const quote = m[1]
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .trim();
+  return quote ? { quote, rest: m[2].trim() } : null;
+}
+
+function TagChips({ tags, size }: { tags: Tag[]; size: "sm" | "lg" }) {
+  if (tags.length === 0) return null;
+  return (
+    <span className={`ml-3.5 flex flex-wrap self-start ${size === "lg" ? "gap-1.5" : "gap-1"}`}>
+      {tags.map((t) => (
+        <span
+          key={t.name}
+          className={`rounded-full font-semibold text-white ${
+            size === "lg" ? "px-2.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-[9px]"
+          }`}
+          style={{ background: t.color ?? "#78716c" }}
+        >
+          {t.name}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 export interface PostitData {
@@ -36,6 +78,8 @@ export function PostitCard({ note }: { note: PostitData }) {
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  const pdf = parsePdfQuote(note.content);
 
   const sourceLine = note.source_title
     ? `${note.source_author}${note.source_year ? ` (${note.source_year})` : ""}${
@@ -94,31 +138,45 @@ export function PostitCard({ note }: { note: PostitData }) {
           </button>
         </form>
 
-        <h3 className="pl-3.5 pr-5 text-[13px] font-bold leading-snug line-clamp-2">
-          {note.title}
-        </h3>
-        {preview && (
-          <p className="mt-1.5 flex-1 whitespace-pre-wrap text-[11px] leading-snug line-clamp-4 opacity-90">
-            {preview.slice(0, 160)}
-          </p>
-        )}
-        <div className="mt-2 space-y-1">
-          {sourceLine && (
-            <p className="line-clamp-1 text-[10px] italic opacity-70">{sourceLine}</p>
-          )}
-          {note.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {note.tags.slice(0, 3).map((t) => (
-                <span
-                  key={t.name}
-                  className="rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] font-medium"
-                >
-                  {t.name}
-                </span>
-              ))}
+        {pdf ? (
+          <>
+            <TagChips tags={note.tags} size="sm" />
+            <p className="mt-2 flex-1 whitespace-pre-wrap text-[12px] font-medium leading-snug line-clamp-6">
+              “{pdf.quote}”
+            </p>
+            {sourceLine && (
+              <p className="mt-2 line-clamp-1 text-[10px] italic opacity-70">{sourceLine}</p>
+            )}
+          </>
+        ) : (
+          <>
+            <h3 className="pl-3.5 pr-5 text-[13px] font-bold leading-snug line-clamp-2">
+              {note.title}
+            </h3>
+            {preview && (
+              <p className="mt-1.5 flex-1 whitespace-pre-wrap text-[11px] leading-snug line-clamp-4 opacity-90">
+                {preview.slice(0, 160)}
+              </p>
+            )}
+            <div className="mt-2 space-y-1">
+              {sourceLine && (
+                <p className="line-clamp-1 text-[10px] italic opacity-70">{sourceLine}</p>
+              )}
+              {note.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {note.tags.slice(0, 3).map((t) => (
+                    <span
+                      key={t.name}
+                      className="rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] font-medium"
+                    >
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Expanded, centered view with a blurred backdrop. */}
@@ -145,30 +203,52 @@ export function PostitCard({ note }: { note: PostitData }) {
               ×
             </button>
 
-            <h2 className="pl-3.5 pr-8 text-xl font-bold leading-snug">{note.title}</h2>
+            {pdf ? (
+              <>
+                <TagChips tags={note.tags} size="lg" />
+                <p className="mt-3 overflow-y-auto whitespace-pre-wrap pr-1 text-lg font-medium leading-relaxed">
+                  “{pdf.quote}”
+                </p>
+                {pdf.rest && (
+                  <div
+                    className="note-html mt-2 text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: pdf.rest }}
+                  />
+                )}
+                {sourceLine && (
+                  <p className="mt-3 border-t border-black/10 pt-2.5 text-xs italic opacity-70">
+                    {sourceLine}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="pl-3.5 pr-8 text-xl font-bold leading-snug">{note.title}</h2>
 
-            <div
-              className="note-html mt-3 overflow-y-auto pr-1 text-[11pt] leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: note.content || "<p>—</p>" }}
-            />
+                <div
+                  className="note-html mt-3 overflow-y-auto pr-1 text-[11pt] leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: note.content || "<p>—</p>" }}
+                />
 
-            <div className="mt-3 space-y-1.5 border-t border-black/10 pt-2.5">
-              {sourceLine && (
-                <p className="text-xs italic opacity-70">{sourceLine}</p>
-              )}
-              {note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {note.tags.map((t) => (
-                    <span
-                      key={t.name}
-                      className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
-                    >
-                      {t.name}
-                    </span>
-                  ))}
+                <div className="mt-3 space-y-1.5 border-t border-black/10 pt-2.5">
+                  {sourceLine && (
+                    <p className="text-xs italic opacity-70">{sourceLine}</p>
+                  )}
+                  {note.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {note.tags.map((t) => (
+                        <span
+                          key={t.name}
+                          className="rounded-full bg-black/10 px-2 py-0.5 text-[10px] font-medium"
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           {note.sourceHref && (

@@ -153,6 +153,16 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    Tasarım sadeleştirildi: gradyan renkler kaldırıldı (düz `btn-gradient`, düz kategori
    sekmeleri ve kapak renkleri).
 
+16. ✅ **Zotero benzeri sade tasarım:** nötr gri paneller + mavi vurgu (`globals.css`
+   tokenları; bileşenlerdeki `amber-*` yardımcıları `@theme` ile maviye yönlendirilir),
+   küçük köşe yarıçapları (`btn-gradient`/`btn-ghost`/arama/select katmansız CSS ile
+   `rounded-full`'u ezer), düz kartlar; kenar çubuğu Zotero sol paneli gibi kompakt.
+   Literatür "Notlarım" önce **Liste** açılır (Harita ikinci); liste Zotero öğe tablosu
+   (`MyNoteList`: Başlık | Yazar | Yıl, eylemler sessiz simgeler), kart görünümü yalnızca
+   başlık + tek satır künye + etiketler. PDF'den kaydedilen post-it'ler
+   (`<blockquote data-pdf-page>`) panoda diğer pasaj post-it'leri gibi görünür
+   (etiket çipleri + “alıntı” + kaynak satırı; `PostitCard` `parsePdfQuote`).
+
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
 `OWNER_EMAIL` / `OWNER_PASSWORD` ile otomatik `signInWithPassword` yapar (RLS

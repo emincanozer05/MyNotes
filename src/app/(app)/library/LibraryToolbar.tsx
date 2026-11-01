@@ -91,12 +91,12 @@ export function LibraryToolbar({
         <div
           role="group"
           aria-label="Görünüm"
-          className="flex overflow-hidden rounded-full border border-[var(--border)] text-xs font-semibold"
+          className="flex overflow-hidden rounded-md border border-[var(--border-strong)] text-xs font-semibold"
         >
           {(
             [
-              { id: "grid", label: "Kart", icon: "grid" },
               { id: "list", label: "Liste", icon: "list" },
+              { id: "grid", label: "Kart", icon: "grid" },
             ] as const
           ).map((v) => (
             <button

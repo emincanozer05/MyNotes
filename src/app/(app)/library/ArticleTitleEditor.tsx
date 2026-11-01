@@ -14,10 +14,13 @@ export function ArticleTitleEditor({
   articleId,
   title,
   href,
+  subtle = false,
 }: {
   articleId: string;
   title: string;
   href?: string | null;
+  /** Show the edit pencil only while hovering the enclosing `.group`. */
+  subtle?: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -49,7 +52,9 @@ export function ArticleTitleEditor({
             setValue(title);
             setEditing(true);
           }}
-          className="ml-1.5 align-middle text-xs text-stone-400 transition-colors hover:text-amber-600 dark:hover:text-amber-400"
+          className={`ml-1.5 align-middle text-xs text-stone-400 transition-all hover:text-amber-600 dark:hover:text-amber-400 ${
+            subtle ? "touch-show opacity-0 focus:opacity-100 group-hover:opacity-100" : ""
+          }`}
           title="Başlığı düzenle"
         >
           <Icon name="pencil" className="h-3.5 w-3.5" />
