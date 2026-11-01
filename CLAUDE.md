@@ -161,7 +161,17 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    (`MyNoteList`: Başlık | Yazar | Yıl, eylemler sessiz simgeler), kart görünümü yalnızca
    başlık + tek satır künye + etiketler. PDF'den kaydedilen post-it'ler
    (`<blockquote data-pdf-page>`) panoda diğer pasaj post-it'leri gibi görünür
-   (etiket çipleri + “alıntı” + kaynak satırı; `PostitCard` `parsePdfQuote`).
+   (alıntı + kaynak satırı + etiketler; `PostitCard` `parsePdfQuote`).
+   Tüm sekmelere yayıldı: ortak `PageHeader` (`src/components/PageHeader.tsx`, küçük
+   başlık + tek satır açıklama + sağda eylemler); kategori sekmeleri tek tip alt çizgili
+   `.cat-tabs`/`.cat-tab` (aktif = `aria-pressed`); listeler Zotero tablosu
+   (`.item-table`/`.item-table-head`/`.item-row`): Panel modül listesi, Kaydedilenler,
+   Not Defterim girdileri, Ne nedir? girdileri, Arama sonuçları. Kitap Rafı kapakları
+   çerçevesiz (durum = renkli nokta), Kurs kartları sade.
+   Post-it kartları sade: eğim/raptiye/pastel zemin yok; nötr kart + sol kenarda etiket
+   renginde ince şerit (`--postit-accent`, etiketsiz notlarda `postit-y…v` yedek renkleri),
+   etiketler renk noktası + ad. Ortak parçalar `notes/postitUi.tsx` (`TagList`,
+   `CardDeleteButton`, `ExpandedPostit`).
 
 Kimlik doğrulama: Site tek kullanıcılıdır; giriş/kayıt/şifre sıfırlama
 ekranları kaldırıldı. `src/proxy.ts`, geçerli oturum yoksa sunucu ortamındaki
