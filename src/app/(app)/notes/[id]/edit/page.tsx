@@ -37,7 +37,7 @@ export default async function EditNotePage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Notu Düzenle</h1>
+      <h1 className="text-xl font-semibold tracking-tight">Notu Düzenle</h1>
       <NoteForm
         sources={(sources ?? []).filter((s) => s.cat !== NOTEBOOK_CONFIG_MARKER)}
         error={error}

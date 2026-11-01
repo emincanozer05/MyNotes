@@ -51,8 +51,8 @@ export default async function ArticleDetailPage({
         <Icon name="arrow-left" /> Literatür
       </Link>
 
-      <div className="glass-card rounded-2xl border-t-2 border-t-amber-400/70 p-5">
-        <h1 className="text-2xl font-bold leading-tight">
+      <div className="glass-card rounded-lg p-5">
+        <h1 className="text-xl font-semibold leading-tight">
           <TranslatedTitle text={article.title} href={link} />
         </h1>
         <p className="mt-1.5 text-sm text-stone-500">

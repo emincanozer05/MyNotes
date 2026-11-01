@@ -90,9 +90,9 @@ function FeedCard({
   const link = feedLink(article);
 
   return (
-    <article className="glass-card flex flex-col rounded-2xl border-t-2 border-t-[var(--brand-1)] p-5">
+    <article className="glass-card flex flex-col rounded-lg p-4">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--accent-text)]">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
           {article.topic}
         </span>
         {isOpenAccess(article.journal) && <OpenAccessBadge />}
@@ -103,7 +103,7 @@ function FeedCard({
         )}
       </div>
 
-      <h3 className="mt-3 text-[15px] font-bold leading-snug">
+      <h3 className="mt-2 text-[15px] font-semibold leading-snug">
         <TranslatedTitle text={article.title} href={link} />
       </h3>
       <p className="mt-1.5 text-xs text-stone-500">
@@ -114,8 +114,8 @@ function FeedCard({
       {article.abstract && (
         <>
           <p
-            className={`mt-3 flex-1 text-xs leading-relaxed text-stone-600 dark:text-stone-400 ${
-              expanded ? "" : "line-clamp-4"
+            className={`mt-2.5 flex-1 text-xs leading-relaxed text-[var(--muted)] ${
+              expanded ? "" : "line-clamp-3"
             }`}
           >
             {article.abstract}
@@ -511,7 +511,7 @@ export function LiteratureTabs({
 
       {/* ---------- Manual add panel (own articles) ---------- */}
       {showAdd && (
-        <div className="animate-in space-y-4 rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5">
+        <div className="animate-in space-y-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <div>
             <h3 className="text-sm font-bold">Kendi makaleni ekle</h3>
             <p className="mt-0.5 text-xs text-stone-500">
@@ -636,21 +636,20 @@ export function LiteratureTabs({
               .sort((a, b) => a.localeCompare(b, "tr"))
               .map((topic) => (
                 <div key={topic}>
-                  <h3 className="section-rule mb-2.5 text-sm font-bold">
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--brand-1)]" />
+                  <h3 className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold">
                     {topic}
                     <span className="text-xs font-normal text-stone-400">
                       ({byTopic.get(topic)!.length})
                     </span>
                   </h3>
-                  <div className="space-y-2">
+                  <div className="item-table">
                     {byTopic.get(topic)!.map((a) => {
                       const noteCount = noteCounts[a.id] ?? 0;
                       const summary = hasSummary(a);
                       return (
                         <article
                           key={a.id}
-                          className="glass-card rounded-xl p-4"
+                          className="item-row group px-4 py-3"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -664,11 +663,12 @@ export function LiteratureTabs({
                                   articleId={a.id}
                                   title={a.title}
                                   href={articleLink(a)}
+                                  subtle
                                 />
                               </h4>
-                              <p className="mt-1 text-xs text-stone-500">
-                                {a.authors.slice(0, 4).join(", ")}
-                                {a.authors.length > 4 ? " ve diğerleri" : ""}
+                              <p className="mt-0.5 text-xs text-[var(--muted)]">
+                                {a.authors.slice(0, 3).join(", ")}
+                                {a.authors.length > 3 ? " ve diğerleri" : ""}
                                 {a.year && ` · ${a.year}`}
                                 {a.journal && ` · ${a.journal}`}
                               </p>
@@ -682,13 +682,13 @@ export function LiteratureTabs({
                                   if (!window.confirm("Bu makale silinsin mi?"))
                                     e.preventDefault();
                                 }}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-stone-400 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
+                                className="touch-show flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-sm text-stone-400 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-500 focus:opacity-100 group-hover:opacity-100"
                               >
                                 <Icon name="trash" className="h-4 w-4" />
                               </button>
                             </form>
                           </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                             <ArticleTopicEditor
                               articleId={a.id}
                               current={topicOf(a)}
@@ -698,6 +698,7 @@ export function LiteratureTabs({
                               articleId={a.id}
                               current={tagsOf(a)}
                               allTags={allTags}
+                              subtle
                             />
                             {a.doi && (
                               <a
@@ -711,19 +712,19 @@ export function LiteratureTabs({
                             )}
                             <IntentLink
                               href={`/library/${a.id}`}
-                              className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
+                              className="font-medium text-[var(--accent-text)] hover:underline"
                             >
                               <Icon name="pencil" />{" "}
                               {summary ? "Özeti düzenle" : "Özet yaz"}
                             </IntentLink>
                             <Link
                               href={`/notes/new?source=${a.id}`}
-                              className="font-semibold text-amber-700 hover:underline dark:text-amber-400"
+                              className="font-medium text-[var(--accent-text)] hover:underline"
                             >
                               + Not al
                             </Link>
                             {noteCount > 0 && (
-                              <span className="text-emerald-600 dark:text-emerald-400">
+                              <span className="text-[var(--muted)]">
                                 {noteCount} not
                               </span>
                             )}

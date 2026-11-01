@@ -45,7 +45,7 @@ export default async function NoteDetailPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{note.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{note.title}</h1>
           {note.source_title && (
             <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
               {note.source_author}

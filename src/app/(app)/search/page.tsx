@@ -175,7 +175,7 @@ export default async function SearchPage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Arama</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Arama</h1>
         {query ? (
           <p className="mt-1 text-sm text-[var(--muted)]">
             &ldquo;{query}&rdquo; için {hits.length} sonuç bulundu.
@@ -195,15 +195,15 @@ export default async function SearchPage({
       )}
 
       {/* #ara= fragment: ScrollToSearchText scrolls the target page to the word. */}
-      <ul className="space-y-3">
+      <ul className={hits.length > 0 ? "item-table" : ""}>
         {hits.map((hit, i) => {
           const deepHref = hit.href
             ? `${hit.href}#ara=${encodeURIComponent(query)}`
             : null;
           const card = (
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-amber-400/60">
+            <div className="px-4 py-3">
               <div className="mb-1 flex items-center gap-2">
-                <span className="rounded-full bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
                   {hit.kindLabel}
                 </span>
                 <span className="truncate text-sm font-semibold">
@@ -211,14 +211,14 @@ export default async function SearchPage({
                 </span>
               </div>
               {hit.snippet && (
-                <p className="text-sm leading-relaxed text-[var(--muted)]">
+                <p className="text-[13px] leading-relaxed text-[var(--muted)]">
                   {hit.snippet}
                 </p>
               )}
             </div>
           );
           return (
-            <li key={i}>
+            <li key={i} className="item-row">
               {deepHref ? <Link href={deepHref}>{card}</Link> : card}
             </li>
           );

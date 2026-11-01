@@ -108,7 +108,7 @@ export function NewPostitButton({ category }: { category?: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-gradient shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold"
+        className="btn-gradient shrink-0 px-3.5 py-1.5 text-sm font-semibold"
       >
         + Yeni Not
       </button>

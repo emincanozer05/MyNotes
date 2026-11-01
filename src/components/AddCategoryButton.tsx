@@ -60,7 +60,7 @@ export function AddCategoryButton({
         onClick={() => setOpen(true)}
         aria-label="Kategori ekle"
         title="Kategori ekle"
-        className="flex items-center gap-1 rounded-full bg-stone-500/10 px-3 py-1.5 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-500/20 dark:text-stone-400"
+        className="cat-tab"
       >
         <span className="text-base leading-none">+</span>
         Kategori
@@ -86,7 +86,7 @@ export function AddCategoryButton({
           placeholder="Yeni kategori…"
           maxLength={40}
           disabled={saving}
-          className="w-40 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500"
+          className="w-40 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-amber-500"
         />
         <button
           type="button"

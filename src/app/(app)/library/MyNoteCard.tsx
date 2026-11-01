@@ -106,17 +106,17 @@ export function MyNoteList({
   allTags: string[];
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+    <div className="item-table">
       <div
         aria-hidden
-        className="hidden items-center gap-4 border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)] md:flex"
+        className="item-table-head hidden items-center gap-4 px-4 py-1.5 md:flex"
       >
         <span className="flex-1">Başlık</span>
         <span className="w-36">Yazar</span>
         <span className="w-12">Yıl</span>
         <span className="w-[5.75rem]" />
       </div>
-      <ul className="divide-y divide-[var(--border)]">
+      <ul>
         {articles.map((a) => {
           const creator = creatorOf(a);
           const tags = tagsOf(a);
@@ -124,7 +124,7 @@ export function MyNoteList({
           return (
             <li
               key={a.id}
-              className="group flex items-start gap-4 px-4 py-2.5 transition-colors hover:bg-[var(--surface-2)] md:items-center"
+              className="item-row group flex items-start gap-4 px-4 py-2.5 md:items-center"
             >
               <div className="min-w-0 flex-1">
                 <Title a={a} size="row" />

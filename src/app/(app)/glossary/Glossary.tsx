@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -51,26 +52,26 @@ export function Glossary({
   }, [titled]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="gradient-text">Ne, nedir?</span>
-          </h1>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+    <div className="mx-auto max-w-4xl space-y-5">
+      <PageHeader
+        title="Ne, nedir?"
+        description={
+          <>
             Kavramların ve ifadelerin kısa tanımları. Not/özet yazarken bir
             metni seçip <b>Sözlüğe Kaydet</b> ile buraya ekleyebilir, başlığını
             sonradan girebilirsin.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-stone-100 dark:text-stone-900"
-        >
-          + Yeni
-        </button>
-      </div>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="btn-gradient px-3.5 py-1.5 text-sm font-semibold"
+          >
+            + Yeni
+          </button>
+        }
+      />
 
       {setupError && (
         <p className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
@@ -83,41 +84,47 @@ export function Glossary({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Sözlükte ara…"
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-1)]"
+        className="w-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:border-[var(--brand-1)]"
       />
 
       {adding && (
-        <EntryCard
+        <div className="item-table">
+          <EntryCard
           entry={null}
-          startEditing
-          onDone={() => setAdding(false)}
-        />
+            startEditing
+            onDone={() => setAdding(false)}
+          />
+        </div>
       )}
 
       {untitled.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-text)]">
             Başlık bekleyenler ({untitled.length})
           </h2>
-          {untitled.map((e) => (
-            <EntryCard key={e.id} entry={e} />
-          ))}
+          <div className="item-table">
+            {untitled.map((e) => (
+              <EntryCard key={e.id} entry={e} />
+            ))}
+          </div>
         </section>
       )}
 
       {groups.map(([letter, list]) => (
-        <section key={letter} className="space-y-3">
-          <h2 className="border-b border-[var(--border)] pb-1 text-lg font-bold text-[var(--brand-1)]">
+        <section key={letter} className="space-y-2">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
             {letter}
           </h2>
-          {list.map((e) => (
-            <EntryCard key={e.id} entry={e} />
-          ))}
+          <div className="item-table">
+            {list.map((e) => (
+              <EntryCard key={e.id} entry={e} />
+            ))}
+          </div>
         </section>
       ))}
 
       {!setupError && entries.length === 0 && !adding && (
-        <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
+        <p className="rounded-lg border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
           Sözlük boş. <b>+ Yeni</b> ile bir tanım ekle ya da not editöründe
           metin seçip <b>Sözlüğe Kaydet</b>&apos;e bas.
         </p>
@@ -180,7 +187,7 @@ function EntryCard({
 
   if (editing) {
     return (
-      <div className="glass-card space-y-2 rounded-2xl p-4">
+      <div className="item-row space-y-2 bg-[var(--surface)] p-4">
         <input
           autoFocus={!entry || !entry.term}
           value={term}
@@ -210,7 +217,7 @@ function EntryCard({
             type="button"
             onClick={save}
             disabled={pending || (!term.trim() && !definition.trim())}
-            className="rounded-full bg-stone-900 px-4 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+            className="btn-gradient px-4 py-1.5 text-sm font-semibold disabled:opacity-50"
           >
             {pending ? "Kaydediliyor…" : "Kaydet"}
           </button>
@@ -221,20 +228,20 @@ function EntryCard({
 
   if (!entry) return null;
   return (
-    <div className="glass-card group rounded-2xl p-4">
+    <div className="item-row group px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         {entry.term.trim() ? (
-          <h3 className="text-base font-bold">{entry.term}</h3>
+          <h3 className="text-sm font-semibold">{entry.term}</h3>
         ) : (
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-full border border-dashed border-amber-500 px-2.5 py-0.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/10"
+            className="rounded-md border border-dashed border-amber-500 px-2 py-0.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/10"
           >
             + Başlık ekle
           </button>
         )}
-        <div className="flex shrink-0 items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+        <div className="touch-show flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -255,7 +262,7 @@ function EntryCard({
         </div>
       </div>
       {entry.definition && (
-        <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-[var(--muted)]">
           {entry.definition}
         </p>
       )}

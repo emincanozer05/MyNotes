@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Source } from "@/lib/types";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
 import { LiteratureTabs } from "./LiteratureTabs";
+import { PageHeader } from "@/components/PageHeader";
 
 export default async function LibraryPage({
   searchParams,
@@ -52,16 +53,11 @@ export default async function LibraryPage({
   const curated = [...CURATED_ARTICLES].sort(() => Math.random() - 0.5);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="animate-in">
-        <h1 className="text-3xl font-bold tracking-tight">
-          <span className="gradient-text">Literatür</span>
-        </h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">
-          Günlük makale akışını incele, beğendiklerini kaydet, kendi
-          makalelerini ekle ve özetlerini A4 olarak çıktı al.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <PageHeader
+        title="Literatür"
+        description="Günlük makale akışını incele, beğendiklerini kaydet, kendi makalelerini ekle ve özetlerini A4 olarak çıktı al."
+      />
 
       <LiteratureTabs
         initialTab={tab}

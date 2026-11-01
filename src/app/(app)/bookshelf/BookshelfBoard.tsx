@@ -15,6 +15,7 @@ import { AddCategoryButton } from "@/components/AddCategoryButton";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { deleteBook } from "./actions";
 import { AddBookModal } from "./AddBookModal";
+import { PageHeader } from "@/components/PageHeader";
 
 export interface BookCardData {
   id: string;
@@ -71,22 +72,15 @@ export function BookshelfBoard({
   const shown = books.filter((b) => b.category === category);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="gradient-text">Kitap Rafı</span>
-          </h1>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            {categoryLabel(category, categories)} rafı — her kategorinin kitapları
-            ayrı tutulur. Her kitap için zengin metin özeti yazın, görsel ekleyin.
-          </p>
-        </div>
-        <AddBookModal category={category} categories={categories} />
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Kitap Rafı"
+        description={`${categoryLabel(category, categories)} rafı — her kitap için zengin metin özeti yaz, görsel ekle.`}
+        actions={<AddBookModal category={category} categories={categories} />}
+      />
 
       {/* Kategori sekmeleri */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="cat-tabs">
         {categories.map((c) => {
           const active = c.slug === category;
           return (
@@ -94,11 +88,8 @@ export function BookshelfBoard({
               key={c.slug}
               type="button"
               onClick={() => switchCategory(c.slug)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                active
-                  ? "bg-[var(--foreground)] text-[var(--surface)]"
-                  : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
-              }`}
+              aria-pressed={active}
+              className="cat-tab"
             >
               <CategoryIcon slug={c.slug} />
               {c.label}
@@ -109,21 +100,18 @@ export function BookshelfBoard({
       </div>
 
       {shown.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {shown.map((b) => {
             const status = STATUS_META[b.status];
             return (
-              <div
-                key={b.id}
-                className="glass-card group relative flex flex-col overflow-hidden rounded-2xl p-2.5"
-              >
+              <div key={b.id} className="group relative flex flex-col">
                 <form action={deleteBook} className="absolute right-1.5 top-1.5 z-10">
                   <input type="hidden" name="id" value={b.id} />
                   <ConfirmSubmit
                     ariaLabel="Kitabı sil"
                     title="Sil"
                     message={`"${b.title}" kitabı ve notları silinsin mi?`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/30 text-sm leading-none text-white/80 touch-show opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                    className="flex h-6 w-6 items-center justify-center rounded-md bg-black/40 text-sm leading-none text-white/90 touch-show opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
                   </ConfirmSubmit>
@@ -131,7 +119,7 @@ export function BookshelfBoard({
 
                 <Link
                   href={`/bookshelf/${b.id}`}
-                  className="relative block transition-transform active:scale-[0.97]"
+                  className="relative block"
                 >
                   <LinkPendingOverlay />
                   {b.cover_url ? (
@@ -139,11 +127,11 @@ export function BookshelfBoard({
                     <img
                       src={b.cover_url}
                       alt={`${b.title} kapağı`}
-                      className="aspect-[2/3] w-full rounded-lg border border-[var(--border)] object-cover shadow-md transition-transform group-hover:scale-[1.03]"
+                      className="aspect-[2/3] w-full rounded-md border border-[var(--border)] object-cover transition-[filter] group-hover:brightness-95"
                     />
                   ) : (
                     <div
-                      className={`flex aspect-[2/3] w-full items-center justify-center rounded-lg p-2 text-center shadow-md transition-transform group-hover:scale-[1.03] ${b.spineCls}`}
+                      className={`flex aspect-[2/3] w-full items-center justify-center rounded-md p-2 text-center ${b.spineCls}`}
                     >
                       <span className="line-clamp-5 text-[11px] font-semibold leading-tight text-white">
                         {b.title}
@@ -152,44 +140,36 @@ export function BookshelfBoard({
                   )}
                 </Link>
 
-                <div className="mt-2 flex min-w-0 flex-1 flex-col">
-                  <Link href={`/bookshelf/${b.id}`} className="min-w-0">
-                    <h3 className="line-clamp-2 text-xs font-bold leading-snug hover:text-amber-600">
-                      {b.title}
-                    </h3>
-                    <p className="mt-0.5 line-clamp-1 text-[11px] text-stone-500">
-                      {b.authors.join(", ")}
-                      {b.year ? ` · ${b.year}` : ""}
-                    </p>
+                <Link href={`/bookshelf/${b.id}`} className="mt-2 min-w-0">
+                  <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug group-hover:text-[var(--accent-text)]">
+                    {b.title}
+                  </h3>
+                </Link>
+                <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--muted)]">
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${status.dot}`}
+                    title={status.label}
+                    aria-label={status.label}
+                  />
+                  <span className="truncate">
+                    {b.authors.join(", ") || status.label}
+                    {b.year ? ` · ${b.year}` : ""}
+                  </span>
+                </p>
+                {b.noteCount > 0 && (
+                  <Link
+                    href={`/notes?source=${b.id}`}
+                    className="mt-0.5 w-fit text-[11px] text-[var(--muted)] hover:text-[var(--accent-text)]"
+                  >
+                    {b.noteCount} not
                   </Link>
-                  <div className="mt-auto flex flex-wrap items-center gap-1 pt-1.5">
-                    {/* Kitabın türü (kategorisi) ve okuma durumu */}
-                    <span className="flex items-center gap-1 rounded-full bg-stone-500/10 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:text-stone-400">
-                      <CategoryIcon slug={b.category} className="h-2.5 w-2.5" />
-                      {categoryLabel(b.category, categories)}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.pill}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                      {status.label}
-                    </span>
-                    {b.noteCount > 0 && (
-                      <Link
-                        href={`/notes?source=${b.id}`}
-                        className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
-                      >
-                        {b.noteCount} not
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
+        <p className="rounded-lg border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
           Bu rafta henüz kitap yok. Sağ üstteki{" "}
           <b className="text-amber-600">+ Kitap Ekle</b> ile ekleyin.
         </p>

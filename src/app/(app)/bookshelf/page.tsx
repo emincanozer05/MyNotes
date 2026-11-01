@@ -5,7 +5,7 @@ import { getCategories } from "../categoriesActions";
 import { BookshelfBoard, type BookCardData } from "./BookshelfBoard";
 
 const SPINE_COLORS = [
-  "bg-amber-700",
+  "bg-slate-600",
   "bg-emerald-700",
   "bg-sky-700",
   "bg-rose-700",

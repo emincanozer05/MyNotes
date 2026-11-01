@@ -10,6 +10,7 @@ import {
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { AddCategoryButton } from "@/components/AddCategoryButton";
 import { PostitCard, type PostitData } from "./PostitCard";
+import { PageHeader } from "@/components/PageHeader";
 import { PassagePostitCard } from "./PassagePostitCard";
 import { NewPostitButton } from "./NewPostitButton";
 
@@ -160,22 +161,20 @@ export function NotesBoard({
   const total = shownNotes.length + shownPassages.length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="gradient-text">Post-it Notlar</span>
-          </h1>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+    <div className="space-y-5">
+      <PageHeader
+        title="Post-it Notlar"
+        description={
+          <>
             {`${categoryLabel(category, categories)} panosu — `}notların ve
             etiketlediğin cümlelerin renkli post-it&apos;ler olur.
-          </p>
-        </div>
-        <NewPostitButton category={category} />
-      </div>
+          </>
+        }
+        actions={<NewPostitButton category={category} />}
+      />
 
       {/* Kategori sekmeleri: her kategori kendi post-it'leri ve etiketleriyle */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="cat-tabs">
         {categories.map((c) => {
           const active = c.slug === category;
           return (
@@ -183,11 +182,8 @@ export function NotesBoard({
               key={c.slug}
               type="button"
               onClick={() => switchCategory(c.slug)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                active
-                  ? "bg-[var(--foreground)] text-[var(--surface)]"
-                  : "bg-stone-500/10 text-stone-600 hover:bg-stone-500/20 dark:text-stone-400"
-              }`}
+              aria-pressed={active}
+              className="cat-tab"
             >
               <CategoryIcon slug={c.slug} />
               {c.label}
@@ -208,7 +204,7 @@ export function NotesBoard({
           }}
           placeholder="Post-it'lerde ara…"
           aria-label="Post-it'lerde ara"
-          className="min-w-[200px] flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none transition-colors focus:border-[var(--brand-1)]"
+          className="min-w-[200px] flex-1 border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm outline-none transition-colors focus:border-[var(--brand-1)] sm:max-w-sm"
         />
         {allTags.length > 0 && (
           <label className="flex items-center gap-2 text-xs font-semibold text-stone-500">
@@ -229,7 +225,7 @@ export function NotesBoard({
                 value={tag}
                 onChange={(e) => switchTag(e.target.value)}
                 aria-label="Etikete göre filtrele"
-                className={`max-w-[14rem] rounded-full border py-2 pl-7 pr-2 text-sm font-medium outline-none transition-colors focus:border-[var(--brand-1)] ${
+                className={`max-w-[14rem] border py-1.5 pl-7 pr-2 text-sm font-medium outline-none transition-colors focus:border-[var(--brand-1)] ${
                   tag
                     ? "border-[var(--brand-1)] bg-[var(--accent-soft)] text-[var(--accent-text)]"
                     : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
@@ -286,7 +282,7 @@ export function NotesBoard({
           ))}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-10 text-center text-sm text-stone-500">
+        <p className="rounded-lg border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
           {tag || q
             ? "Bu filtreye uyan post-it bulunamadı."
             : "Henüz post-it'in yok. + Yeni Not ile ilk post-it'ini yapıştır."}

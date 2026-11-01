@@ -258,6 +258,65 @@ select {
   border-radius: 6px;
 }
 
+/* Category tabs (Post-it, Kitap Rafı, Not Defterim…): one quiet underline
+   tab bar, like the Literatür tabs. Active = aria-pressed/aria-current. */
+.cat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem;
+  border-bottom: 1px solid var(--border);
+}
+.cat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: -1px;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.cat-tab:hover {
+  color: var(--foreground);
+}
+.cat-tab[aria-pressed="true"],
+.cat-tab[aria-current="page"] {
+  color: var(--accent-text);
+  border-bottom-color: var(--brand-1);
+  font-weight: 600;
+}
+
+/* Zotero-like item table: one bordered box, hairline rows, header strip. */
+.item-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.item-table-head {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.item-row + .item-row {
+  border-top: 1px solid var(--border);
+}
+.item-row {
+  transition: background-color 0.12s ease;
+}
+.item-row:hover {
+  background: var(--surface-2);
+}
+
 /* Section heading rule — a label with a hairline that fills the row. */
 .section-rule {
   display: flex;
