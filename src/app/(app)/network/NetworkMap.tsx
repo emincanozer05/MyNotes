@@ -87,8 +87,8 @@ export function NetworkMap({
     <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:h-[calc(100dvh-8.5rem)] lg:min-h-[520px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Network Haritası</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <h1 className="text-xl font-semibold tracking-tight">Network Haritası</h1>
+          <p className="mt-0.5 text-[13px] text-[var(--muted)]">
             {contacts.length} kişi · {edges.length} bağlantı — kişiye tıkla, profilini
             gör; sürükle, kaydır ve yakınlaştır.
           </p>
@@ -110,7 +110,7 @@ export function NetworkMap({
               }}
               placeholder="Kişi, meslek veya kurum ara…"
               aria-label="Ağda kişi ara"
-              className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm outline-none transition-colors focus:border-[var(--brand-1)]"
+              className="w-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm outline-none transition-colors focus:border-[var(--brand-1)]"
             />
             {searchOpen && results.length > 0 && (
               <ul className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] py-1 shadow-[var(--shadow-2)]">

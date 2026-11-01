@@ -489,7 +489,7 @@ export function CareerTree({
     >
       <div className="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Kariyer Yol Haritası</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Kariyer Yol Haritası</h1>
           {root && (
             <p className="truncate text-xs text-[var(--muted)]">
               %{overallPct} tamamlandı · {rootStats?.leavesDone ?? 0}/{total} hedef

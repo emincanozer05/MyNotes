@@ -75,7 +75,7 @@ export function EditableTitle({
             if (e.key === "Enter") commit();
             else if (e.key === "Escape") cancel();
           }}
-          className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-2 py-1 text-2xl font-bold leading-tight outline-none focus:border-amber-500 disabled:opacity-60"
+          className="w-full rounded-lg border border-[var(--border-strong)] bg-transparent px-2 py-1 text-xl font-semibold leading-tight outline-none focus:border-amber-500 disabled:opacity-60"
         />
         {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
       </div>
@@ -83,7 +83,7 @@ export function EditableTitle({
   }
 
   return (
-    <h1 className="group text-2xl font-bold leading-tight">
+    <h1 className="group text-xl font-semibold leading-tight">
       <button
         type="button"
         onClick={start}

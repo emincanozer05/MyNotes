@@ -1,4 +1,5 @@
 import { Icon } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { BackupPanel } from "./BackupPanel";
 
@@ -28,32 +29,32 @@ export default async function BackupPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          <span className="gradient-text">Yedekleme</span>
-        </h1>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-          Tüm verilerin Supabase&apos;te güvenle saklanır. Ekstra güvence için
-          buradan dosya olarak yedek al; gerekirse geri yükle.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <PageHeader
+        title="Yedekleme"
+        description={
+          <>
+            Tüm verilerin Supabase&apos;te güvenle saklanır. Ekstra güvence için
+            buradan dosya olarak yedek al; gerekirse geri yükle.
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="item-table grid grid-cols-3">
         {stats.map((s) => (
           <div
             key={s.label}
-            className="glass-card rounded-xl p-4 text-center"
+            className="border-[var(--border)] px-4 py-3 [&:not(:first-child)]:border-l"
           >
-            <p className="text-2xl font-black">{s.value}</p>
-            <p className="mt-0.5 text-xs text-stone-500">{s.label}</p>
+            <p className="text-lg font-semibold tabular-nums">{s.value}</p>
+            <p className="text-xs text-[var(--muted)]">{s.label}</p>
           </div>
         ))}
       </div>
 
       <BackupPanel />
 
-      <p className="rounded-xl border border-[var(--border)] p-4 text-xs text-stone-500">
+      <p className="rounded-lg border border-[var(--border)] p-3 text-xs text-[var(--muted)]">
         <Icon name="lightbulb" className="h-4 w-4 text-amber-500" /> İpucu: Önemli çalışmalardan sonra düzenli olarak yedek indir. Yedek
         dosyası; makale, kitap, not ve etiket verilerini içerir.
       </p>

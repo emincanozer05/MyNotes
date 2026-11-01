@@ -2,14 +2,17 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { extractTaggedPassages } from "@/lib/wiki";
 import { Icon, type IconName } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
 
 const MODULES: { title: string; detail: string; href: string; icon: IconName }[] = [
   { title: "Literatür", detail: "Günlük PubMed akışı, kaydettiğin makaleler ve özetlerin", href: "/library", icon: "newspaper" },
   { title: "Post-it Notlar", detail: "Kategorilere ayrılmış notlar ve etiketlediğin pasajlar", href: "/notes", icon: "sticky-note" },
   { title: "Kitap Rafı", detail: "Kapaklı dijital kütüphane ve zengin metin özetleri", href: "/bookshelf", icon: "library" },
+  { title: "Ne, nedir?", detail: "Kavram ve ifadelerin kısa tanımları", href: "/glossary", icon: "help" },
   { title: "Kurslar ve Eğitimler", detail: "S&C kursların, ilerleme durumu ve notların", href: "/courses", icon: "graduation" },
   { title: "Not Defterim", detail: "Kategorilere ayrılmış kişisel notların", href: "/notebook", icon: "notebook" },
   { title: "Network Haritası", detail: "Kişisel ve profesyonel ağını interaktif grafikte yönet", href: "/network", icon: "network" },
+  { title: "Kariyer Yol Haritası", detail: "Kariyer hedeflerin, gelişim alanların ve görevlerin", href: "/career", icon: "tree" },
 ];
 
 export default async function DashboardPage() {
@@ -63,74 +66,54 @@ export default async function DashboardPage() {
   );
   const postitCount = (noteCount ?? 0) + passageCount;
 
-  const stats = [
-    { label: "Makale", value: articleCount ?? 0, href: "/library" },
-    { label: "Post-it", value: postitCount, href: "/notes" },
-    { label: "Kitap", value: bookCount ?? 0, href: "/bookshelf" },
-    { label: "Kurs", value: courseCount ?? 0, href: "/courses" },
-    { label: "Kişi", value: contactCount ?? 0, href: "/network" },
-  ];
+  // Item counts shown in the module list (modules without one show nothing).
+  const counts: Record<string, { value: number; label: string }> = {
+    "/library": { value: articleCount ?? 0, label: "makale" },
+    "/notes": { value: postitCount, label: "post-it" },
+    "/bookshelf": { value: bookCount ?? 0, label: "kitap" },
+    "/courses": { value: courseCount ?? 0, label: "kurs" },
+    "/network": { value: contactCount ?? 0, label: "kişi" },
+  };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
-      <div className="animate-in">
-        <h1 className="text-3xl font-bold tracking-tight">
-          <span className="gradient-text">Panel</span>
-        </h1>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-          Kütüphanenizin ve bilgi tabanınızın genel görünümü.
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-5">
+      <PageHeader
+        title="Panel"
+        description="Kütüphanenizin ve bilgi tabanınızın genel görünümü."
+      />
 
-      <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map((s) => (
-          <Link
-            key={s.label}
-            href={s.href}
-            className="glass-card card-lift group rounded-2xl p-5"
-          >
-            <p className="text-3xl font-bold tabular-nums tracking-tight">
-              {s.value}
-            </p>
-            <p className="mt-1 flex items-center justify-between text-sm font-medium text-[var(--muted)]">
-              {s.label}
-              <span
-                aria-hidden
-                className="opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <Icon name="arrow-right" className="h-4 w-4" />
-              </span>
-            </p>
-          </Link>
-        ))}
-      </div>
-
-      <div>
-        <h2 className="section-rule text-lg font-bold">Modüller</h2>
-        <div className="stagger mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULES.map((m) => (
-            <Link
-              key={m.title}
-              href={m.href}
-              className="glass-card card-lift group flex flex-col rounded-2xl p-5"
-            >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-lg text-[var(--accent-text)]">
-                <Icon name={m.icon} className="h-5 w-5" />
-              </span>
-              <p className="mt-3 flex items-center gap-1.5 font-bold">
-                {m.title}
-                <span
-                  aria-hidden
-                  className="translate-x-0 text-[var(--muted)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
-                >
-                  <Icon name="arrow-right" className="h-4 w-4" />
+      <ul className="item-table">
+        {MODULES.map((m) => {
+          const c = counts[m.href];
+          return (
+            <li key={m.href} className="item-row">
+              <Link href={m.href} className="group flex items-center gap-3 px-4 py-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--surface-2)] text-[var(--muted)] group-hover:text-[var(--accent-text)]">
+                  <Icon name={m.icon} className="h-4 w-4" />
                 </span>
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">{m.detail}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{m.title}</span>
+                  <span className="block truncate text-xs text-[var(--muted)]">
+                    {m.detail}
+                  </span>
+                </span>
+                {c && (
+                  <span className="shrink-0 text-right text-xs text-[var(--muted)]">
+                    <span className="text-sm font-semibold tabular-nums text-[var(--foreground)]">
+                      {c.value}
+                    </span>{" "}
+                    {c.label}
+                  </span>
+                )}
+                <Icon
+                  name="arrow-right"
+                  className="h-4 w-4 shrink-0 text-[var(--muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

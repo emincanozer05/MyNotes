@@ -86,7 +86,7 @@ export default async function BookDetailPage({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-bold leading-tight">{book.title}</h1>
+            <h1 className="text-xl font-semibold leading-tight">{book.title}</h1>
             <EditBookModal
               book={{
                 id: book.id,

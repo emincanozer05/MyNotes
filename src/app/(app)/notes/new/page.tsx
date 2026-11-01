@@ -39,7 +39,7 @@ export default async function NewNotePage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-3xl font-extrabold tracking-tight">
+      <h1 className="text-xl font-semibold tracking-tight">
         <span className="gradient-text">Yeni Not</span>
       </h1>
       <NoteForm

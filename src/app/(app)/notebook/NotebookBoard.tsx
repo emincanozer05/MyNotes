@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/PageHeader";
 import { Icon } from "@/components/Icon";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { LinkPendingOverlay } from "@/components/LinkPending";
@@ -109,40 +110,37 @@ export function NotebookBoard({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Not Defterim</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Kategorilere ayrılmış kişisel notların — her sayfada başlıklı notlar
-            tut, biçimlendir, görsel ekle.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-            aria-label="Notlarda ara"
-            aria-pressed={searchOpen}
-            title="Ara"
-            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-              searchOpen
-                ? "border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--foreground)]"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            <Icon name="search" className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={createEntry}
-            disabled={creating || !active}
-            className="btn-gradient rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-60"
-          >
-            {creating ? "Oluşturuluyor…" : "+ Yeni Not"}
-          </button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Not Defterim"
+        description="Kategorilere ayrılmış kişisel notların — her sayfada başlıklı notlar tut, biçimlendir, görsel ekle."
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+              aria-label="Notlarda ara"
+              aria-pressed={searchOpen}
+              title="Ara"
+              className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                searchOpen
+                  ? "border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--foreground)]"
+                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <Icon name="search" className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={createEntry}
+              disabled={creating || !active}
+              className="btn-gradient px-3.5 py-1.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {creating ? "Oluşturuluyor…" : "+ Yeni Not"}
+            </button>
+          </>
+        }
+      />
 
       {createError && (
         <p className="text-sm text-rose-600 dark:text-rose-400">{createError}</p>
@@ -162,13 +160,13 @@ export function NotebookBoard({
             onKeyDown={(e) => e.key === "Escape" && closeSearch()}
             placeholder="Tüm kategorilerde başlık ve not içeriğinde ara…"
             aria-label="Not Defterim'de ara"
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] py-2.5 pl-10 pr-4 text-sm outline-none focus:border-[var(--border-strong)]"
+            className="w-full border border-[var(--border)] bg-[var(--surface)] py-2 pl-10 pr-4 text-sm outline-none focus:border-[var(--brand-1)]"
           />
         </div>
       )}
 
       {/* Kategori sekmeleri */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="cat-tabs">
         {categories.map((c) => {
           const isActive = !searching && c.slug === active?.slug;
           return (
@@ -180,11 +178,7 @@ export function NotebookBoard({
                 switchCategory(c.slug);
               }}
               aria-pressed={isActive}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                isActive
-                  ? "bg-[var(--foreground)] text-[var(--surface)]"
-                  : "bg-[var(--surface-2)] text-[var(--muted)] hover:bg-[var(--surface-3)] hover:text-[var(--foreground)]"
-              }`}
+              className="cat-tab"
             >
               <Icon name={c.icon} className="h-4 w-4" />
               {c.label}
@@ -194,7 +188,7 @@ export function NotebookBoard({
         <button
           type="button"
           onClick={() => setDialog("add")}
-          className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--foreground)]"
+          className="cat-tab"
         >
           <Icon name="plus" className="h-3.5 w-3.5" />
           Kategori
@@ -205,7 +199,7 @@ export function NotebookBoard({
             onClick={() => setDialog("edit")}
             aria-label={`${active.label} kategorisini düzenle`}
             title="Kategoriyi düzenle (ad, simge)"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
           >
             <Icon name="pencil" className="h-3.5 w-3.5" />
           </button>
@@ -219,63 +213,59 @@ export function NotebookBoard({
       )}
 
       {shown.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="item-table">
           {shown.map((e) => {
             const cat = categoryBySlug(entryCategory(e));
             const preview = excerpt(e.text, q);
             return (
-              <div
-                key={e.id}
-                className="glass-card group relative flex flex-col rounded-xl"
-              >
-                <form action={deleteNotebookEntry} className="absolute right-2 top-2 z-10">
+              <li key={e.id} className="item-row group relative flex items-center">
+                <Link
+                  href={`/notebook/${e.id}`}
+                  className="relative flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5"
+                >
+                  <LinkPendingOverlay />
+                  <Icon
+                    name={cat?.icon ?? "file-text"}
+                    className="h-4 w-4 shrink-0 text-[var(--muted)]"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">
+                      {e.title}
+                    </span>
+                    <span className="block truncate text-xs text-[var(--muted)]">
+                      {searching && cat ? `${cat.label} · ` : ""}
+                      {preview || "Boş sayfa"}
+                    </span>
+                  </span>
+                  {e.noteTitles.length > 0 && (
+                    <span className="hidden shrink-0 text-xs text-[var(--muted)] sm:inline">
+                      {e.noteTitles.length} başlık
+                    </span>
+                  )}
+                  <time
+                    dateTime={e.createdAt}
+                    className="w-24 shrink-0 text-right text-xs tabular-nums text-[var(--muted)]"
+                  >
+                    {dateFmt.format(new Date(e.createdAt))}
+                  </time>
+                </Link>
+                <form action={deleteNotebookEntry} className="pr-2">
                   <input type="hidden" name="id" value={e.id} />
                   <ConfirmSubmit
                     ariaLabel="Notu sil"
                     title="Sil"
                     message={`"${e.title}" silinsin mi?`}
-                    className="touch-show flex h-7 w-7 items-center justify-center rounded-full text-[var(--muted)] opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 group-hover:opacity-100"
+                    className="touch-show flex h-7 w-7 items-center justify-center rounded-md text-[var(--muted)] opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 group-hover:opacity-100"
                   >
                     <Icon name="trash" className="h-3.5 w-3.5" />
                   </ConfirmSubmit>
                 </form>
-                <Link
-                  href={`/notebook/${e.id}`}
-                  className="relative flex flex-1 flex-col p-4"
-                >
-                  <LinkPendingOverlay className="rounded-xl" />
-                  <h3 className="line-clamp-2 pr-7 text-sm font-bold leading-snug">
-                    {e.title}
-                  </h3>
-                  {preview ? (
-                    <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-[var(--muted)]">
-                      {preview}
-                    </p>
-                  ) : (
-                    <p className="mt-1.5 text-xs italic text-[var(--muted)]">Boş sayfa</p>
-                  )}
-                  <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3 text-[11px] text-[var(--muted)]">
-                    {searching && cat && (
-                      <span className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] px-2 py-0.5 font-medium">
-                        <Icon name={cat.icon} className="h-3 w-3" />
-                        {cat.label}
-                      </span>
-                    )}
-                    {e.noteTitles.length > 0 && (
-                      <span>{e.noteTitles.length} başlık</span>
-                    )}
-                    {e.noteTitles.length > 0 && <span aria-hidden>·</span>}
-                    <time dateTime={e.createdAt}>
-                      {dateFmt.format(new Date(e.createdAt))}
-                    </time>
-                  </div>
-                </Link>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       ) : (
-        <p className="rounded-xl border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
+        <p className="rounded-lg border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
           {searching
             ? "Aramanla eşleşen not bulunamadı."
             : `${active?.label ?? "Bu"} kategorisinde henüz not yok. Sağ üstteki “+ Yeni Not” ile başla.`}

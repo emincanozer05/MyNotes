@@ -5,6 +5,7 @@ import { deleteCourse } from "./actions";
 import { AddCourseModal } from "./AddCourseModal";
 import { STATUS_META, normalizeStatus } from "./status";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { PageHeader } from "@/components/PageHeader";
 
 interface CourseRow {
   id: string;
@@ -17,7 +18,7 @@ interface CourseRow {
 }
 
 const GRAD = [
-  "bg-amber-700",
+  "bg-slate-600",
   "bg-emerald-700",
   "bg-sky-700",
   "bg-rose-700",
@@ -47,19 +48,12 @@ export default async function CoursesPage() {
   const courses = (data ?? []) as CourseRow[];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="gradient-text">Kurslar ve Eğitimler (S&C)</span>
-          </h1>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            Kurs, sertifika ve eğitimlerini kapak görselleriyle topla; her biri
-            için not/özet yaz.
-          </p>
-        </div>
-        <AddCourseModal />
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <PageHeader
+        title="Kurslar ve Eğitimler (S&C)"
+        description="Kurs, sertifika ve eğitimlerini kapak görselleriyle topla; her biri için not/özet yaz."
+        actions={<AddCourseModal />}
+      />
 
       {courses.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -69,7 +63,7 @@ export default async function CoursesPage() {
             return (
               <div
                 key={c.id}
-                className="glass-card group relative flex flex-col overflow-hidden rounded-2xl"
+                className="glass-card group relative flex flex-col overflow-hidden rounded-lg"
               >
                 <form
                   action={deleteCourse}
@@ -80,7 +74,7 @@ export default async function CoursesPage() {
                     ariaLabel="Sil"
                     title="Sil"
                     message={`"${c.title}" silinsin mi?`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-sm leading-none text-white/80 touch-show opacity-0 backdrop-blur-sm transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
+                    className="flex h-6 w-6 items-center justify-center rounded-md bg-black/40 text-sm leading-none text-white/90 touch-show opacity-0 transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                   >
                     ×
                   </ConfirmSubmit>
@@ -88,7 +82,7 @@ export default async function CoursesPage() {
 
                 <Link
                   href={`/courses/${c.id}`}
-                  className="relative block transition-transform active:scale-[0.98]"
+                  className="relative block border-b border-[var(--border)]"
                 >
                   <LinkPendingOverlay className="" />
                   {c.cover_url ? (
@@ -102,7 +96,7 @@ export default async function CoursesPage() {
                     <div
                       className={`flex aspect-[16/10] w-full items-center justify-center p-3 text-center ${grad(c.title)}`}
                     >
-                      <span className="line-clamp-3 text-sm font-black uppercase tracking-wide text-white">
+                      <span className="line-clamp-3 text-sm font-semibold text-white">
                         {c.title}
                       </span>
                     </div>
@@ -111,21 +105,19 @@ export default async function CoursesPage() {
 
                 <div className="flex flex-1 flex-col p-3">
                   <Link href={`/courses/${c.id}`}>
-                    <h3 className="line-clamp-2 text-sm font-bold leading-snug hover:text-amber-600">
+                    <h3 className="line-clamp-2 text-sm font-semibold leading-snug hover:text-[var(--accent-text)]">
                       {c.title}
                     </h3>
                   </Link>
                   {(c.authors.length > 0 || c.year) && (
-                    <p className="mt-0.5 line-clamp-1 text-xs text-stone-500">
+                    <p className="mt-0.5 line-clamp-1 text-xs text-[var(--muted)]">
                       {c.authors.join(", ")}
                       {c.authors.length > 0 && c.year ? " · " : ""}
                       {c.year ?? ""}
                     </p>
                   )}
-                  <div className="mt-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.pill}`}
-                    >
+                  <div className="mt-auto pt-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
                       <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                       {meta.label}
                     </span>
@@ -136,7 +128,7 @@ export default async function CoursesPage() {
           })}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500 dark:border-stone-700">
+        <p className="rounded-lg border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--muted)]">
           Henüz kurs/eğitim eklemedin. Sağ üstteki{" "}
           <b className="text-amber-600">+ Ekle</b> ile başla.
         </p>
