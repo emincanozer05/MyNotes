@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { pastelize } from "@/lib/color";
 import { extractTaggedPassages } from "@/lib/wiki";
 import { normalizeCategory } from "@/lib/categories";
 import { pdfDeepLink } from "@/lib/articlePdf";
@@ -8,15 +7,7 @@ import { getCategories } from "../categoriesActions";
 import type { PostitData } from "./PostitCard";
 import { NotesBoard, type PassageItem } from "./NotesBoard";
 
-// Deterministic post-it tilt from a stable key so cards don't jump on refresh.
-const TILTS = ["-2deg", "1.5deg", "-1deg", "2deg", "0.5deg", "-1.5deg"];
-function tiltFor(key: string) {
-  let h = 0;
-  for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return TILTS[h % TILTS.length];
-}
-
-// Fallback pastel classes for notes that carry no coloured tag.
+// Fallback accent classes for notes that carry no coloured tag.
 const CLASSES = ["postit-y", "postit-p", "postit-g", "postit-b", "postit-o", "postit-v"];
 function clsFor(key: string) {
   let h = 0;
@@ -141,8 +132,7 @@ export default async function NotesPage({
           : null,
       tags: tags.map((t) => ({ name: t.name, color: t.color })),
       cls: clsFor(n.id),
-      tilt: tiltFor(n.id),
-      color: firstColor ? pastelize(firstColor) : null,
+      color: firstColor,
     };
   });
 
@@ -173,7 +163,6 @@ export default async function NotesPage({
         sourceLabel: s.title,
         href: `${base}#note-legacy~${i}`,
         category: srcCategory,
-        tilt: tiltFor(`src-${s.id}-sum-${i}`),
         sourceId: s.id,
         noteRef: "",
         passageIndex: i,
@@ -187,7 +176,6 @@ export default async function NotesPage({
           sourceLabel: tn.title ? `${s.title} › ${tn.title}` : s.title,
           href: `${base}#note-${tn.id}~${i}`,
           category: srcCategory,
-          tilt: tiltFor(`src-${s.id}-${tn.id}-${i}`),
           sourceId: s.id,
           noteRef: tn.id,
           passageIndex: i,
