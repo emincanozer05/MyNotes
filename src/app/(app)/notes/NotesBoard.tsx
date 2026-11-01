@@ -24,7 +24,6 @@ export interface PassageItem {
   tags: { name: string; color: string | null }[];
   sourceLabel: string;
   href: string;
-  tilt: string;
   category: string;
   /** Source + location the highlight lives in, so it can be un-highlighted. */
   sourceId: string;
@@ -258,7 +257,7 @@ export function NotesBoard({
       </div>
 
       {total > 0 ? (
-        <div className="grid grid-cols-2 gap-4 pt-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
           {shownNotes.map((n) => (
             <PostitCard key={`note-${n.id}`} note={n} />
           ))}
@@ -273,7 +272,6 @@ export function NotesBoard({
                 tags: it.tags,
                 sourceLabel: it.sourceLabel,
                 href: it.href,
-                tilt: it.tilt,
                 sourceId: it.sourceId,
                 noteRef: it.noteRef,
                 passageIndex: it.passageIndex,

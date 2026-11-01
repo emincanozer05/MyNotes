@@ -336,62 +336,64 @@ select {
 }
 
 /* ---------------------------------------------------------------------------
-   Post-it notes — small, modern, no movement on hover
+   Post-it notes — plain cards: neutral surface, hairline border and a thin
+   accent bar in the tag colour (--postit-accent). No tilt, pin or shadow.
 --------------------------------------------------------------------------- */
 .postit {
+  --postit-accent: var(--border-strong);
   position: relative;
   cursor: pointer;
-  border-radius: 14px;
-  padding: 0.85rem 0.9rem 0.95rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.15s ease;
-  color: #2a2010;
-  min-height: 132px;
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem 0.75rem 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: inset 3px 0 0 var(--postit-accent);
+  color: var(--foreground);
+  min-height: 112px;
   display: flex;
   flex-direction: column;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 .postit:hover {
-  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.25);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
 }
 .postit:focus-visible {
-  outline: 2px solid var(--brand-1);
-  outline-offset: 3px;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
-.postit-pin {
-  position: absolute;
-  top: 0.7rem;
-  left: 0.8rem;
-  width: 9px;
-  height: 9px;
-  border-radius: 9999px;
-  background: #e11d48;
-}
-.postit-y { background: #fef3c7; }
-.postit-p { background: #fce7f3; }
-.postit-g { background: #d1fae5; }
-.postit-b { background: #dbeafe; }
-.postit-o { background: #ffedd5; }
-.postit-v { background: #ede9fe; }
+/* Fallback accents for notes without a coloured tag. */
+.postit-y { --postit-accent: #eab308; }
+.postit-p { --postit-accent: #ec4899; }
+.postit-g { --postit-accent: #10b981; }
+.postit-b { --postit-accent: #3b82f6; }
+.postit-o { --postit-accent: #f97316; }
+.postit-v { --postit-accent: #8b5cf6; }
 
-/* Expanded post-it (centered modal): grows from small to full size. */
+/* Expanded post-it (centred panel). */
 .postit-expand {
   cursor: default;
-  padding: 1.5rem 1.6rem 1.4rem;
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.45);
-  transform: none;
-  animation: postit-grow 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+  min-height: 0;
+  padding: 1.25rem 1.4rem 1.2rem 1.6rem;
+  box-shadow:
+    inset 4px 0 0 var(--postit-accent),
+    var(--shadow-2);
+  animation: postit-open 0.16s ease-out;
 }
 .postit-expand:hover {
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.45);
+  background: var(--surface);
+  border-color: var(--border);
 }
-@keyframes postit-grow {
+@keyframes postit-open {
   from {
     opacity: 0;
-    transform: scale(0.55);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: none;
   }
 }
 
