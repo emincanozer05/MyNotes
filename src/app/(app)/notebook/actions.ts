@@ -236,3 +236,44 @@ export async function setNotebookEntryCategory(id: string, category: string) {
   revalidatePath("/notes");
   return { error: error?.message ?? null };
 }
+
+/** Sets a page's author(s) and year (stored in the `authors` / `year` columns). */
+export async function setNotebookEntryMeta(
+  id: string,
+  patch: { authors?: string; year?: string },
+) {
+  const { supabase, user } = await requireUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  const update: { authors?: string[]; year?: number | null } = {};
+  if (patch.authors !== undefined) {
+    update.authors = patch.authors
+      .split(/[;,]/)
+      .map((a) => a.trim().slice(0, 120))
+      .filter(Boolean)
+      .slice(0, 20);
+  }
+  if (patch.year !== undefined) {
+    const raw = patch.year.trim();
+    if (!raw) {
+      update.year = null;
+    } else {
+      const year = Number(raw);
+      if (!/^-?\d{1,4}$/.test(raw) || !Number.isInteger(year)) {
+        return { error: "Yıl geçerli bir sayı olmalı." };
+      }
+      update.year = year;
+    }
+  }
+
+  const { error } = await supabase
+    .from("sources")
+    .update(update)
+    .eq("id", id)
+    .eq("kind", "other")
+    .contains("metadata", { category: NOTEBOOK_MARKER });
+
+  revalidatePath(`/notebook/${id}`);
+  revalidatePath("/notebook");
+  return { error: error?.message ?? null };
+}

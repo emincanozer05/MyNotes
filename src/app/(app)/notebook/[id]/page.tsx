@@ -8,11 +8,14 @@ import { EditableTitle } from "@/app/(app)/courses/[id]/EditableTitle";
 import { NOTEBOOK_MARKER } from "@/lib/notebook";
 import { getNotebookCategories, setNotebookEntryTitle } from "../actions";
 import { EntryCategoryPicker } from "./EntryCategoryPicker";
+import { EntryMetaFields } from "./EntryMetaFields";
 
 interface EntryRow {
   id: string;
   title: string;
   created_at: string;
+  authors: string[] | null;
+  year: number | null;
   metadata: { nb_category?: string; notes?: TitledNote[] } | null;
 }
 
@@ -33,7 +36,7 @@ export default async function NotebookEntryPage({
   const [{ data }, categories] = await Promise.all([
     supabase
       .from("sources")
-      .select("id, title, created_at, metadata")
+      .select("id, title, created_at, authors, year, metadata")
       .eq("id", id)
       .eq("kind", "other")
       .contains("metadata", { category: NOTEBOOK_MARKER })
@@ -70,6 +73,13 @@ export default async function NotebookEntryPage({
             current={category?.slug ?? ""}
           />
           <span>Oluşturulma: {dateFmt.format(new Date(entry.created_at))}</span>
+        </div>
+        <div className="mt-3 text-xs text-[var(--muted)]">
+          <EntryMetaFields
+            entryId={entry.id}
+            authors={entry.authors ?? []}
+            year={entry.year}
+          />
         </div>
       </div>
 

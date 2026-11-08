@@ -149,7 +149,9 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    `metadata.nb_category`, `category` kolonu = kategori slug'ı → pasajlar ilgili Post-it
    panosuna düşer), kategori listesi kullanıcı başına tek ayar satırında
    (`metadata.category = "notebook-config"`, `metadata.categories`). Detay sayfası
-   `TitledNotes` kullanır. Mantık `src/lib/notebook.ts`, eylemler `notebook/actions.ts`.
+   `TitledNotes` kullanır; başlık kartında satır içi düzenlenen **Yazar** / **Yıl** alanları
+   (`EntryMetaFields`, `sources.authors` / `sources.year` kolonları, `setNotebookEntryMeta`).
+   Mantık `src/lib/notebook.ts`, eylemler `notebook/actions.ts`.
    Tasarım sadeleştirildi: gradyan renkler kaldırıldı (düz `btn-gradient`, düz kategori
    sekmeleri ve kapak renkleri).
 
