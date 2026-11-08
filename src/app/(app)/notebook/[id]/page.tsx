@@ -6,9 +6,11 @@ import { TitledNotes } from "@/components/TitledNotes";
 import type { TitledNote } from "@/app/(app)/sourceNotesActions";
 import { EditableTitle } from "@/app/(app)/courses/[id]/EditableTitle";
 import { NOTEBOOK_MARKER } from "@/lib/notebook";
+import { pdfOf } from "@/lib/articlePdf";
 import { getNotebookCategories, setNotebookEntryTitle } from "../actions";
 import { EntryCategoryPicker } from "./EntryCategoryPicker";
 import { EntryMetaFields } from "./EntryMetaFields";
+import { EntryPdfField } from "./EntryPdfField";
 
 interface EntryRow {
   id: string;
@@ -74,11 +76,15 @@ export default async function NotebookEntryPage({
           />
           <span>Oluşturulma: {dateFmt.format(new Date(entry.created_at))}</span>
         </div>
-        <div className="mt-3 text-xs text-[var(--muted)]">
+        <div className="mt-3 space-y-2 text-xs text-[var(--muted)]">
           <EntryMetaFields
             entryId={entry.id}
             authors={entry.authors ?? []}
             year={entry.year}
+          />
+          <EntryPdfField
+            entryId={entry.id}
+            pdf={pdfOf(entry.metadata as Record<string, unknown> | null)}
           />
         </div>
       </div>

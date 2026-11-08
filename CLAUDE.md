@@ -151,6 +151,9 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    (`metadata.category = "notebook-config"`, `metadata.categories`). Detay sayfası
    `TitledNotes` kullanır; başlık kartında satır içi düzenlenen **Yazar** / **Yıl** alanları
    (`EntryMetaFields`, `sources.authors` / `sources.year` kolonları, `setNotebookEntryMeta`).
+   Aynı kartta **PDF** ekle/aç/değiştir/kaldır (`EntryPdfField`): Literatür'le aynı depolama
+   (`src/lib/uploadPdf.ts` ortak yükleyici, `article-pdfs` → `voice-notes` yedeği), işaretçi
+   `sources.metadata.pdf`; imzalı URL ile yeni sekmede açılır, not silinince PDF de silinir.
    Mantık `src/lib/notebook.ts`, eylemler `notebook/actions.ts`.
    Tasarım sadeleştirildi: gradyan renkler kaldırıldı (düz `btn-gradient`, düz kategori
    sekmeleri ve kapak renkleri).
