@@ -11,6 +11,8 @@ import {
   removeTaggedPassage,
 } from "@/lib/wiki";
 import { normalizeCategory, type CategorySlug } from "@/lib/categories";
+import { PDF_SOURCE_KINDS } from "@/lib/articlePdf";
+import { NOTEBOOK_MARKER } from "@/lib/notebook";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -258,9 +260,9 @@ export async function savePdfPostit(input: {
     .from("sources")
     .select("id, title, authors, year, category, metadata")
     .eq("id", input.articleId)
-    .eq("kind", "article")
+    .in("kind", PDF_SOURCE_KINDS)
     .maybeSingle();
-  if (!src) return { error: "Makale bulunamadı." };
+  if (!src) return { error: "Kaynak bulunamadı." };
 
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -271,7 +273,13 @@ export async function savePdfPostit(input: {
     : "";
   const content =
     `<blockquote data-pdf-page="${page}"${hl}>${esc(quote)}</blockquote>` + (comment ? `<p>${esc(comment)}</p>` : "");
-  const metadata = (src.metadata ?? {}) as { category?: string };
+  const metadata = (src.metadata ?? {}) as { category?: string; nb_category?: string };
+  // Notebook pages keep the marker in metadata.category; their board
+  // category is the notebook category slug.
+  const category =
+    metadata.category === NOTEBOOK_MARKER
+      ? (metadata.nb_category ?? (src.category as string | undefined))
+      : (metadata.category ?? (src.category as string | undefined));
 
   return upsertNote({
     title: quote.slice(0, 60),
@@ -282,7 +290,7 @@ export async function savePdfPostit(input: {
     source_year: src.year,
     source_page: String(page),
     tags: input.tags,
-    category: metadata.category ?? (src.category as string | undefined),
+    category,
   });
 }
 

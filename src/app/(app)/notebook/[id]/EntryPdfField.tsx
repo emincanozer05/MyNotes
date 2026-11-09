@@ -1,13 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { formatBytes, type ArticlePdf } from "@/lib/articlePdf";
 import { removeUserPdf, uploadUserPdf, validatePdfFile } from "@/lib/uploadPdf";
-import { getNotebookPdfUrl, setNotebookEntryPdf } from "../actions";
+import { setNotebookEntryPdf } from "../actions";
 
-/** Attach / open / replace / remove the PDF of a notebook page. */
+/**
+ * Attach / replace / remove the PDF of a notebook page; opening it goes to
+ * the in-app reader (`/notebook/[id]/pdf`) shared with Literatür.
+ */
 export function EntryPdfField({
   entryId,
   pdf: initialPdf,
@@ -17,7 +21,7 @@ export function EntryPdfField({
 }) {
   const router = useRouter();
   const [pdf, setPdf] = useState(initialPdf);
-  const [busy, setBusy] = useState<"upload" | "open" | "remove" | null>(null);
+  const [busy, setBusy] = useState<"upload" | "remove" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -45,28 +49,6 @@ export function EntryPdfField({
       router.refresh();
     } catch {
       setError("PDF yüklenirken bağlantı hatası oluştu. Tekrar dene.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function open() {
-    setError(null);
-    // Open the tab synchronously so the popup blocker allows it.
-    const tab = window.open("", "_blank");
-    setBusy("open");
-    try {
-      const res = await getNotebookPdfUrl(entryId);
-      if (!res.url) {
-        tab?.close();
-        setError(res.error);
-        return;
-      }
-      if (tab) tab.location.href = res.url;
-      else window.location.href = res.url;
-    } catch {
-      tab?.close();
-      setError("PDF açılamadı.");
     } finally {
       setBusy(null);
     }
@@ -111,12 +93,10 @@ export function EntryPdfField({
 
       {pdf ? (
         <>
-          <button
-            type="button"
-            onClick={open}
-            disabled={busy !== null}
-            title="PDF'i yeni sekmede aç"
-            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-[var(--surface-2)] px-2 py-1 font-medium text-[var(--foreground)] hover:text-amber-600 disabled:opacity-60"
+          <Link
+            href={`/notebook/${entryId}/pdf`}
+            title="PDF'i aç: vurgula, post-it olarak kaydet"
+            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-[var(--surface-2)] px-2 py-1 font-medium text-[var(--foreground)] hover:text-amber-600"
           >
             <Icon name="file-text" className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{pdf.name}</span>
@@ -125,8 +105,14 @@ export function EntryPdfField({
                 {formatBytes(pdf.size)}
               </span>
             )}
-            <Icon name="external" className="h-3 w-3 shrink-0 text-[var(--muted)]" />
-          </button>
+          </Link>
+          <Link
+            href={`/notebook/${entryId}/pdf`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-2.5 py-1 font-semibold text-white hover:bg-amber-700"
+          >
+            <Icon name="highlighter" className="h-3.5 w-3.5" />
+            Oku ve not al
+          </Link>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}

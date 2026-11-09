@@ -322,6 +322,8 @@ export async function setNotebookEntryPdf(id: string, pdf: ArticlePdf | null) {
   } else {
     delete metadata.pdf;
   }
+  // Highlights are positions inside the old file; they don't carry over.
+  if (previous?.path !== pdf?.path) delete metadata.pdfHighlights;
 
   const { error } = await supabase.from("sources").update({ metadata }).eq("id", id);
   if (!error && previous && previous.path !== pdf?.path) {
@@ -330,26 +332,4 @@ export async function setNotebookEntryPdf(id: string, pdf: ArticlePdf | null) {
 
   revalidatePath(`/notebook/${id}`);
   return { error: error?.message ?? null };
-}
-
-/** Short-lived signed URL for a page's PDF (the bucket is private). */
-export async function getNotebookPdfUrl(id: string) {
-  const { supabase } = await requireUser();
-  const { data } = await supabase
-    .from("sources")
-    .select("metadata")
-    .eq("id", id)
-    .eq("kind", "other")
-    .contains("metadata", { category: NOTEBOOK_MARKER })
-    .maybeSingle();
-  const pdf = pdfOf(data?.metadata as Record<string, unknown> | null);
-  if (!pdf) return { url: null, error: "Bu nota PDF eklenmemiş." };
-
-  const { data: signed, error } = await supabase.storage
-    .from(pdf.bucket)
-    .createSignedUrl(pdf.path, 60 * 60);
-  if (error || !signed) {
-    return { url: null, error: `PDF açılamadı: ${error?.message ?? "bilinmeyen hata"}` };
-  }
-  return { url: signed.signedUrl, error: null };
 }
