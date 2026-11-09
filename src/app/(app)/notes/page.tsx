@@ -46,6 +46,15 @@ function sourceHref(kind: string, id: string, metaCategory?: string): string {
   return `/library/${id}`; // article
 }
 
+/** Deep link into the PDF reader for post-its saved from a PDF, else null. */
+function pdfLink(kind: string, id: string, content: string, metaCategory?: string) {
+  if (kind === "article") return pdfDeepLink(id, content);
+  if (kind === "other" && metaCategory === NOTEBOOK_MARKER) {
+    return pdfDeepLink(id, content, "/notebook");
+  }
+  return null;
+}
+
 export default async function NotesPage({
   searchParams,
 }: {
@@ -127,7 +136,7 @@ export default async function NotesPage({
       // Post-its saved from the PDF reader jump straight to that spot in it.
       sourceHref:
         n.source_id && kind
-          ? (kind === "article" ? pdfDeepLink(n.source_id, n.content ?? "") : null) ??
+          ? pdfLink(kind, n.source_id, n.content ?? "", sourceMetaCategoryById.get(n.source_id)) ??
             sourceHref(kind, n.source_id, sourceMetaCategoryById.get(n.source_id))
           : null,
       tags: tags.map((t) => ({ name: t.name, color: t.color })),

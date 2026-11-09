@@ -153,7 +153,11 @@ Canlı veritabanında 0011, 0012 ve 0013 uygulanmıştır.
    (`EntryMetaFields`, `sources.authors` / `sources.year` kolonları, `setNotebookEntryMeta`).
    Aynı kartta **PDF** ekle/aç/değiştir/kaldır (`EntryPdfField`): Literatür'le aynı depolama
    (`src/lib/uploadPdf.ts` ortak yükleyici, `article-pdfs` → `voice-notes` yedeği), işaretçi
-   `sources.metadata.pdf`; imzalı URL ile yeni sekmede açılır, not silinince PDF de silinir.
+   `sources.metadata.pdf`; not silinince PDF de silinir. PDF, Literatür'deki okuyucuyla
+   (`library/[id]/pdf/PdfViewer.tsx`) `/notebook/[id]/pdf`'te açılır: vurgular
+   `metadata.pdfHighlights`, post-it'ler sayfanın not defteri kategorisinin panosuna düşer
+   ("Kaynağa git" → `pdfDeepLink(…, "/notebook")`). PDF eylemleri `PDF_SOURCE_KINDS`
+   (`article` + `other`) ile her iki kaynak türünde çalışır; PDF değişince eski vurgular silinir.
    Mantık `src/lib/notebook.ts`, eylemler `notebook/actions.ts`.
    Tasarım sadeleştirildi: gradyan renkler kaldırıldı (düz `btn-gradient`, düz kategori
    sekmeleri ve kapak renkleri).

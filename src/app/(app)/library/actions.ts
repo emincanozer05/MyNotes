@@ -5,6 +5,7 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { CURATED_ARTICLES } from "@/lib/curatedArticles";
 import {
   PDF_BUCKETS,
+  PDF_SOURCE_KINDS,
   PDF_HIGHLIGHT_COLORS,
   isOwnPdfPath,
   pdfHighlightsOf,
@@ -363,7 +364,7 @@ async function loadArticleMetadata(id: string) {
     .from("sources")
     .select("metadata")
     .eq("id", id)
-    .eq("kind", "article")
+    .in("kind", PDF_SOURCE_KINDS)
     .maybeSingle();
   return {
     supabase,
@@ -398,7 +399,7 @@ export async function addPdfHighlight(
     .from("sources")
     .update({ metadata: { ...metadata, pdfHighlights: next } })
     .eq("id", articleId)
-    .eq("kind", "article");
+    .in("kind", PDF_SOURCE_KINDS);
   return { error: error?.message ?? null };
 }
 
@@ -413,6 +414,6 @@ export async function deletePdfHighlight(
     .from("sources")
     .update({ metadata: { ...metadata, pdfHighlights: next } })
     .eq("id", articleId)
-    .eq("kind", "article");
+    .in("kind", PDF_SOURCE_KINDS);
   return { error: error?.message ?? null };
 }
