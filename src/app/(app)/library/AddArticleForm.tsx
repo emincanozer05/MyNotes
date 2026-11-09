@@ -3,15 +3,8 @@
 import { Icon } from "@/components/Icon";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import {
-  MAX_PDF_BYTES,
-  PDF_BUCKETS,
-  extractPdfMeta,
-  formatBytes,
-  pdfPathFor,
-  type ArticlePdf,
-} from "@/lib/articlePdf";
+import { MAX_PDF_BYTES, extractPdfMeta, formatBytes, type ArticlePdf } from "@/lib/articlePdf";
+import { removeUserPdf, uploadUserPdf, validatePdfFile } from "@/lib/uploadPdf";
 import { addOwnArticle } from "./actions";
 
 const inputCls =
@@ -107,15 +100,9 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
   async function handlePdf(file: File) {
     setError(null);
     setPdfNote(null);
-    const isPdf =
-      file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const magic = await file.slice(0, 5).text().catch(() => "");
-    if (!isPdf || !magic.startsWith("%PDF")) {
-      setError("Lütfen bir PDF dosyası seç.");
-      return;
-    }
-    if (file.size > MAX_PDF_BYTES) {
-      setError(`PDF çok büyük (${formatBytes(file.size)}). En fazla ${formatBytes(MAX_PDF_BYTES)} yüklenebilir.`);
+    const invalid = await validatePdfFile(file);
+    if (invalid) {
+      setError(invalid);
       return;
     }
 
@@ -125,41 +112,15 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
     // Read the PDF's own metadata while it uploads.
     const metaPromise = extractPdfMeta(file).catch(() => ({}) as { doi?: string; title?: string });
     try {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        setError("Oturum bulunamadı; sayfayı yenileyip tekrar dene.");
+      const res = await uploadUserPdf(file);
+      if (!res.pdf) {
+        setError(res.error);
         return;
       }
-
-      let uploaded: ArticlePdf | null = null;
-      let lastError = "";
-      for (const bucket of PDF_BUCKETS) {
-        const path = pdfPathFor(session.user.id, bucket);
-        const { error: upErr } = await supabase.storage
-          .from(bucket)
-          .upload(path, file, { contentType: "application/pdf", upsert: false });
-        if (!upErr) {
-          uploaded = { bucket, path, name: file.name, size: file.size };
-          break;
-        }
-        lastError = upErr.message;
-        // Only fall back to the next bucket when this one doesn't exist.
-        if (!/bucket not found/i.test(upErr.message)) break;
-      }
-      if (!uploaded) {
-        setError(
-          /bucket not found/i.test(lastError)
-            ? "PDF depolama alanı bulunamadı (0014 migration'ı uygulanmalı)."
-            : `PDF yüklenemedi: ${lastError}`,
-        );
-        return;
-      }
+      const uploaded = res.pdf;
 
       // Replacing a file: drop the previous upload.
-      if (pdf) void supabase.storage.from(pdf.bucket).remove([pdf.path]);
+      if (pdf) removeUserPdf(pdf);
       setPdf(uploaded);
 
       const meta = await metaPromise;
@@ -180,7 +141,7 @@ export function AddArticleForm({ onAdded }: { onAdded?: () => void }) {
   }
 
   function removePdf() {
-    if (pdf) void createClient().storage.from(pdf.bucket).remove([pdf.path]);
+    if (pdf) removeUserPdf(pdf);
     setPdf(null);
     setPdfNote(null);
   }

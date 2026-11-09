@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { slugifyCategory } from "@/lib/categories";
+import { PDF_BUCKETS, isOwnPdfPath, pdfOf, type ArticlePdf } from "@/lib/articlePdf";
 import {
   NOTEBOOK_CONFIG_MARKER,
   NOTEBOOK_MARKER,
@@ -179,12 +180,17 @@ export async function deleteNotebookEntry(formData: FormData) {
   const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   if (id) {
-    await supabase
+    const { data } = await supabase
       .from("sources")
       .delete()
       .eq("id", id)
       .eq("kind", "other")
-      .contains("metadata", { category: NOTEBOOK_MARKER });
+      .contains("metadata", { category: NOTEBOOK_MARKER })
+      .select("metadata")
+      .maybeSingle();
+    // Remove the attached PDF too, so storage doesn't keep orphans.
+    const pdf = pdfOf(data?.metadata as Record<string, unknown> | null);
+    if (pdf) await supabase.storage.from(pdf.bucket).remove([pdf.path]);
   }
   revalidatePath("/notebook");
 }
@@ -276,4 +282,74 @@ export async function setNotebookEntryMeta(
   revalidatePath(`/notebook/${id}`);
   revalidatePath("/notebook");
   return { error: error?.message ?? null };
+}
+
+/**
+ * Attaches (or with `null`, removes) a page's PDF. The file is uploaded from
+ * the browser first; only the pointer is stored in `metadata.pdf`. The
+ * previous file is deleted from storage.
+ */
+export async function setNotebookEntryPdf(id: string, pdf: ArticlePdf | null) {
+  const { supabase, user } = await requireUser();
+  if (!user) return { error: "Oturum bulunamadı." };
+
+  if (
+    pdf &&
+    (!PDF_BUCKETS.includes(pdf.bucket) || !isOwnPdfPath(user.id, pdf.path))
+  ) {
+    return { error: "Geçersiz PDF." };
+  }
+
+  const { data: existing } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .eq("kind", "other")
+    .contains("metadata", { category: NOTEBOOK_MARKER })
+    .maybeSingle();
+  if (!existing) return { error: "Not bulunamadı." };
+
+  const current = (existing.metadata as Record<string, unknown> | null) ?? {};
+  const previous = pdfOf(current);
+  const metadata: Record<string, unknown> = { ...current };
+  if (pdf) {
+    metadata.pdf = {
+      bucket: pdf.bucket,
+      path: pdf.path,
+      name: String(pdf.name).slice(0, 255),
+      size: Number(pdf.size) || 0,
+    };
+  } else {
+    delete metadata.pdf;
+  }
+
+  const { error } = await supabase.from("sources").update({ metadata }).eq("id", id);
+  if (!error && previous && previous.path !== pdf?.path) {
+    await supabase.storage.from(previous.bucket).remove([previous.path]);
+  }
+
+  revalidatePath(`/notebook/${id}`);
+  return { error: error?.message ?? null };
+}
+
+/** Short-lived signed URL for a page's PDF (the bucket is private). */
+export async function getNotebookPdfUrl(id: string) {
+  const { supabase } = await requireUser();
+  const { data } = await supabase
+    .from("sources")
+    .select("metadata")
+    .eq("id", id)
+    .eq("kind", "other")
+    .contains("metadata", { category: NOTEBOOK_MARKER })
+    .maybeSingle();
+  const pdf = pdfOf(data?.metadata as Record<string, unknown> | null);
+  if (!pdf) return { url: null, error: "Bu nota PDF eklenmemiş." };
+
+  const { data: signed, error } = await supabase.storage
+    .from(pdf.bucket)
+    .createSignedUrl(pdf.path, 60 * 60);
+  if (error || !signed) {
+    return { url: null, error: `PDF açılamadı: ${error?.message ?? "bilinmeyen hata"}` };
+  }
+  return { url: signed.signedUrl, error: null };
 }
